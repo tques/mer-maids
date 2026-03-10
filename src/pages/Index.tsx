@@ -4,6 +4,7 @@ import {
   WATER_SPEED_FACTOR,
 } from "../game/water";
 import { createBoat, drawBoat, Boat } from "../game/boat";
+import { updateEnemies, checkBulletCollisions, drawEnemies } from "../game/enemies";
 
 const SPEED = 4;
 const TRI_SIZE = 20;
@@ -185,6 +186,13 @@ const Index = () => {
         return b.x > -10 && b.x < cw + 10 && b.y > -10 && b.y < ch + 10;
       });
 
+      // Update enemies & bombs
+      const boatX = boatRef.current ? boatRef.current.x : cw / 2;
+      updateEnemies(1 / 60, cw, ch, boatX);
+
+      // Bullet-enemy/bomb collisions
+      bulletsRef.current = checkBulletCollisions(bulletsRef.current);
+
       // Update water particles
       updateParticles(1 / 60);
 
@@ -201,7 +209,10 @@ const Index = () => {
       // Water (behind everything else)
       drawWater(ctx, cw, ch);
 
-      // Boat
+      // Enemies, bombs, explosions
+      drawEnemies(ctx);
+
+      // Boat (on top of water)
       if (boatRef.current) {
         drawBoat(ctx, boatRef.current, ch);
       }
