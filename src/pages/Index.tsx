@@ -74,6 +74,28 @@ const Index = () => {
           id: bulletIdRef.current++,
         });
       }
+      if (key === "a" || key === "d") {
+        e.preventDefault();
+        setShowHint(false);
+        const roll = rollRef.current;
+        if (!roll.active) {
+          const pos = posRef.current;
+          const mouse = mouseRef.current;
+          const angle = Math.atan2(mouse.y - pos.y, mouse.x - pos.x);
+          const dir = key === "a" ? -1 : 1;
+          // Perpendicular to aim direction
+          const perpX = -Math.sin(angle) * dir;
+          const perpY = Math.cos(angle) * dir;
+          roll.active = true;
+          roll.dir = dir as -1 | 1;
+          roll.startTime = performance.now();
+          roll.startX = pos.x;
+          roll.startY = pos.y;
+          roll.perpX = perpX;
+          roll.perpY = perpY;
+          roll.spinAngle = 0;
+        }
+      }
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
