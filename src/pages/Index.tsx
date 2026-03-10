@@ -1,8 +1,9 @@
 import { useEffect, useRef, useCallback, useState } from "react";
+import spriteImg from "@/assets/sprite.png";
 
 const SPEED = 5;
-const OBJ_W = 100;
-const OBJ_H = 105;
+const OBJ_W = 80;
+const OBJ_H = 90;
 const CONTAINER_RATIO = 0.85;
 
 const Index = () => {
@@ -127,15 +128,17 @@ const Index = () => {
           transition: "transform 200ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
-        <div
-          ref={objRef}
+        <img
+          ref={objRef as React.RefObject<HTMLImageElement>}
+          src={spriteImg}
+          alt="cyborg sprite"
           className="absolute"
+          draggable={false}
           style={{
             width: OBJ_W,
             height: OBJ_H,
-            backgroundColor: "var(--cinnabar)",
-            borderRadius: 4,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+            objectFit: "contain",
+            filter: "drop-shadow(0 6px 12px rgba(0,0,0,0.25))",
             transition: "transform 150ms ease-out",
           }}
         />
