@@ -1,18 +1,34 @@
 import { useEffect, useRef, useCallback, useState } from "react";
-import spriteImg from "@/assets/sprite.png";
+import spriteDown from "@/assets/sprite-down.png";
+import spriteUp from "@/assets/sprite-up.png";
+import spriteLeft from "@/assets/sprite-left.png";
+import spriteIdle from "@/assets/sprite.png";
 
 const SPEED = 5;
 const OBJ_W = 80;
 const OBJ_H = 90;
 const CONTAINER_RATIO = 0.85;
 
+type Direction = "up" | "down" | "left" | "right" | "idle";
+
+const SPRITE_MAP: Record<Direction, { src: string; flipX: boolean }> = {
+  idle: { src: spriteIdle, flipX: false },
+  down: { src: spriteDown, flipX: false },
+  up: { src: spriteUp, flipX: false },
+  left: { src: spriteLeft, flipX: false },
+  right: { src: spriteLeft, flipX: true },
+};
+
 const Index = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const objRef = useRef<HTMLDivElement>(null);
+  const objRef = useRef<HTMLImageElement>(null);
   const posRef = useRef({ x: 0, y: 0 });
   const keysRef = useRef<string[]>([]);
   const rafRef = useRef<number>(0);
   const [showHint, setShowHint] = useState(true);
+  const [direction, setDirection] = useState<Direction>("idle");
+  const [isMoving, setIsMoving] = useState(false);
+  const dirRef = useRef<Direction>("idle");
 
   const shake = useCallback((dx: number, dy: number) => {
     const el = containerRef.current;
@@ -23,16 +39,17 @@ const Index = () => {
     }, 200);
   }, []);
 
-  const deform = useCallback((axis: "x" | "y", dir: number) => {
+  const deform = useCallback((axis: "x" | "y") => {
     const el = objRef.current;
     if (!el) return;
+    const base = dirRef.current === "right" ? "scaleX(-1)" : "";
     if (axis === "x") {
-      el.style.transform = `scaleX(0.9) scaleY(1.05)`;
+      el.style.transform = `${base} scaleX(${dirRef.current === "right" ? "-0.9" : "0.9"}) scaleY(1.05)`;
     } else {
-      el.style.transform = `scaleY(0.9) scaleX(1.05)`;
+      el.style.transform = `${base} scaleY(0.9) scaleX(${dirRef.current === "right" ? "-1.05" : "1.05"})`;
     }
     setTimeout(() => {
-      el.style.transform = "scale(1)";
+      el.style.transform = dirRef.current === "right" ? "scaleX(-1)" : "scale(1)";
     }, 150);
   }, []);
 
@@ -47,18 +64,35 @@ const Index = () => {
     obj.style.left = posRef.current.x + "px";
     obj.style.top = posRef.current.y + "px";
 
+    const keyToDir: Record<string, Direction> = {
+      w: "up", s: "down", a: "left", d: "right",
+    };
+
     const onKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
       if (!["w", "a", "s", "d"].includes(key)) return;
       setShowHint(false);
-      // Most recent key priority — move to end
       keysRef.current = keysRef.current.filter((k) => k !== key);
       keysRef.current.push(key);
+      const newDir = keyToDir[key];
+      dirRef.current = newDir;
+      setDirection(newDir);
+      setIsMoving(true);
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
       keysRef.current = keysRef.current.filter((k) => k !== key);
+      if (keysRef.current.length === 0) {
+        setIsMoving(false);
+        dirRef.current = "idle";
+        setDirection("idle");
+      } else {
+        const lastKey = keysRef.current[keysRef.current.length - 1];
+        const newDir = keyToDir[lastKey];
+        dirRef.current = newDir;
+        setDirection(newDir);
+      }
     };
 
     const loop = () => {
@@ -76,7 +110,6 @@ const Index = () => {
         if (activeKey === "w") ny -= SPEED;
         if (activeKey === "s") ny += SPEED;
 
-        // Collision
         let hitX = 0, hitY = 0;
         if (nx <= 0) { nx = 0; hitX = -1; }
         if (nx >= maxX) { nx = maxX; hitX = 1; }
@@ -85,11 +118,11 @@ const Index = () => {
 
         if (hitX !== 0 && pos.x !== nx) {
           shake(hitX, 0);
-          deform("x", hitX);
+          deform("x");
         }
         if (hitY !== 0 && pos.y !== ny) {
           shake(0, hitY);
-          deform("y", hitY);
+          deform("y");
         }
 
         pos.x = nx;
@@ -113,6 +146,8 @@ const Index = () => {
     };
   }, [shake, deform]);
 
+  const spriteInfo = SPRITE_MAP[direction];
+
   return (
     <div
       className="flex items-center justify-center w-screen h-screen select-none"
@@ -129,8 +164,8 @@ const Index = () => {
         }}
       >
         <img
-          ref={objRef as React.RefObject<HTMLImageElement>}
-          src={spriteImg}
+          ref={objRef}
+          src={spriteInfo.src}
           alt="cyborg sprite"
           className="absolute"
           draggable={false}
@@ -140,8 +175,24 @@ const Index = () => {
             objectFit: "contain",
             filter: "drop-shadow(0 6px 12px rgba(0,0,0,0.25))",
             transition: "transform 150ms ease-out",
+            transform: spriteInfo.flipX ? "scaleX(-1)" : "scale(1)",
+            animation: isMoving ? "jetpack-bob 0.3s ease-in-out infinite alternate" : "jetpack-idle 2s ease-in-out infinite alternate",
           }}
         />
+        {/* Jetpack flame glow */}
+        {isMoving && (
+          <div
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              width: 30,
+              height: 30,
+              background: "radial-gradient(circle, rgba(0,200,255,0.4) 0%, transparent 70%)",
+              left: posRef.current.x + OBJ_W / 2 - 15,
+              top: posRef.current.y + OBJ_H + 5,
+              animation: "flame-flicker 0.15s ease-in-out infinite alternate",
+            }}
+          />
+        )}
         {showHint && (
           <div
             className="absolute bottom-6 left-1/2 -translate-x-1/2 tracking-widest uppercase text-sm opacity-40"
