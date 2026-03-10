@@ -162,16 +162,17 @@ const Index = () => {
       }
 
       // Triangle pointing at mouse
-      const extraSpin = roll.active ? roll.spinAngle : 0;
       ctx.save();
       ctx.translate(pos.x, pos.y);
-      ctx.rotate(angle + extraSpin);
+      ctx.rotate(angle);
       
-      // Scale squish during roll for visual flair
+      // Barrel roll = rotation around forward axis → in 2D this is a scale on the perpendicular (Y) axis
+      // Goes 1 → 0 → -1 → 0 → 1 like a spinning top / coin flip
       if (roll.active) {
         const elapsed = performance.now() - roll.startTime;
         const t = Math.min(elapsed / ROLL_DURATION, 1);
-        const scaleY = 1 - 0.3 * Math.sin(t * Math.PI);
+        const rollAngle = roll.dir * Math.PI * 2 * t;
+        const scaleY = Math.cos(rollAngle);
         ctx.scale(1, scaleY);
       }
 
