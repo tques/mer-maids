@@ -3,6 +3,7 @@ import {
   getWaterSurfaceY, isSubmerged, spawnSplash, updateParticles, drawWater,
   WATER_SPEED_FACTOR,
 } from "../game/water";
+import { createBoat, drawBoat, Boat } from "../game/boat";
 
 const SPEED = 4;
 const TRI_SIZE = 20;
