@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from "react";
+import spriteImg from "@/assets/sprite.png";
 
 const SPEED = 5;
 const OBJ_W = 80;
