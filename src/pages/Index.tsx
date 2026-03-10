@@ -56,13 +56,13 @@ const Index = () => {
       mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     };
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      if (key === "w") { setShowHint(false); keysRef.current.add("w"); }
-      if (key === " ") {
+    const onMouseDown = (e: MouseEvent) => {
+      if (e.button === 0) {
+        setShowHint(false);
+        keysRef.current.add("w");
+      } else if (e.button === 2) {
         e.preventDefault();
         setShowHint(false);
-        // Fire bullet
         const pos = posRef.current;
         const mouse = mouseRef.current;
         const angle = Math.atan2(mouse.y - pos.y, mouse.x - pos.x);
@@ -74,6 +74,16 @@ const Index = () => {
           id: bulletIdRef.current++,
         });
       }
+    };
+
+    const onMouseUp = (e: MouseEvent) => {
+      if (e.button === 0) keysRef.current.delete("w");
+    };
+
+    const onContextMenu = (e: Event) => e.preventDefault();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
       if (key === "a" || key === "d") {
         e.preventDefault();
         setShowHint(false);
@@ -196,12 +206,18 @@ const Index = () => {
     };
 
     canvas.addEventListener("mousemove", onMouseMove);
+    canvas.addEventListener("mousedown", onMouseDown);
+    canvas.addEventListener("mouseup", onMouseUp);
+    canvas.addEventListener("contextmenu", onContextMenu);
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
     rafRef.current = requestAnimationFrame(loop);
 
     return () => {
       canvas.removeEventListener("mousemove", onMouseMove);
+      canvas.removeEventListener("mousedown", onMouseDown);
+      canvas.removeEventListener("mouseup", onMouseUp);
+      canvas.removeEventListener("contextmenu", onContextMenu);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("resize", resize);
@@ -231,7 +247,7 @@ const Index = () => {
             className="absolute bottom-6 left-1/2 -translate-x-1/2 tracking-widest uppercase text-sm opacity-40 pointer-events-none"
             style={{ color: "var(--canvas)", fontFamily: "var(--font-mono)" }}
           >
-            w to move · space to fire
+            left click to move · right click to fire
           </div>
         )}
       </div>
