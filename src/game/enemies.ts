@@ -65,31 +65,28 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number)
   if (spawnTimer <= 0) {
     spawnTimer = SPAWN_INTERVAL + Math.random() * 1.5;
     const fromLeft = Math.random() > 0.5;
-    const tx = boatX + (Math.random() - 0.5) * cw * 0.3;
+    const dir = fromLeft ? 1 : -1;
     enemies.push({
       x: fromLeft ? -30 : cw + 30,
       y: 40 + Math.random() * waterY * 0.3,
       speed: 1.2 + Math.random() * 0.8,
+      dir: dir as 1 | -1,
       angle: 0,
-      targetX: tx,
+      targetX: boatX + (Math.random() - 0.5) * cw * 0.3,
       bombCooldown: 0.5 + Math.random(),
       alive: true,
     });
   }
 
-  // Update enemies
+  // Update enemies — they fly continuously in their direction
   for (const e of enemies) {
     if (!e.alive) continue;
-    const dx = e.targetX - e.x;
-    const targetY = 30 + Math.random() * 0.01; // stay high
-    e.angle = Math.atan2(0, dx); // face direction of travel
-    e.x += Math.sign(dx) * e.speed;
-    // Gentle vertical oscillation
+    e.x += e.dir * e.speed;
     e.y += Math.sin(performance.now() * 0.003 + e.x * 0.01) * 0.3;
 
-    // Drop bombs when roughly above target
+    // Drop bombs while passing over target zone
     e.bombCooldown -= dt;
-    if (Math.abs(dx) < 80 && e.bombCooldown <= 0) {
+    if (Math.abs(e.x - e.targetX) < 120 && e.bombCooldown <= 0) {
       e.bombCooldown = BOMB_INTERVAL + Math.random() * 0.5;
       bombs.push({
         x: e.x,
