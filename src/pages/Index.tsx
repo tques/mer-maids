@@ -25,6 +25,7 @@ const Index = () => {
   const bulletsRef = useRef<Bullet[]>([]);
   const bulletIdRef = useRef(0);
   const rafRef = useRef(0);
+  const rollRef = useRef<{ active: boolean; dir: -1 | 1; startTime: number; startX: number; startY: number; perpX: number; perpY: number; spinAngle: number }>({ active: false, dir: 1, startTime: 0, startX: 0, startY: 0, perpX: 0, perpY: 0, spinAngle: 0 });
   const [showHint, setShowHint] = useState(true);
 
   const shake = useCallback((dx: number, dy: number) => {
