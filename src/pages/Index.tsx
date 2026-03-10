@@ -1,8 +1,8 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 
 const SPEED = 5;
-const OBJ_W = 100;
-const OBJ_H = 105;
+const OBJ_W = 80;
+const OBJ_H = 90;
 const CONTAINER_RATIO = 0.85;
 
 const Index = () => {
