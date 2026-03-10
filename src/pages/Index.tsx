@@ -3,6 +3,7 @@ import {
   getWaterSurfaceY, isSubmerged, spawnSplash, updateParticles, drawWater,
   WATER_SPEED_FACTOR,
 } from "../game/water";
+import { createBoat, drawBoat, Boat } from "../game/boat";
 
 const SPEED = 4;
 const TRI_SIZE = 20;
@@ -32,6 +33,7 @@ const Index = () => {
   const rollRef = useRef<{ active: boolean; dir: -1 | 1; startTime: number; startX: number; startY: number; perpX: number; perpY: number; spinAngle: number }>({ active: false, dir: 1, startTime: 0, startX: 0, startY: 0, perpX: 0, perpY: 0, spinAngle: 0 });
   const wasSubmergedRef = useRef(false);
   const lastPosRef = useRef({ x: 0, y: 0 });
+  const boatRef = useRef<Boat | null>(null);
   const [showHint, setShowHint] = useState(true);
 
   const shake = useCallback((dx: number, dy: number) => {
@@ -52,6 +54,7 @@ const Index = () => {
       if (posRef.current.x === 0 && posRef.current.y === 0) {
         posRef.current = { x: canvas.width / 2, y: canvas.height / 2 };
       }
+      boatRef.current = createBoat(canvas.width);
       mouseRef.current = { x: canvas.width / 2, y: canvas.height / 2 };
     };
     resize();
@@ -185,11 +188,23 @@ const Index = () => {
       // Update water particles
       updateParticles(1 / 60);
 
-      // Draw
-      ctx.clearRect(0, 0, cw, ch);
+      // Draw sunset sky gradient
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, ch);
+      skyGrad.addColorStop(0, "#1a1a2e");       // deep navy top
+      skyGrad.addColorStop(0.3, "#16213e");     // dark blue
+      skyGrad.addColorStop(0.5, "#e94560");     // warm red-pink
+      skyGrad.addColorStop(0.65, "#f5a623");    // golden orange
+      skyGrad.addColorStop(0.75, "#f7d794");    // pale gold at horizon
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, cw, ch);
 
-      // Water (behind everything)
+      // Water (behind everything else)
       drawWater(ctx, cw, ch);
+
+      // Boat
+      if (boatRef.current) {
+        drawBoat(ctx, boatRef.current, ch);
+      }
 
       // Bullets
       ctx.fillStyle = "#D93636";
