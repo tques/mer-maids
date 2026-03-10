@@ -162,7 +162,6 @@ const Index = () => {
       }
 
       // Triangle pointing at mouse
-      const roll = rollRef.current;
       ctx.save();
       ctx.translate(pos.x, pos.y);
       ctx.rotate(angle);
