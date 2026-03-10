@@ -54,6 +54,7 @@ const Index = () => {
       if (posRef.current.x === 0 && posRef.current.y === 0) {
         posRef.current = { x: canvas.width / 2, y: canvas.height / 2 };
       }
+      boatRef.current = createBoat(canvas.width);
       mouseRef.current = { x: canvas.width / 2, y: canvas.height / 2 };
     };
     resize();
