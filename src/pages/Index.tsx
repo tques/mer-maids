@@ -56,13 +56,13 @@ const Index = () => {
       mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     };
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      if (key === "w") { setShowHint(false); keysRef.current.add("w"); }
-      if (key === " ") {
+    const onMouseDown = (e: MouseEvent) => {
+      if (e.button === 0) {
+        setShowHint(false);
+        keysRef.current.add("w");
+      } else if (e.button === 2) {
         e.preventDefault();
         setShowHint(false);
-        // Fire bullet
         const pos = posRef.current;
         const mouse = mouseRef.current;
         const angle = Math.atan2(mouse.y - pos.y, mouse.x - pos.x);
@@ -74,6 +74,16 @@ const Index = () => {
           id: bulletIdRef.current++,
         });
       }
+    };
+
+    const onMouseUp = (e: MouseEvent) => {
+      if (e.button === 0) keysRef.current.delete("w");
+    };
+
+    const onContextMenu = (e: Event) => e.preventDefault();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
       if (key === "a" || key === "d") {
         e.preventDefault();
         setShowHint(false);
