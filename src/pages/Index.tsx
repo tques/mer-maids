@@ -160,9 +160,18 @@ const Index = () => {
       }
 
       // Triangle pointing at mouse
+      const extraSpin = roll.active ? roll.spinAngle : 0;
       ctx.save();
       ctx.translate(pos.x, pos.y);
-      ctx.rotate(angle);
+      ctx.rotate(angle + extraSpin);
+      
+      // Scale squish during roll for visual flair
+      if (roll.active) {
+        const elapsed = performance.now() - roll.startTime;
+        const t = Math.min(elapsed / ROLL_DURATION, 1);
+        const scaleY = 1 - 0.3 * Math.sin(t * Math.PI);
+        ctx.scale(1, scaleY);
+      }
 
       // Shadow
       ctx.shadowColor = "rgba(0,0,0,0.3)";
