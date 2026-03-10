@@ -188,11 +188,23 @@ const Index = () => {
       // Update water particles
       updateParticles(1 / 60);
 
-      // Draw
-      ctx.clearRect(0, 0, cw, ch);
+      // Draw sunset sky gradient
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, ch);
+      skyGrad.addColorStop(0, "#1a1a2e");       // deep navy top
+      skyGrad.addColorStop(0.3, "#16213e");     // dark blue
+      skyGrad.addColorStop(0.5, "#e94560");     // warm red-pink
+      skyGrad.addColorStop(0.65, "#f5a623");    // golden orange
+      skyGrad.addColorStop(0.75, "#f7d794");    // pale gold at horizon
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, cw, ch);
 
-      // Water (behind everything)
+      // Water (behind everything else)
       drawWater(ctx, cw, ch);
+
+      // Boat
+      if (boatRef.current) {
+        drawBoat(ctx, boatRef.current, ch);
+      }
 
       // Bullets
       ctx.fillStyle = "#D93636";
