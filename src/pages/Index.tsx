@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  getWaterSurfaceY, isSubmerged, spawnSplash, updateParticles, drawWater,
+  WATER_SPEED_FACTOR,
+} from "../game/water";
 
 const SPEED = 4;
 const TRI_SIZE = 20;
