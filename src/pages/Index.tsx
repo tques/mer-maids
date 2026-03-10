@@ -5,6 +5,8 @@ const TRI_SIZE = 20;
 const CONTAINER_RATIO = 0.85;
 const BULLET_SPEED = 8;
 const BULLET_RADIUS = 5;
+const ROLL_DISTANCE = 60;
+const ROLL_DURATION = 300; // ms
 
 interface Bullet {
   x: number;
@@ -23,6 +25,7 @@ const Index = () => {
   const bulletsRef = useRef<Bullet[]>([]);
   const bulletIdRef = useRef(0);
   const rafRef = useRef(0);
+  const rollRef = useRef<{ active: boolean; dir: -1 | 1; startTime: number; startX: number; startY: number; perpX: number; perpY: number; spinAngle: number }>({ active: false, dir: 1, startTime: 0, startX: 0, startY: 0, perpX: 0, perpY: 0, spinAngle: 0 });
   const [showHint, setShowHint] = useState(true);
 
   const shake = useCallback((dx: number, dy: number) => {
@@ -71,6 +74,28 @@ const Index = () => {
           id: bulletIdRef.current++,
         });
       }
+      if (key === "a" || key === "d") {
+        e.preventDefault();
+        setShowHint(false);
+        const roll = rollRef.current;
+        if (!roll.active) {
+          const pos = posRef.current;
+          const mouse = mouseRef.current;
+          const angle = Math.atan2(mouse.y - pos.y, mouse.x - pos.x);
+          const dir = key === "a" ? -1 : 1;
+          // Perpendicular to aim direction
+          const perpX = -Math.sin(angle) * dir;
+          const perpY = Math.cos(angle) * dir;
+          roll.active = true;
+          roll.dir = dir as -1 | 1;
+          roll.startTime = performance.now();
+          roll.startX = pos.x;
+          roll.startY = pos.y;
+          roll.perpX = perpX;
+          roll.perpY = perpY;
+          roll.spinAngle = 0;
+        }
+      }
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
@@ -85,8 +110,21 @@ const Index = () => {
       const mouse = mouseRef.current;
       const angle = Math.atan2(mouse.y - pos.y, mouse.x - pos.x);
 
-      // Move toward mouse
-      if (keysRef.current.has("w")) {
+      // Barrel roll
+      const roll = rollRef.current;
+      if (roll.active) {
+        const elapsed = performance.now() - roll.startTime;
+        const t = Math.min(elapsed / ROLL_DURATION, 1);
+        // Ease out
+        const ease = 1 - (1 - t) * (1 - t);
+        pos.x = roll.startX + roll.perpX * ROLL_DISTANCE * ease;
+        pos.y = roll.startY + roll.perpY * ROLL_DISTANCE * ease;
+        roll.spinAngle = roll.dir * Math.PI * 2 * ease;
+        if (t >= 1) roll.active = false;
+      }
+
+      // Move toward mouse (only when not rolling)
+      if (!roll.active && keysRef.current.has("w")) {
         const dist = Math.hypot(mouse.x - pos.x, mouse.y - pos.y);
         if (dist > 5) {
           pos.x += Math.cos(angle) * SPEED;
@@ -122,9 +160,18 @@ const Index = () => {
       }
 
       // Triangle pointing at mouse
+      const extraSpin = roll.active ? roll.spinAngle : 0;
       ctx.save();
       ctx.translate(pos.x, pos.y);
-      ctx.rotate(angle);
+      ctx.rotate(angle + extraSpin);
+      
+      // Scale squish during roll for visual flair
+      if (roll.active) {
+        const elapsed = performance.now() - roll.startTime;
+        const t = Math.min(elapsed / ROLL_DURATION, 1);
+        const scaleY = 1 - 0.3 * Math.sin(t * Math.PI);
+        ctx.scale(1, scaleY);
+      }
 
       // Shadow
       ctx.shadowColor = "rgba(0,0,0,0.3)";
