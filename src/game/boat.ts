@@ -1,75 +1,53 @@
-// Traditional boat sitting high on the waterline
+// Abstract carrier-style boat sitting high on the waterline
 
 import { getWaveY, getWaterSurfaceY } from "./water";
 
 export interface Boat {
-  x: number;       // center x
+  x: number;
   width: number;
-  height: number;   // hull depth below waterline
-  mastHeight: number;
+  hullDepth: number;
 }
 
 export function createBoat(canvasWidth: number): Boat {
   return {
-    x: canvasWidth * 0.65,
-    width: 120,
-    height: 18,      // shallow hull – sits high on waterline
-    mastHeight: 70,
+    x: canvasWidth / 2,       // centered
+    width: canvasWidth * 0.45, // long carrier
+    hullDepth: 14,             // shallow – sits high
   };
 }
 
 export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, canvasHeight: number) {
   const surfaceY = getWaterSurfaceY(canvasHeight);
-  // Average wave height at boat center for gentle bobbing
   const waveY = getWaveY(boat.x, surfaceY);
-  const boatY = waveY - 2; // sits just above wave surface
+  const topY = waveY - 6; // sits just above waves
 
   const hw = boat.width / 2;
 
   ctx.save();
 
-  // Hull – traditional wooden boat shape (trapezoid with curved bottom)
+  // Hull – simple geometric trapezoid (carrier silhouette)
   ctx.beginPath();
-  ctx.moveTo(boat.x - hw, boatY);                          // top-left
-  ctx.lineTo(boat.x - hw * 0.6, boatY + boat.height);      // bottom-left (narrower)
-  ctx.quadraticCurveTo(boat.x, boatY + boat.height + 4, boat.x + hw * 0.6, boatY + boat.height); // curved bottom
-  ctx.lineTo(boat.x + hw, boatY);                          // top-right
+  ctx.moveTo(boat.x - hw, topY);                          // top-left
+  ctx.lineTo(boat.x - hw * 0.85, topY + boat.hullDepth);  // bottom-left (tapered)
+  ctx.lineTo(boat.x + hw * 0.85, topY + boat.hullDepth);  // bottom-right
+  ctx.lineTo(boat.x + hw, topY);                          // top-right
   ctx.closePath();
-  ctx.fillStyle = "#8B5E3C";
+  ctx.fillStyle = "#2a2a2a";
   ctx.fill();
-  ctx.strokeStyle = "#5C3A1E";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
 
-  // Deck line
+  // Deck line accent
   ctx.beginPath();
-  ctx.moveTo(boat.x - hw + 4, boatY + 3);
-  ctx.lineTo(boat.x + hw - 4, boatY + 3);
-  ctx.strokeStyle = "#6B4226";
+  ctx.moveTo(boat.x - hw + 6, topY + 3);
+  ctx.lineTo(boat.x + hw - 6, topY + 3);
+  ctx.strokeStyle = "#444";
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  // Mast
-  const mastX = boat.x;
-  const mastTop = boatY - boat.mastHeight;
-  ctx.beginPath();
-  ctx.moveTo(mastX, boatY);
-  ctx.lineTo(mastX, mastTop);
-  ctx.strokeStyle = "#5C3A1E";
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
-
-  // Sail – triangular
-  ctx.beginPath();
-  ctx.moveTo(mastX, mastTop + 5);
-  ctx.lineTo(mastX + hw * 0.7, boatY - 8);
-  ctx.lineTo(mastX, boatY - 8);
-  ctx.closePath();
-  ctx.fillStyle = "rgba(240, 230, 210, 0.85)";
-  ctx.fill();
-  ctx.strokeStyle = "rgba(180, 160, 130, 0.6)";
-  ctx.lineWidth = 1;
-  ctx.stroke();
+  // Small bridge/tower rectangle (abstract)
+  const towerW = 16;
+  const towerH = 18;
+  ctx.fillStyle = "#333";
+  ctx.fillRect(boat.x + hw * 0.25 - towerW / 2, topY - towerH, towerW, towerH);
 
   ctx.restore();
 }

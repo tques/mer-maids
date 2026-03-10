@@ -190,11 +190,11 @@ const Index = () => {
 
       // Draw sunset sky gradient
       const skyGrad = ctx.createLinearGradient(0, 0, 0, ch);
-      skyGrad.addColorStop(0, "#1a1a2e");       // deep navy top
-      skyGrad.addColorStop(0.3, "#16213e");     // dark blue
-      skyGrad.addColorStop(0.5, "#e94560");     // warm red-pink
-      skyGrad.addColorStop(0.65, "#f5a623");    // golden orange
-      skyGrad.addColorStop(0.75, "#f7d794");    // pale gold at horizon
+      skyGrad.addColorStop(0, "#0a0a1a");       // deep night
+      skyGrad.addColorStop(0.35, "#1a1a3e");    // dark indigo
+      skyGrad.addColorStop(0.55, "#2d4a6f");    // steel blue
+      skyGrad.addColorStop(0.7, "#e8a838");     // amber gold
+      skyGrad.addColorStop(0.78, "#f7d794");    // pale gold horizon
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, cw, ch);
 
