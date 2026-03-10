@@ -141,12 +141,28 @@ const Index = () => {
         if (t >= 1) roll.active = false;
       }
 
+      // Water submersion check
+      const submerged = isSubmerged(pos.y, ch);
+      const wasSubmerged = wasSubmergedRef.current;
+      const speedMult = submerged ? WATER_SPEED_FACTOR : 1;
+
+      // Splash on entry/exit
+      if (submerged && !wasSubmerged) {
+        const vy = pos.y - lastPosRef.current.y;
+        spawnSplash(pos.x, getWaterSurfaceY(ch), vy, true);
+      } else if (!submerged && wasSubmerged) {
+        const vy = pos.y - lastPosRef.current.y;
+        spawnSplash(pos.x, getWaterSurfaceY(ch), vy, false);
+      }
+      wasSubmergedRef.current = submerged;
+      lastPosRef.current = { x: pos.x, y: pos.y };
+
       // Move toward mouse (always, including during roll)
       if (keysRef.current.has("w")) {
         const dist = Math.hypot(mouse.x - pos.x, mouse.y - pos.y);
         if (dist > 5) {
-          pos.x += Math.cos(angle) * SPEED;
-          pos.y += Math.sin(angle) * SPEED;
+          pos.x += Math.cos(angle) * SPEED * speedMult;
+          pos.y += Math.sin(angle) * SPEED * speedMult;
         }
       }
 
