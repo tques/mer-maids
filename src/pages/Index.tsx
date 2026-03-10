@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  getWaterSurfaceY, isSubmerged, spawnSplash, updateParticles, drawWater,
+  WATER_SPEED_FACTOR,
+} from "../game/water";
 
 const SPEED = 4;
 const TRI_SIZE = 20;
@@ -26,6 +30,8 @@ const Index = () => {
   const bulletIdRef = useRef(0);
   const rafRef = useRef(0);
   const rollRef = useRef<{ active: boolean; dir: -1 | 1; startTime: number; startX: number; startY: number; perpX: number; perpY: number; spinAngle: number }>({ active: false, dir: 1, startTime: 0, startX: 0, startY: 0, perpX: 0, perpY: 0, spinAngle: 0 });
+  const wasSubmergedRef = useRef(false);
+  const lastPosRef = useRef({ x: 0, y: 0 });
   const [showHint, setShowHint] = useState(true);
 
   const shake = useCallback((dx: number, dy: number) => {
@@ -135,12 +141,28 @@ const Index = () => {
         if (t >= 1) roll.active = false;
       }
 
+      // Water submersion check
+      const submerged = isSubmerged(pos.y, ch);
+      const wasSubmerged = wasSubmergedRef.current;
+      const speedMult = submerged ? WATER_SPEED_FACTOR : 1;
+
+      // Splash on entry/exit
+      if (submerged && !wasSubmerged) {
+        const vy = pos.y - lastPosRef.current.y;
+        spawnSplash(pos.x, getWaterSurfaceY(ch), vy, true);
+      } else if (!submerged && wasSubmerged) {
+        const vy = pos.y - lastPosRef.current.y;
+        spawnSplash(pos.x, getWaterSurfaceY(ch), vy, false);
+      }
+      wasSubmergedRef.current = submerged;
+      lastPosRef.current = { x: pos.x, y: pos.y };
+
       // Move toward mouse (always, including during roll)
       if (keysRef.current.has("w")) {
         const dist = Math.hypot(mouse.x - pos.x, mouse.y - pos.y);
         if (dist > 5) {
-          pos.x += Math.cos(angle) * SPEED;
-          pos.y += Math.sin(angle) * SPEED;
+          pos.x += Math.cos(angle) * SPEED * speedMult;
+          pos.y += Math.sin(angle) * SPEED * speedMult;
         }
       }
 
@@ -160,8 +182,14 @@ const Index = () => {
         return b.x > -10 && b.x < cw + 10 && b.y > -10 && b.y < ch + 10;
       });
 
+      // Update water particles
+      updateParticles(1 / 60);
+
       // Draw
       ctx.clearRect(0, 0, cw, ch);
+
+      // Water (behind everything)
+      drawWater(ctx, cw, ch);
 
       // Bullets
       ctx.fillStyle = "#D93636";
