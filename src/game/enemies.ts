@@ -6,8 +6,9 @@ export interface Enemy {
   x: number;
   y: number;
   speed: number;
+  dir: 1 | -1; // horizontal direction, never stops
   angle: number;
-  targetX: number; // x position above boat to fly toward
+  targetX: number;
   bombCooldown: number;
   alive: boolean;
 }
