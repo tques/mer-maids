@@ -4,6 +4,7 @@ import {
   WATER_SPEED_FACTOR,
 } from "../game/water";
 import { createBoat, drawBoat, Boat } from "../game/boat";
+import { updateEnemies, checkBulletCollisions, drawEnemies } from "../game/enemies";
 
 const SPEED = 4;
 const TRI_SIZE = 20;
