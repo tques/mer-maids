@@ -168,7 +168,7 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     if (!e.alive) continue;
     ctx.save();
     ctx.translate(e.x, e.y);
-    const facing = e.targetX > e.x ? 0 : Math.PI;
+    const facing = e.dir === 1 ? 0 : Math.PI;
     ctx.rotate(facing);
 
     ctx.beginPath();
