@@ -110,8 +110,21 @@ const Index = () => {
       const mouse = mouseRef.current;
       const angle = Math.atan2(mouse.y - pos.y, mouse.x - pos.x);
 
-      // Move toward mouse
-      if (keysRef.current.has("w")) {
+      // Barrel roll
+      const roll = rollRef.current;
+      if (roll.active) {
+        const elapsed = performance.now() - roll.startTime;
+        const t = Math.min(elapsed / ROLL_DURATION, 1);
+        // Ease out
+        const ease = 1 - (1 - t) * (1 - t);
+        pos.x = roll.startX + roll.perpX * ROLL_DISTANCE * ease;
+        pos.y = roll.startY + roll.perpY * ROLL_DISTANCE * ease;
+        roll.spinAngle = roll.dir * Math.PI * 2 * ease;
+        if (t >= 1) roll.active = false;
+      }
+
+      // Move toward mouse (only when not rolling)
+      if (!roll.active && keysRef.current.has("w")) {
         const dist = Math.hypot(mouse.x - pos.x, mouse.y - pos.y);
         if (dist > 5) {
           pos.x += Math.cos(angle) * SPEED;
