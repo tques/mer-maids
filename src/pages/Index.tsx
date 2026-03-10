@@ -186,6 +186,13 @@ const Index = () => {
         return b.x > -10 && b.x < cw + 10 && b.y > -10 && b.y < ch + 10;
       });
 
+      // Update enemies & bombs
+      const boatX = boatRef.current ? boatRef.current.x : cw / 2;
+      updateEnemies(1 / 60, cw, ch, boatX);
+
+      // Bullet-enemy/bomb collisions
+      bulletsRef.current = checkBulletCollisions(bulletsRef.current);
+
       // Update water particles
       updateParticles(1 / 60);
 
