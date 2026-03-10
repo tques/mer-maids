@@ -247,7 +247,7 @@ const Index = () => {
             className="absolute bottom-6 left-1/2 -translate-x-1/2 tracking-widest uppercase text-sm opacity-40 pointer-events-none"
             style={{ color: "var(--canvas)", fontFamily: "var(--font-mono)" }}
           >
-            w to move · space to fire
+            left click to move · right click to fire
           </div>
         )}
       </div>
