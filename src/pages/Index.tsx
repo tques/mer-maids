@@ -209,7 +209,10 @@ const Index = () => {
       // Water (behind everything else)
       drawWater(ctx, cw, ch);
 
-      // Boat
+      // Enemies, bombs, explosions
+      drawEnemies(ctx);
+
+      // Boat (on top of water)
       if (boatRef.current) {
         drawBoat(ctx, boatRef.current, ch);
       }
