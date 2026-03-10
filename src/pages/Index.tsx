@@ -1,152 +1,163 @@
-import { useEffect, useRef, useCallback, useState } from "react";
-import spriteDown from "@/assets/sprite-down.png";
-import spriteUp from "@/assets/sprite-up.png";
-import spriteLeft from "@/assets/sprite-left.png";
-import spriteIdle from "@/assets/sprite.png";
+import { useEffect, useRef, useState, useCallback } from "react";
 
-const SPEED = 5;
-const OBJ_W = 80;
-const OBJ_H = 90;
+const SPEED = 4;
+const TRI_SIZE = 20;
 const CONTAINER_RATIO = 0.85;
+const BULLET_SPEED = 8;
+const BULLET_RADIUS = 5;
 
-type Direction = "up" | "down" | "left" | "right" | "idle";
-
-const SPRITE_MAP: Record<Direction, { src: string; flipX: boolean }> = {
-  idle: { src: spriteIdle, flipX: false },
-  down: { src: spriteDown, flipX: false },
-  up: { src: spriteUp, flipX: false },
-  left: { src: spriteLeft, flipX: false },
-  right: { src: spriteLeft, flipX: true },
-};
+interface Bullet {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  id: number;
+}
 
 const Index = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const objRef = useRef<HTMLImageElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const posRef = useRef({ x: 0, y: 0 });
-  const keysRef = useRef<string[]>([]);
-  const rafRef = useRef<number>(0);
+  const mouseRef = useRef({ x: 0, y: 0 });
+  const keysRef = useRef<Set<string>>(new Set());
+  const bulletsRef = useRef<Bullet[]>([]);
+  const bulletIdRef = useRef(0);
+  const rafRef = useRef(0);
   const [showHint, setShowHint] = useState(true);
-  const [direction, setDirection] = useState<Direction>("idle");
-  const [isMoving, setIsMoving] = useState(false);
-  const dirRef = useRef<Direction>("idle");
 
   const shake = useCallback((dx: number, dy: number) => {
     const el = containerRef.current;
     if (!el) return;
-    el.style.transform = `translate(${dx * 3}px, ${dy * 3}px)`;
-    setTimeout(() => {
-      el.style.transform = "translate(0, 0)";
-    }, 200);
-  }, []);
-
-  const deform = useCallback((axis: "x" | "y") => {
-    const el = objRef.current;
-    if (!el) return;
-    const base = dirRef.current === "right" ? "scaleX(-1)" : "";
-    if (axis === "x") {
-      el.style.transform = `${base} scaleX(${dirRef.current === "right" ? "-0.9" : "0.9"}) scaleY(1.05)`;
-    } else {
-      el.style.transform = `${base} scaleY(0.9) scaleX(${dirRef.current === "right" ? "-1.05" : "1.05"})`;
-    }
-    setTimeout(() => {
-      el.style.transform = dirRef.current === "right" ? "scaleX(-1)" : "scale(1)";
-    }, 150);
+    el.style.transform = `translate(${dx * 2}px, ${dy * 2}px)`;
+    setTimeout(() => { el.style.transform = "translate(0,0)"; }, 150);
   }, []);
 
   useEffect(() => {
     const container = containerRef.current;
-    const obj = objRef.current;
-    if (!container || !obj) return;
+    const canvas = canvasRef.current;
+    if (!container || !canvas) return;
 
-    const cw = container.clientWidth;
-    const ch = container.clientHeight;
-    posRef.current = { x: (cw - OBJ_W) / 2, y: (ch - OBJ_H) / 2 };
-    obj.style.left = posRef.current.x + "px";
-    obj.style.top = posRef.current.y + "px";
+    const resize = () => {
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+      if (posRef.current.x === 0 && posRef.current.y === 0) {
+        posRef.current = { x: canvas.width / 2, y: canvas.height / 2 };
+      }
+      mouseRef.current = { x: canvas.width / 2, y: canvas.height / 2 };
+    };
+    resize();
+    window.addEventListener("resize", resize);
 
-    const keyToDir: Record<string, Direction> = {
-      w: "up", s: "down", a: "left", d: "right",
+    const onMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
-      if (!["w", "a", "s", "d"].includes(key)) return;
-      setShowHint(false);
-      keysRef.current = keysRef.current.filter((k) => k !== key);
-      keysRef.current.push(key);
-      const newDir = keyToDir[key];
-      dirRef.current = newDir;
-      setDirection(newDir);
-      setIsMoving(true);
+      if (key === "w") { setShowHint(false); keysRef.current.add("w"); }
+      if (key === " ") {
+        e.preventDefault();
+        setShowHint(false);
+        // Fire bullet
+        const pos = posRef.current;
+        const mouse = mouseRef.current;
+        const angle = Math.atan2(mouse.y - pos.y, mouse.x - pos.x);
+        bulletsRef.current.push({
+          x: pos.x + Math.cos(angle) * (TRI_SIZE + 4),
+          y: pos.y + Math.sin(angle) * (TRI_SIZE + 4),
+          dx: Math.cos(angle) * BULLET_SPEED,
+          dy: Math.sin(angle) * BULLET_SPEED,
+          id: bulletIdRef.current++,
+        });
+      }
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      keysRef.current = keysRef.current.filter((k) => k !== key);
-      if (keysRef.current.length === 0) {
-        setIsMoving(false);
-        dirRef.current = "idle";
-        setDirection("idle");
-      } else {
-        const lastKey = keysRef.current[keysRef.current.length - 1];
-        const newDir = keyToDir[lastKey];
-        dirRef.current = newDir;
-        setDirection(newDir);
-      }
+      keysRef.current.delete(e.key.toLowerCase());
     };
 
+    const ctx = canvas.getContext("2d")!;
+
     const loop = () => {
-      const keys = keysRef.current;
-      const activeKey = keys[keys.length - 1];
-      if (activeKey) {
-        const pos = posRef.current;
-        const maxX = container.clientWidth - OBJ_W;
-        const maxY = container.clientHeight - OBJ_H;
-        let nx = pos.x;
-        let ny = pos.y;
+      const { width: cw, height: ch } = canvas;
+      const pos = posRef.current;
+      const mouse = mouseRef.current;
+      const angle = Math.atan2(mouse.y - pos.y, mouse.x - pos.x);
 
-        if (activeKey === "a") nx -= SPEED;
-        if (activeKey === "d") nx += SPEED;
-        if (activeKey === "w") ny -= SPEED;
-        if (activeKey === "s") ny += SPEED;
-
-        let hitX = 0, hitY = 0;
-        if (nx <= 0) { nx = 0; hitX = -1; }
-        if (nx >= maxX) { nx = maxX; hitX = 1; }
-        if (ny <= 0) { ny = 0; hitY = -1; }
-        if (ny >= maxY) { ny = maxY; hitY = 1; }
-
-        if (hitX !== 0 && pos.x !== nx) {
-          shake(hitX, 0);
-          deform("x");
-        }
-        if (hitY !== 0 && pos.y !== ny) {
-          shake(0, hitY);
-          deform("y");
-        }
-
-        pos.x = nx;
-        pos.y = ny;
-        if (obj) {
-          obj.style.left = nx + "px";
-          obj.style.top = ny + "px";
+      // Move toward mouse
+      if (keysRef.current.has("w")) {
+        const dist = Math.hypot(mouse.x - pos.x, mouse.y - pos.y);
+        if (dist > 5) {
+          pos.x += Math.cos(angle) * SPEED;
+          pos.y += Math.sin(angle) * SPEED;
         }
       }
+
+      // Clamp & collide
+      let hitX = 0, hitY = 0;
+      if (pos.x < TRI_SIZE) { pos.x = TRI_SIZE; hitX = -1; }
+      if (pos.x > cw - TRI_SIZE) { pos.x = cw - TRI_SIZE; hitX = 1; }
+      if (pos.y < TRI_SIZE) { pos.y = TRI_SIZE; hitY = -1; }
+      if (pos.y > ch - TRI_SIZE) { pos.y = ch - TRI_SIZE; hitY = 1; }
+      if (hitX) shake(hitX, 0);
+      if (hitY) shake(0, hitY);
+
+      // Update bullets
+      bulletsRef.current = bulletsRef.current.filter((b) => {
+        b.x += b.dx;
+        b.y += b.dy;
+        return b.x > -10 && b.x < cw + 10 && b.y > -10 && b.y < ch + 10;
+      });
+
+      // Draw
+      ctx.clearRect(0, 0, cw, ch);
+
+      // Bullets
+      ctx.fillStyle = "#D93636";
+      for (const b of bulletsRef.current) {
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, BULLET_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Triangle pointing at mouse
+      ctx.save();
+      ctx.translate(pos.x, pos.y);
+      ctx.rotate(angle);
+
+      // Shadow
+      ctx.shadowColor = "rgba(0,0,0,0.3)";
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 4;
+
+      ctx.beginPath();
+      ctx.moveTo(TRI_SIZE, 0);
+      ctx.lineTo(-TRI_SIZE * 0.7, -TRI_SIZE * 0.6);
+      ctx.lineTo(-TRI_SIZE * 0.7, TRI_SIZE * 0.6);
+      ctx.closePath();
+      ctx.fillStyle = "#D93636";
+      ctx.fill();
+
+      ctx.shadowColor = "transparent";
+      ctx.restore();
+
       rafRef.current = requestAnimationFrame(loop);
     };
 
+    canvas.addEventListener("mousemove", onMouseMove);
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
     rafRef.current = requestAnimationFrame(loop);
 
     return () => {
+      canvas.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("resize", resize);
       cancelAnimationFrame(rafRef.current);
     };
-  }, [shake, deform]);
-
-  const spriteInfo = SPRITE_MAP[direction];
+  }, [shake]);
 
   return (
     <div
@@ -155,50 +166,22 @@ const Index = () => {
     >
       <div
         ref={containerRef}
-        className="relative rounded-lg"
+        className="relative rounded-lg overflow-hidden"
         style={{
           width: `${CONTAINER_RATIO * 100}vw`,
           height: `${CONTAINER_RATIO * 100}vh`,
           backgroundColor: "var(--basalt)",
-          transition: "transform 200ms cubic-bezier(0.22, 1, 0.36, 1)",
+          transition: "transform 150ms cubic-bezier(0.22, 1, 0.36, 1)",
+          cursor: "crosshair",
         }}
       >
-        <img
-          ref={objRef}
-          src={spriteInfo.src}
-          alt="cyborg sprite"
-          className="absolute"
-          draggable={false}
-          style={{
-            width: OBJ_W,
-            height: OBJ_H,
-            objectFit: "contain",
-            filter: "drop-shadow(0 6px 12px rgba(0,0,0,0.25))",
-            transition: "transform 150ms ease-out",
-            transform: spriteInfo.flipX ? "scaleX(-1)" : "scale(1)",
-            animation: isMoving ? "jetpack-bob 0.3s ease-in-out infinite alternate" : "jetpack-idle 2s ease-in-out infinite alternate",
-          }}
-        />
-        {/* Jetpack flame glow */}
-        {isMoving && (
-          <div
-            className="absolute rounded-full pointer-events-none"
-            style={{
-              width: 30,
-              height: 30,
-              background: "radial-gradient(circle, rgba(0,200,255,0.4) 0%, transparent 70%)",
-              left: posRef.current.x + OBJ_W / 2 - 15,
-              top: posRef.current.y + OBJ_H + 5,
-              animation: "flame-flicker 0.15s ease-in-out infinite alternate",
-            }}
-          />
-        )}
+        <canvas ref={canvasRef} className="absolute inset-0" />
         {showHint && (
           <div
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 tracking-widest uppercase text-sm opacity-40"
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 tracking-widest uppercase text-sm opacity-40 pointer-events-none"
             style={{ color: "var(--canvas)", fontFamily: "var(--font-mono)" }}
           >
-            use wasd
+            w to move · space to fire
           </div>
         )}
       </div>
