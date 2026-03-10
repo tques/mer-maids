@@ -127,15 +127,17 @@ const Index = () => {
           transition: "transform 200ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
-        <div
-          ref={objRef}
+        <img
+          ref={objRef as React.RefObject<HTMLImageElement>}
+          src={spriteImg}
+          alt="cyborg sprite"
           className="absolute"
+          draggable={false}
           style={{
             width: OBJ_W,
             height: OBJ_H,
-            backgroundColor: "var(--cinnabar)",
-            borderRadius: 4,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+            objectFit: "contain",
+            filter: "drop-shadow(0 6px 12px rgba(0,0,0,0.25))",
             transition: "transform 150ms ease-out",
           }}
         />
