@@ -5,6 +5,8 @@ const TRI_SIZE = 20;
 const CONTAINER_RATIO = 0.85;
 const BULLET_SPEED = 8;
 const BULLET_RADIUS = 5;
+const ROLL_DISTANCE = 60;
+const ROLL_DURATION = 300; // ms
 
 interface Bullet {
   x: number;
