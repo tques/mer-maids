@@ -42,6 +42,7 @@ const Index = () => {
   const velRef = useRef({ x: 0, y: 0 });
   const floatTimerRef = useRef(0);
   const wasMovingRef = useRef(false);
+  const throttleRef = useRef(1); // 0 = stalled, 1 = full power
   const [showHint, setShowHint] = useState(true);
 
   const shake = useCallback((dx: number, dy: number) => {
