@@ -39,6 +39,9 @@ const Index = () => {
   const bulletIdRef = useRef(0);
   const rafRef = useRef(0);
   const rollRef = useRef<{ active: boolean; dir: -1 | 1; startTime: number; startX: number; startY: number; perpX: number; perpY: number; spinAngle: number }>({ active: false, dir: 1, startTime: 0, startX: 0, startY: 0, perpX: 0, perpY: 0, spinAngle: 0 });
+  const rightMouseRef = useRef(false);
+  const shootCooldownRef = useRef(0);
+  const SHOOT_INTERVAL = 120; // ms between shots when holding
   const wasSubmergedRef = useRef(false);
   const lastPosRef = useRef({ x: 0, y: 0 });
   const boatRef = useRef<Boat | null>(null);
