@@ -139,7 +139,7 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
 
   // Update chasers — they chase the player above water, patrol when player is submerged
   const playerSubmerged = playerY > waterY;
-  const waterCeiling = waterY - CHASER_SIZE * 2; // safe margin above water
+  const waterCeiling = waterY - CHASER_SIZE * 6; // generous margin above water
 
   for (const c of chasers) {
     if (!c.alive) continue;
@@ -148,16 +148,21 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
     let targetY: number;
 
     if (playerSubmerged) {
-      // Patrol mode: fly horizontally above the water near last known X
-      // Use a sine-wave patrol pattern
-      if (!(c as any)._patrolBase) (c as any)._patrolBase = c.x;
-      const patrolBase = (c as any)._patrolBase as number;
-      const patrolOffset = Math.sin(performance.now() * 0.001 + patrolBase * 0.01) * 150;
-      targetX = patrolBase + patrolOffset;
-      targetY = waterCeiling - 40 - Math.sin(performance.now() * 0.002) * 20;
+      // Patrol mode: linear back-and-forth sweeps at altitude, like a search pattern
+      if (!(c as any)._patrolDir) (c as any)._patrolDir = c.x < cw / 2 ? 1 : -1;
+      if (!(c as any)._patrolAlt) (c as any)._patrolAlt = waterCeiling - 60 - Math.random() * 80;
+
+      const patrolDir = (c as any)._patrolDir as number;
+      targetX = c.x + patrolDir * 200; // fly ahead in patrol direction
+      targetY = (c as any)._patrolAlt as number;
+
+      // Reverse at screen edges with some margin
+      if (c.x < 80) (c as any)._patrolDir = 1;
+      else if (c.x > cw - 80) (c as any)._patrolDir = -1;
     } else {
       // Chase player, but clamp target above water
-      (c as any)._patrolBase = playerX; // update patrol anchor
+      (c as any)._patrolDir = null; // reset patrol on re-engage
+      (c as any)._patrolAlt = null;
       targetX = playerX;
       targetY = Math.min(playerY, waterCeiling);
     }
@@ -166,7 +171,7 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
     let angleDiff = targetAngle - c.angle;
     while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
     while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-    c.angle += angleDiff * 0.04;
+    c.angle += angleDiff * (playerSubmerged ? 0.03 : 0.04); // gentler turns in patrol
 
     c.x += Math.cos(c.angle) * c.speed;
     c.y += Math.sin(c.angle) * c.speed;
@@ -174,7 +179,7 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
     // Hard clamp: never enter water
     if (c.y > waterCeiling) {
       c.y = waterCeiling;
-      if (c.angle > 0) c.angle *= 0.8; // deflect upward
+      if (c.angle > 0) c.angle *= 0.7;
     }
 
     // Shoot at player (even when patrolling, shoot downward if player is in water)
