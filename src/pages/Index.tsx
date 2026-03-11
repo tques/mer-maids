@@ -173,24 +173,39 @@ const Index = () => {
       const isMoving = keysRef.current.has("w");
       const vel = velRef.current;
       if (isMoving) {
+        // Recover throttle gradually from stall
+        const stalling = floatTimerRef.current > FLOAT_DURATION;
+        if (stalling && throttleRef.current < 1) {
+          throttleRef.current = Math.min(throttleRef.current + 0.012, 1); // ~80 frames to full recovery
+        } else if (!stalling) {
+          throttleRef.current = 1;
+        }
+
+        const power = SPEED * speedMult * throttleRef.current;
         const dist = Math.hypot(mouse.x - pos.x, mouse.y - pos.y);
         if (dist > 5) {
-          vel.x = Math.cos(angle) * SPEED * speedMult;
-          vel.y = Math.sin(angle) * SPEED * speedMult;
-          pos.x += vel.x;
-          pos.y += vel.y;
+          // Blend: current falling velocity lerps toward desired direction
+          const targetVx = Math.cos(angle) * power;
+          const targetVy = Math.sin(angle) * power;
+          vel.x += (targetVx - vel.x) * (0.05 + throttleRef.current * 0.15);
+          vel.y += (targetVy - vel.y) * (0.05 + throttleRef.current * 0.15);
         }
-        floatTimerRef.current = 0;
+        pos.x += vel.x;
+        pos.y += vel.y;
+
+        // Only reset float timer once recovered
+        if (throttleRef.current >= 0.95) {
+          floatTimerRef.current = 0;
+        }
         wasMovingRef.current = true;
       } else if (wasMovingRef.current) {
         // Coast: maintain momentum with drag, then gravity takes over
         floatTimerRef.current += 16;
+        throttleRef.current = Math.max(throttleRef.current - 0.02, 0);
 
-        // Drag decays horizontal and vertical momentum
         vel.x *= DRAG;
         vel.y *= DRAG;
 
-        // After float period, gravity ramps up
         if (floatTimerRef.current > FLOAT_DURATION) {
           const gravityT = Math.min((floatTimerRef.current - FLOAT_DURATION) / 800, 1);
           vel.y = Math.min(vel.y + GRAVITY * gravityT * gravityT, MAX_FALL_SPEED);
