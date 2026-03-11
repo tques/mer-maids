@@ -452,12 +452,34 @@ const Index = () => {
       }}
     >
       <canvas ref={canvasRef} className="absolute inset-0" />
-      {showHint && (
+      {showHint && !gameOver && (
         <div
           className="absolute bottom-6 left-1/2 -translate-x-1/2 tracking-widest uppercase text-sm opacity-40 pointer-events-none"
           style={{ color: "var(--canvas)", fontFamily: "var(--font-mono)" }}
         >
           left click to move · right click to fire
+        </div>
+      )}
+      {gameOver && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
+          <div className="text-4xl font-bold tracking-widest uppercase mb-4" style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}>
+            GAME OVER
+          </div>
+          <div className="text-lg tracking-wider uppercase mb-8 opacity-70" style={{ color: "#ccc", fontFamily: "var(--font-mono)" }}>
+            {gameOverReason}
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 text-sm tracking-widest uppercase border cursor-pointer"
+            style={{
+              color: "#D93636",
+              borderColor: "#D93636",
+              backgroundColor: "transparent",
+              fontFamily: "var(--font-mono)",
+            }}
+          >
+            Try Again
+          </button>
         </div>
       )}
     </div>
