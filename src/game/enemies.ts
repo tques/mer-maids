@@ -215,9 +215,14 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
   // Update bombs
   for (const b of bombs) {
     if (!b.alive) continue;
-    b.vy += BOMB_GRAVITY;
-    b.y += b.vy;
-    b.rotation += b.rotSpeed * dt;
+    if (b.hangTime > 0) {
+      b.hangTime -= dt;
+      b.rotation += b.rotSpeed * dt * 0.3; // slow tumble during hang
+    } else {
+      b.vy += BOMB_GRAVITY;
+      b.y += b.vy;
+      b.rotation += b.rotSpeed * dt;
+    }
     if (b.y > ch + 20) b.alive = false;
   }
 
