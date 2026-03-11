@@ -365,7 +365,7 @@ const Index = () => {
       ctx.fillText("LIVES", hudX, hudY);
       for (let i = 0; i < PLAYER_LIVES; i++) {
         const lx = hudX + 60 + i * 22;
-        if (i < playerLives) {
+        if (i < playerLivesRef.current) {
           ctx.beginPath();
           ctx.moveTo(lx + 8, hudY - 5);
           ctx.lineTo(lx - 2, hudY - 10);
