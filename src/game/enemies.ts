@@ -58,11 +58,11 @@ let chaserSpawnTimer = 3;
 
 const ENEMY_SIZE = 16;
 const CHASER_SIZE = 14;
-const BOMB_SIZE = 8;
+const BOMB_SIZE = 14;
 const BOMBER_SPAWN_INTERVAL = 8; // much less frequent
 const CHASER_SPAWN_INTERVAL = 5;
 const BOMB_INTERVAL = 1.8;
-const BOMB_GRAVITY = 0.12;
+const BOMB_GRAVITY = 0.06;
 const CHASER_SPEED = 2.2;
 const CHASER_BULLET_SPEED = 4;
 const CHASER_SHOOT_INTERVAL = 1.2;
@@ -333,10 +333,10 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.save();
     ctx.translate(b.x, b.y);
     ctx.rotate(b.rotation);
-    ctx.fillStyle = "#2d3436";
+    ctx.fillStyle = "#f0f0f0";
     ctx.fillRect(-BOMB_SIZE / 2, -BOMB_SIZE / 2, BOMB_SIZE, BOMB_SIZE);
-    ctx.strokeStyle = "#636e72";
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#cccccc";
+    ctx.lineWidth = 1.5;
     ctx.strokeRect(-BOMB_SIZE / 2, -BOMB_SIZE / 2, BOMB_SIZE, BOMB_SIZE);
     ctx.restore();
   }
