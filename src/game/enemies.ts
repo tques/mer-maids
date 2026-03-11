@@ -82,7 +82,7 @@ export function spawnExplosion(x: number, y: number, size = 30) {
   });
 }
 
-export function updateEnemies(dt: number, cw: number, ch: number, boatX: number, playerX: number, playerY: number) {
+export function updateEnemies(dt: number, cw: number, ch: number, boatX: number, boatWidth: number, playerX: number, playerY: number) {
   const waterY = getWaterSurfaceY(ch);
 
   // --- Bomber spawning (pink, infrequent) ---
@@ -121,9 +121,10 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
     if (e.x < -60 || e.x > cw + 60) e.alive = false;
   }
 
-  // --- Chaser spawning (blue, tracks player) ---
+  // --- Chaser spawning (blue, tracks player, max 3) ---
   chaserSpawnTimer -= dt;
-  if (chaserSpawnTimer <= 0) {
+  const aliveChasers = chasers.filter(c => c.alive).length;
+  if (chaserSpawnTimer <= 0 && aliveChasers < 3) {
     chaserSpawnTimer = CHASER_SPAWN_INTERVAL + Math.random() * 3;
     const fromLeft = Math.random() > 0.5;
     chasers.push({
@@ -148,6 +149,19 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
 
     c.x += Math.cos(c.angle) * c.speed;
     c.y += Math.sin(c.angle) * c.speed;
+
+    // Prevent entering water
+    if (c.y > waterY - CHASER_SIZE) {
+      c.y = waterY - CHASER_SIZE;
+    }
+
+    // Explode on contact with ship
+    const boatHw = boatWidth / 2;
+    if (c.y > waterY - 20 && c.x > boatX - boatHw && c.x < boatX + boatHw) {
+      c.alive = false;
+      spawnExplosion(c.x, c.y, 40);
+      continue;
+    }
 
     // Shoot at player
     c.shootCooldown -= dt;
