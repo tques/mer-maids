@@ -47,6 +47,8 @@ const Index = () => {
   const wasMovingRef = useRef(false);
   const throttleRef = useRef(1);
   const [showHint, setShowHint] = useState(true);
+  const [gameStarted, setGameStarted] = useState(false);
+  const gameStartedRef = useRef(false);
   const playerHPRef = useRef(PLAYER_MAX_HP);
   const playerLivesRef = useRef(PLAYER_LIVES);
   const shipHPRef = useRef(SHIP_MAX_HP);
