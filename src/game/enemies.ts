@@ -333,10 +333,10 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.save();
     ctx.translate(b.x, b.y);
     ctx.rotate(b.rotation);
-    ctx.fillStyle = "#2d3436";
+    ctx.fillStyle = "#f0f0f0";
     ctx.fillRect(-BOMB_SIZE / 2, -BOMB_SIZE / 2, BOMB_SIZE, BOMB_SIZE);
-    ctx.strokeStyle = "#636e72";
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#cccccc";
+    ctx.lineWidth = 1.5;
     ctx.strokeRect(-BOMB_SIZE / 2, -BOMB_SIZE / 2, BOMB_SIZE, BOMB_SIZE);
     ctx.restore();
   }
