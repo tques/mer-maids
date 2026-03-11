@@ -39,6 +39,9 @@ const Index = () => {
   const bulletIdRef = useRef(0);
   const rafRef = useRef(0);
   const rollRef = useRef<{ active: boolean; dir: -1 | 1; startTime: number; startX: number; startY: number; perpX: number; perpY: number; spinAngle: number }>({ active: false, dir: 1, startTime: 0, startX: 0, startY: 0, perpX: 0, perpY: 0, spinAngle: 0 });
+  const rightMouseRef = useRef(false);
+  const shootCooldownRef = useRef(0);
+  const SHOOT_INTERVAL = 120; // ms between shots when holding
   const wasSubmergedRef = useRef(false);
   const lastPosRef = useRef({ x: 0, y: 0 });
   const boatRef = useRef<Boat | null>(null);
@@ -93,21 +96,14 @@ const Index = () => {
       } else if (e.button === 2) {
         e.preventDefault();
         setShowHint(false);
-        const pos = posRef.current;
-        const mouse = mouseRef.current;
-        const angle = Math.atan2(mouse.y - pos.y, mouse.x - pos.x);
-        bulletsRef.current.push({
-          x: pos.x + Math.cos(angle) * (TRI_SIZE + 4),
-          y: pos.y + Math.sin(angle) * (TRI_SIZE + 4),
-          dx: Math.cos(angle) * BULLET_SPEED,
-          dy: Math.sin(angle) * BULLET_SPEED,
-          id: bulletIdRef.current++,
-        });
+        rightMouseRef.current = true;
+        shootCooldownRef.current = 0; // fire immediately
       }
     };
 
     const onMouseUp = (e: MouseEvent) => {
       if (e.button === 0) keysRef.current.delete("w");
+      if (e.button === 2) rightMouseRef.current = false;
     };
 
     const onContextMenu = (e: Event) => e.preventDefault();
@@ -236,6 +232,24 @@ const Index = () => {
       if (pos.y > ch - TRI_SIZE) { pos.y = ch - TRI_SIZE; hitY = 1; }
       if (hitX) shake(hitX, 0);
       if (hitY) shake(0, hitY);
+
+      // Continuous fire while holding right mouse
+      if (rightMouseRef.current) {
+        shootCooldownRef.current -= 16;
+        if (shootCooldownRef.current <= 0) {
+          shootCooldownRef.current = SHOOT_INTERVAL;
+          const pos2 = posRef.current;
+          const mouse2 = mouseRef.current;
+          const fireAngle = Math.atan2(mouse2.y - pos2.y, mouse2.x - pos2.x);
+          bulletsRef.current.push({
+            x: pos2.x + Math.cos(fireAngle) * (TRI_SIZE + 4),
+            y: pos2.y + Math.sin(fireAngle) * (TRI_SIZE + 4),
+            dx: Math.cos(fireAngle) * BULLET_SPEED,
+            dy: Math.sin(fireAngle) * BULLET_SPEED,
+            id: bulletIdRef.current++,
+          });
+        }
+      }
 
       // Update bullets
       bulletsRef.current = bulletsRef.current.filter((b) => {
