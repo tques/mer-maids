@@ -38,7 +38,7 @@ const Index = () => {
   const wasSubmergedRef = useRef(false);
   const lastPosRef = useRef({ x: 0, y: 0 });
   const boatRef = useRef<Boat | null>(null);
-  const velYRef = useRef(0);
+  const velRef = useRef({ x: 0, y: 0 });
   const floatTimerRef = useRef(0);
   const wasMovingRef = useRef(false);
   const [showHint, setShowHint] = useState(true);
