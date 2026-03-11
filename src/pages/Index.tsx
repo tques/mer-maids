@@ -253,7 +253,7 @@ const Index = () => {
       }
 
       // Enemy projectile collisions
-      if (invulnRef.current > 0) {
+      if (gameStartedRef.current && invulnRef.current > 0) {
         invulnRef.current -= 16;
       } else {
         const playerHits = checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
