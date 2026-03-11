@@ -56,6 +56,18 @@ let bombs: Bomb[] = [];
 let explosions: Explosion[] = [];
 let bomberSpawnTimer = 0;
 let chaserSpawnTimer = 3;
+let gameTime = 0; // total elapsed game time in seconds
+
+export function resetEnemies() {
+  enemies = [];
+  chasers = [];
+  chaserBullets = [];
+  bombs = [];
+  explosions = [];
+  bomberSpawnTimer = 0;
+  chaserSpawnTimer = 8;
+  gameTime = 0;
+}
 
 const ENEMY_SIZE = 16;
 const CHASER_SIZE = 14;
@@ -114,11 +126,17 @@ export function spawnExplosion(x: number, y: number, size = 30) {
 
 export function updateEnemies(dt: number, cw: number, ch: number, boatX: number, boatWidth: number, playerX: number, playerY: number) {
   const waterY = getWaterSurfaceY(ch);
+  gameTime += dt;
 
-  // --- Bomber spawning (pink, infrequent) ---
+  // Difficulty ramp: 0-1 over ~3 minutes
+  const difficulty = Math.min(gameTime / 180, 1);
+
+  // --- Bomber spawning (pink) ---
+  // Early game: very infrequent (every ~20s), ramps to every ~6s
+  const bomberInterval = 20 - difficulty * 14;
   bomberSpawnTimer -= dt;
-  if (bomberSpawnTimer <= 0) {
-    bomberSpawnTimer = BOMBER_SPAWN_INTERVAL + Math.random() * 4;
+  if (bomberSpawnTimer <= 0 && gameTime > 15) { // no bombers for first 15s
+    bomberSpawnTimer = bomberInterval + Math.random() * 4;
     const fromLeft = Math.random() > 0.5;
     const dir = fromLeft ? 1 : -1;
     enemies.push({
@@ -152,18 +170,20 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
     if (e.x < -60 || e.x > cw + 60) e.alive = false;
   }
 
-  // --- Chaser spawning (blue, tracks player, max 3) ---
+  // --- Chaser spawning (blue, tracks player, max scales with difficulty) ---
+  const maxChasers = gameTime < 10 ? 0 : Math.min(1 + Math.floor(difficulty * 2), 3);
+  const chaserInterval = 12 - difficulty * 7; // 12s early → 5s late
   chaserSpawnTimer -= dt;
   const aliveChasers = chasers.filter(c => c.alive).length;
-  if (chaserSpawnTimer <= 0 && aliveChasers < 3) {
-    chaserSpawnTimer = CHASER_SPAWN_INTERVAL + Math.random() * 3;
+  if (chaserSpawnTimer <= 0 && aliveChasers < maxChasers) {
+    chaserSpawnTimer = chaserInterval + Math.random() * 3;
     const fromLeft = Math.random() > 0.5;
     chasers.push({
       x: fromLeft ? -30 : cw + 30,
       y: 40 + Math.random() * waterY * 0.5,
       speed: CHASER_SPEED,
       angle: 0,
-      shootCooldown: 1 + Math.random(),
+      shootCooldown: 2 + Math.random(),
       alive: true,
     });
   }

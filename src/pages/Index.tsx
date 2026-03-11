@@ -4,7 +4,7 @@ import {
   WATER_SPEED_FACTOR,
 } from "../game/water";
 import { createBoat, drawBoat, Boat } from "../game/boat";
-import { updateEnemies, checkBulletCollisions, checkChaserBulletHitsPlayer, checkBombHitsShip, drawEnemies, spawnExplosion } from "../game/enemies";
+import { updateEnemies, checkBulletCollisions, checkChaserBulletHitsPlayer, checkBombHitsShip, drawEnemies, spawnExplosion, resetEnemies } from "../game/enemies";
 
 const SPEED = 4;
 const TRI_SIZE = 20;
@@ -47,6 +47,8 @@ const Index = () => {
   const wasMovingRef = useRef(false);
   const throttleRef = useRef(1);
   const [showHint, setShowHint] = useState(true);
+  const [gameStarted, setGameStarted] = useState(false);
+  const gameStartedRef = useRef(false);
   const playerHPRef = useRef(PLAYER_MAX_HP);
   const playerLivesRef = useRef(PLAYER_LIVES);
   const shipHPRef = useRef(SHIP_MAX_HP);
@@ -242,47 +244,49 @@ const Index = () => {
         return b.x > -10 && b.x < cw + 10 && b.y > -10 && b.y < ch + 10;
       });
 
-      // Update enemies & bombs
+      // Update enemies & bombs (only after game starts)
       const boatX = boatRef.current ? boatRef.current.x : cw / 2;
       const boatW = boatRef.current ? boatRef.current.width : cw * 0.45;
-      updateEnemies(1 / 60, cw, ch, boatX, boatW, pos.x, pos.y);
+      if (gameStartedRef.current) {
+        updateEnemies(1 / 60, cw, ch, boatX, boatW, pos.x, pos.y);
+        bulletsRef.current = checkBulletCollisions(bulletsRef.current);
+      }
 
-      // Bullet-enemy/bomb collisions
-      bulletsRef.current = checkBulletCollisions(bulletsRef.current);
-
-      // Enemy projectile collisions
-      if (invulnRef.current > 0) {
-        invulnRef.current -= 16;
-      } else {
-        const playerHits = checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
-        if (playerHits > 0) {
-          spawnExplosion(pos.x, pos.y, 20);
-          shake(0, 1);
-          invulnRef.current = INVULN_DURATION;
-          playerHPRef.current -= playerHits;
-          if (playerHPRef.current <= 0) {
-            playerLivesRef.current -= 1;
-            if (playerLivesRef.current <= 0) {
-              gameOverRef.current = true;
-              setGameOver(true);
-              setGameOverReason("All ships lost!");
-            } else {
-              playerHPRef.current = PLAYER_MAX_HP;
+      // Enemy projectile collisions (only when game is active)
+      if (gameStartedRef.current) {
+        if (invulnRef.current > 0) {
+          invulnRef.current -= 16;
+        } else {
+          const playerHits = checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
+          if (playerHits > 0) {
+            spawnExplosion(pos.x, pos.y, 20);
+            shake(0, 1);
+            invulnRef.current = INVULN_DURATION;
+            playerHPRef.current -= playerHits;
+            if (playerHPRef.current <= 0) {
+              playerLivesRef.current -= 1;
+              if (playerLivesRef.current <= 0) {
+                gameOverRef.current = true;
+                setGameOver(true);
+                setGameOverReason("All ships lost!");
+              } else {
+                playerHPRef.current = PLAYER_MAX_HP;
+              }
             }
           }
         }
-      }
 
-      // Bomb-ship collisions
-      const waterY = getWaterSurfaceY(ch);
-      const bombHits = checkBombHitsShip(boatX, boatW, waterY);
-      if (bombHits > 0) {
-        shake(0, 1);
-        shipHPRef.current = Math.max(shipHPRef.current - bombHits, 0);
-        if (shipHPRef.current <= 0) {
-          gameOverRef.current = true;
-          setGameOver(true);
-          setGameOverReason("Carrier destroyed!");
+        // Bomb-ship collisions
+        const waterY = getWaterSurfaceY(ch);
+        const bombHits = checkBombHitsShip(boatX, boatW, waterY);
+        if (bombHits > 0) {
+          shake(0, 1);
+          shipHPRef.current = Math.max(shipHPRef.current - bombHits, 0);
+          if (shipHPRef.current <= 0) {
+            gameOverRef.current = true;
+            setGameOver(true);
+            setGameOverReason("Carrier destroyed!");
+          }
         }
       }
 
@@ -441,7 +445,32 @@ const Index = () => {
       }}
     >
       <canvas ref={canvasRef} className="absolute inset-0" />
-      {showHint && !gameOver && (
+      {!gameStarted && !gameOver && (
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.75)", cursor: "pointer" }}
+          onClick={() => {
+            gameStartedRef.current = true;
+            setGameStarted(true);
+            setShowHint(false);
+            resetEnemies();
+          }}
+        >
+          <div className="text-5xl font-bold tracking-widest uppercase mb-6" style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}>
+            CARRIER DEFENSE
+          </div>
+          <div className="max-w-md text-center space-y-3 mb-10" style={{ color: "#ccc", fontFamily: "var(--font-mono)", fontSize: "14px", lineHeight: "1.8" }}>
+            <p><span style={{ color: "#D93636" }}>LEFT CLICK</span> — hold to fly toward cursor</p>
+            <p><span style={{ color: "#D93636" }}>RIGHT CLICK</span> — fire projectiles</p>
+            <p><span style={{ color: "#74b9ff" }}>A / D</span> — barrel roll left / right</p>
+            <p className="mt-4 opacity-70">Defend your carrier from enemy bombers and fighters. Dive underwater to evade — but you'll slow down.</p>
+          </div>
+          <div className="text-sm tracking-widest uppercase animate-pulse" style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}>
+            Click anywhere to start
+          </div>
+        </div>
+      )}
+      {showHint && gameStarted && !gameOver && (
         <div
           className="absolute bottom-6 left-1/2 -translate-x-1/2 tracking-widest uppercase text-sm opacity-40 pointer-events-none"
           style={{ color: "var(--canvas)", fontFamily: "var(--font-mono)" }}
