@@ -12,7 +12,7 @@ const GRAVITY = 0.12;
 const MAX_FALL_SPEED = 7;
 const FLOAT_DURATION = 1200; // ms of coasting before gravity dominates
 const DRAG = 0.99; // momentum decay per frame (slower decay = longer coast)
-const CONTAINER_RATIO = 0.85;
+const CONTAINER_RATIO = 1.0;
 const BULLET_SPEED = 8;
 const BULLET_RADIUS = 5;
 const ROLL_DISTANCE = 60;
