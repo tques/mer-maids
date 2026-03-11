@@ -96,21 +96,14 @@ const Index = () => {
       } else if (e.button === 2) {
         e.preventDefault();
         setShowHint(false);
-        const pos = posRef.current;
-        const mouse = mouseRef.current;
-        const angle = Math.atan2(mouse.y - pos.y, mouse.x - pos.x);
-        bulletsRef.current.push({
-          x: pos.x + Math.cos(angle) * (TRI_SIZE + 4),
-          y: pos.y + Math.sin(angle) * (TRI_SIZE + 4),
-          dx: Math.cos(angle) * BULLET_SPEED,
-          dy: Math.sin(angle) * BULLET_SPEED,
-          id: bulletIdRef.current++,
-        });
+        rightMouseRef.current = true;
+        shootCooldownRef.current = 0; // fire immediately
       }
     };
 
     const onMouseUp = (e: MouseEvent) => {
       if (e.button === 0) keysRef.current.delete("w");
+      if (e.button === 2) rightMouseRef.current = false;
     };
 
     const onContextMenu = (e: Event) => e.preventDefault();
