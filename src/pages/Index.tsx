@@ -167,12 +167,23 @@ const Index = () => {
       lastPosRef.current = { x: pos.x, y: pos.y };
 
       // Move toward mouse (always, including during roll)
-      if (keysRef.current.has("w")) {
+      const isMoving = keysRef.current.has("w");
+      if (isMoving) {
         const dist = Math.hypot(mouse.x - pos.x, mouse.y - pos.y);
         if (dist > 5) {
           pos.x += Math.cos(angle) * SPEED * speedMult;
           pos.y += Math.sin(angle) * SPEED * speedMult;
         }
+        velYRef.current = 0;
+        floatTimerRef.current = 0;
+        wasMovingRef.current = true;
+      } else if (wasMovingRef.current) {
+        // Gravity: float briefly then fall
+        floatTimerRef.current += 16;
+        if (floatTimerRef.current > FLOAT_DURATION) {
+          velYRef.current = Math.min(velYRef.current + GRAVITY, MAX_FALL_SPEED);
+        }
+        pos.y += velYRef.current;
       }
 
       // Clamp & collide
