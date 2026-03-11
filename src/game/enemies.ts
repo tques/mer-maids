@@ -137,41 +137,58 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
     });
   }
 
-  // Update chasers — they chase the player
+  // Update chasers — they chase the player above water, patrol when player is submerged
+  const playerSubmerged = playerY > waterY;
+  const waterCeiling = waterY - CHASER_SIZE * 2; // safe margin above water
+
   for (const c of chasers) {
     if (!c.alive) continue;
-    const targetAngle = Math.atan2(playerY - c.y, playerX - c.x);
-    // Smooth angle turning
+
+    let targetX: number;
+    let targetY: number;
+
+    if (playerSubmerged) {
+      // Patrol mode: fly horizontally above the water near last known X
+      // Use a sine-wave patrol pattern
+      if (!(c as any)._patrolBase) (c as any)._patrolBase = c.x;
+      const patrolBase = (c as any)._patrolBase as number;
+      const patrolOffset = Math.sin(performance.now() * 0.001 + patrolBase * 0.01) * 150;
+      targetX = patrolBase + patrolOffset;
+      targetY = waterCeiling - 40 - Math.sin(performance.now() * 0.002) * 20;
+    } else {
+      // Chase player, but clamp target above water
+      (c as any)._patrolBase = playerX; // update patrol anchor
+      targetX = playerX;
+      targetY = Math.min(playerY, waterCeiling);
+    }
+
+    const targetAngle = Math.atan2(targetY - c.y, targetX - c.x);
     let angleDiff = targetAngle - c.angle;
     while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
     while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-    c.angle += angleDiff * 0.04; // slow turning
+    c.angle += angleDiff * 0.04;
 
     c.x += Math.cos(c.angle) * c.speed;
     c.y += Math.sin(c.angle) * c.speed;
 
-    // Prevent entering water
-    if (c.y > waterY - CHASER_SIZE) {
-      c.y = waterY - CHASER_SIZE;
+    // Hard clamp: never enter water
+    if (c.y > waterCeiling) {
+      c.y = waterCeiling;
+      if (c.angle > 0) c.angle *= 0.8; // deflect upward
     }
 
-    // Explode on contact with ship
-    const boatHw = boatWidth / 2;
-    if (c.y > waterY - 20 && c.x > boatX - boatHw && c.x < boatX + boatHw) {
-      c.alive = false;
-      spawnExplosion(c.x, c.y, 40);
-      continue;
-    }
-
-    // Shoot at player
+    // Shoot at player (even when patrolling, shoot downward if player is in water)
     c.shootCooldown -= dt;
     if (c.shootCooldown <= 0) {
       c.shootCooldown = CHASER_SHOOT_INTERVAL + Math.random() * 0.5;
+      const shootAngle = playerSubmerged
+        ? Math.atan2(playerY - c.y, playerX - c.x)
+        : c.angle;
       chaserBullets.push({
-        x: c.x + Math.cos(c.angle) * (CHASER_SIZE + 4),
-        y: c.y + Math.sin(c.angle) * (CHASER_SIZE + 4),
-        dx: Math.cos(c.angle) * CHASER_BULLET_SPEED,
-        dy: Math.sin(c.angle) * CHASER_BULLET_SPEED,
+        x: c.x + Math.cos(shootAngle) * (CHASER_SIZE + 4),
+        y: c.y + Math.sin(shootAngle) * (CHASER_SIZE + 4),
+        dx: Math.cos(shootAngle) * CHASER_BULLET_SPEED,
+        dy: Math.sin(shootAngle) * CHASER_BULLET_SPEED,
         alive: true,
       });
     }
