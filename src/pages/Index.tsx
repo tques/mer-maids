@@ -12,7 +12,10 @@ const GRAVITY = 0.12;
 const MAX_FALL_SPEED = 7;
 const FLOAT_DURATION = 1200; // ms of coasting before gravity dominates
 const DRAG = 0.99; // momentum decay per frame (slower decay = longer coast)
-const CONTAINER_RATIO = 1.0;
+const PLAYER_MAX_HP = 3;
+const SHIP_MAX_HP = 10;
+const PLAYER_LIVES = 3;
+const INVULN_DURATION = 1500; // ms of invulnerability after hit
 const BULLET_SPEED = 8;
 const BULLET_RADIUS = 5;
 const ROLL_DISTANCE = 60;
