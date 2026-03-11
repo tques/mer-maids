@@ -56,6 +56,18 @@ let bombs: Bomb[] = [];
 let explosions: Explosion[] = [];
 let bomberSpawnTimer = 0;
 let chaserSpawnTimer = 3;
+let gameTime = 0; // total elapsed game time in seconds
+
+export function resetEnemies() {
+  enemies = [];
+  chasers = [];
+  chaserBullets = [];
+  bombs = [];
+  explosions = [];
+  bomberSpawnTimer = 0;
+  chaserSpawnTimer = 8;
+  gameTime = 0;
+}
 
 const ENEMY_SIZE = 16;
 const CHASER_SIZE = 14;
