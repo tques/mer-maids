@@ -150,6 +150,19 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
     c.x += Math.cos(c.angle) * c.speed;
     c.y += Math.sin(c.angle) * c.speed;
 
+    // Prevent entering water
+    if (c.y > waterY - CHASER_SIZE) {
+      c.y = waterY - CHASER_SIZE;
+    }
+
+    // Explode on contact with ship
+    const boatHw = boatWidth / 2;
+    if (c.y > waterY - 20 && c.x > boatX - boatHw && c.x < boatX + boatHw) {
+      c.alive = false;
+      spawnExplosion(c.x, c.y, 40);
+      continue;
+    }
+
     // Shoot at player
     c.shootCooldown -= dt;
     if (c.shootCooldown <= 0) {
