@@ -170,22 +170,33 @@ const Index = () => {
 
       // Move toward mouse (always, including during roll)
       const isMoving = keysRef.current.has("w");
+      const vel = velRef.current;
       if (isMoving) {
         const dist = Math.hypot(mouse.x - pos.x, mouse.y - pos.y);
         if (dist > 5) {
-          pos.x += Math.cos(angle) * SPEED * speedMult;
-          pos.y += Math.sin(angle) * SPEED * speedMult;
+          vel.x = Math.cos(angle) * SPEED * speedMult;
+          vel.y = Math.sin(angle) * SPEED * speedMult;
+          pos.x += vel.x;
+          pos.y += vel.y;
         }
-        velYRef.current = 0;
         floatTimerRef.current = 0;
         wasMovingRef.current = true;
       } else if (wasMovingRef.current) {
-        // Gravity: float briefly then fall
+        // Coast: maintain momentum with drag, then gravity takes over
         floatTimerRef.current += 16;
+
+        // Drag decays horizontal and vertical momentum
+        vel.x *= DRAG;
+        vel.y *= DRAG;
+
+        // After float period, gravity ramps up
         if (floatTimerRef.current > FLOAT_DURATION) {
-          velYRef.current = Math.min(velYRef.current + GRAVITY, MAX_FALL_SPEED);
+          const gravityT = Math.min((floatTimerRef.current - FLOAT_DURATION) / 800, 1);
+          vel.y = Math.min(vel.y + GRAVITY * gravityT * gravityT, MAX_FALL_SPEED);
         }
-        pos.y += velYRef.current;
+
+        pos.x += vel.x;
+        pos.y += vel.y;
       }
 
       // Clamp & collide
