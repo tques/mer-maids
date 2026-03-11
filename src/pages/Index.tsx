@@ -233,6 +233,24 @@ const Index = () => {
       if (hitX) shake(hitX, 0);
       if (hitY) shake(0, hitY);
 
+      // Continuous fire while holding right mouse
+      if (rightMouseRef.current) {
+        shootCooldownRef.current -= 16;
+        if (shootCooldownRef.current <= 0) {
+          shootCooldownRef.current = SHOOT_INTERVAL;
+          const pos2 = posRef.current;
+          const mouse2 = mouseRef.current;
+          const fireAngle = Math.atan2(mouse2.y - pos2.y, mouse2.x - pos2.x);
+          bulletsRef.current.push({
+            x: pos2.x + Math.cos(fireAngle) * (TRI_SIZE + 4),
+            y: pos2.y + Math.sin(fireAngle) * (TRI_SIZE + 4),
+            dx: Math.cos(fireAngle) * BULLET_SPEED,
+            dy: Math.sin(fireAngle) * BULLET_SPEED,
+            id: bulletIdRef.current++,
+          });
+        }
+      }
+
       // Update bullets
       bulletsRef.current = bulletsRef.current.filter((b) => {
         b.x += b.dx;
