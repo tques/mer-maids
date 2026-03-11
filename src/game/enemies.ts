@@ -37,6 +37,7 @@ export interface Bomb {
   rotation: number;
   rotSpeed: number;
   alive: boolean;
+  hangTime: number; // seconds to pause before falling
 }
 
 export interface Explosion {
@@ -116,6 +117,7 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
         vy: 0, rotation: 0,
         rotSpeed: (Math.random() - 0.5) * 8,
         alive: true,
+        hangTime: 0.5 + Math.random() * 0.3,
       });
     }
     if (e.x < -60 || e.x > cw + 60) e.alive = false;
@@ -213,9 +215,14 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
   // Update bombs
   for (const b of bombs) {
     if (!b.alive) continue;
-    b.vy += BOMB_GRAVITY;
-    b.y += b.vy;
-    b.rotation += b.rotSpeed * dt;
+    if (b.hangTime > 0) {
+      b.hangTime -= dt;
+      b.rotation += b.rotSpeed * dt * 0.3; // slow tumble during hang
+    } else {
+      b.vy += BOMB_GRAVITY;
+      b.y += b.vy;
+      b.rotation += b.rotSpeed * dt;
+    }
     if (b.y > ch + 20) b.alive = false;
   }
 
