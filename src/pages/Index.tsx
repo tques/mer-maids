@@ -12,7 +12,7 @@ const GRAVITY = 0.12;
 const MAX_FALL_SPEED = 7;
 const FLOAT_DURATION = 1200; // ms of coasting before gravity dominates
 const DRAG = 0.99; // momentum decay per frame (slower decay = longer coast)
-const CONTAINER_RATIO = 0.85;
+const CONTAINER_RATIO = 1.0;
 const BULLET_SPEED = 8;
 const BULLET_RADIUS = 5;
 const ROLL_DISTANCE = 60;
@@ -327,30 +327,22 @@ const Index = () => {
 
   return (
     <div
-      className="flex items-center justify-center w-screen h-screen select-none"
-      style={{ backgroundColor: "var(--canvas)" }}
+      ref={containerRef}
+      className="relative w-screen h-screen select-none overflow-hidden"
+      style={{
+        transition: "transform 150ms cubic-bezier(0.22, 1, 0.36, 1)",
+        cursor: "crosshair",
+      }}
     >
-      <div
-        ref={containerRef}
-        className="relative rounded-lg overflow-hidden"
-        style={{
-          width: `${CONTAINER_RATIO * 100}vw`,
-          height: `${CONTAINER_RATIO * 100}vh`,
-          backgroundColor: "var(--basalt)",
-          transition: "transform 150ms cubic-bezier(0.22, 1, 0.36, 1)",
-          cursor: "crosshair",
-        }}
-      >
-        <canvas ref={canvasRef} className="absolute inset-0" />
-        {showHint && (
-          <div
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 tracking-widest uppercase text-sm opacity-40 pointer-events-none"
-            style={{ color: "var(--canvas)", fontFamily: "var(--font-mono)" }}
-          >
-            left click to move · right click to fire
-          </div>
-        )}
-      </div>
+      <canvas ref={canvasRef} className="absolute inset-0" />
+      {showHint && (
+        <div
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 tracking-widest uppercase text-sm opacity-40 pointer-events-none"
+          style={{ color: "var(--canvas)", fontFamily: "var(--font-mono)" }}
+        >
+          left click to move · right click to fire
+        </div>
+      )}
     </div>
   );
 };
