@@ -8,9 +8,10 @@ import { updateEnemies, checkBulletCollisions, drawEnemies } from "../game/enemi
 
 const SPEED = 4;
 const TRI_SIZE = 20;
-const GRAVITY = 0.15;
-const MAX_FALL_SPEED = 6;
-const FLOAT_DURATION = 300; // ms of float before gravity kicks in
+const GRAVITY = 0.12;
+const MAX_FALL_SPEED = 7;
+const FLOAT_DURATION = 400; // ms of coasting before gravity dominates
+const DRAG = 0.97; // momentum decay per frame
 const CONTAINER_RATIO = 0.85;
 const BULLET_SPEED = 8;
 const BULLET_RADIUS = 5;
