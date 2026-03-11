@@ -252,39 +252,41 @@ const Index = () => {
         bulletsRef.current = checkBulletCollisions(bulletsRef.current);
       }
 
-      // Enemy projectile collisions
-      if (gameStartedRef.current && invulnRef.current > 0) {
-        invulnRef.current -= 16;
-      } else {
-        const playerHits = checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
-        if (playerHits > 0) {
-          spawnExplosion(pos.x, pos.y, 20);
-          shake(0, 1);
-          invulnRef.current = INVULN_DURATION;
-          playerHPRef.current -= playerHits;
-          if (playerHPRef.current <= 0) {
-            playerLivesRef.current -= 1;
-            if (playerLivesRef.current <= 0) {
-              gameOverRef.current = true;
-              setGameOver(true);
-              setGameOverReason("All ships lost!");
-            } else {
-              playerHPRef.current = PLAYER_MAX_HP;
+      // Enemy projectile collisions (only when game is active)
+      if (gameStartedRef.current) {
+        if (invulnRef.current > 0) {
+          invulnRef.current -= 16;
+        } else {
+          const playerHits = checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
+          if (playerHits > 0) {
+            spawnExplosion(pos.x, pos.y, 20);
+            shake(0, 1);
+            invulnRef.current = INVULN_DURATION;
+            playerHPRef.current -= playerHits;
+            if (playerHPRef.current <= 0) {
+              playerLivesRef.current -= 1;
+              if (playerLivesRef.current <= 0) {
+                gameOverRef.current = true;
+                setGameOver(true);
+                setGameOverReason("All ships lost!");
+              } else {
+                playerHPRef.current = PLAYER_MAX_HP;
+              }
             }
           }
         }
-      }
 
-      // Bomb-ship collisions
-      const waterY = getWaterSurfaceY(ch);
-      const bombHits = checkBombHitsShip(boatX, boatW, waterY);
-      if (bombHits > 0) {
-        shake(0, 1);
-        shipHPRef.current = Math.max(shipHPRef.current - bombHits, 0);
-        if (shipHPRef.current <= 0) {
-          gameOverRef.current = true;
-          setGameOver(true);
-          setGameOverReason("Carrier destroyed!");
+        // Bomb-ship collisions
+        const waterY = getWaterSurfaceY(ch);
+        const bombHits = checkBombHitsShip(boatX, boatW, waterY);
+        if (bombHits > 0) {
+          shake(0, 1);
+          shipHPRef.current = Math.max(shipHPRef.current - bombHits, 0);
+          if (shipHPRef.current <= 0) {
+            gameOverRef.current = true;
+            setGameOver(true);
+            setGameOverReason("Carrier destroyed!");
+          }
         }
       }
 
