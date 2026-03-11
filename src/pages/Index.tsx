@@ -244,13 +244,13 @@ const Index = () => {
         return b.x > -10 && b.x < cw + 10 && b.y > -10 && b.y < ch + 10;
       });
 
-      // Update enemies & bombs
+      // Update enemies & bombs (only after game starts)
       const boatX = boatRef.current ? boatRef.current.x : cw / 2;
       const boatW = boatRef.current ? boatRef.current.width : cw * 0.45;
-      updateEnemies(1 / 60, cw, ch, boatX, boatW, pos.x, pos.y);
-
-      // Bullet-enemy/bomb collisions
-      bulletsRef.current = checkBulletCollisions(bulletsRef.current);
+      if (gameStartedRef.current) {
+        updateEnemies(1 / 60, cw, ch, boatX, boatW, pos.x, pos.y);
+        bulletsRef.current = checkBulletCollisions(bulletsRef.current);
+      }
 
       // Enemy projectile collisions
       if (invulnRef.current > 0) {
