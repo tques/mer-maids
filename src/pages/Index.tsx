@@ -250,6 +250,53 @@ const Index = () => {
       // Bullet-enemy/bomb collisions
       bulletsRef.current = checkBulletCollisions(bulletsRef.current);
 
+      // Enemy projectile collisions
+      if (invulnRef.current > 0) {
+        invulnRef.current -= 16;
+      } else {
+        const playerHits = checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
+        if (playerHits > 0) {
+          spawnExplosion(pos.x, pos.y, 20);
+          shake(0, 1);
+          invulnRef.current = INVULN_DURATION;
+          setPlayerHP(prev => {
+            const newHP = prev - playerHits;
+            if (newHP <= 0) {
+              setPlayerLives(prevLives => {
+                const newLives = prevLives - 1;
+                if (newLives <= 0) {
+                  gameOverRef.current = true;
+                  setGameOver(true);
+                  setGameOverReason("All ships lost!");
+                } else {
+                  // Reset HP for next life
+                  setPlayerHP(PLAYER_MAX_HP);
+                }
+                return newLives;
+              });
+              return PLAYER_MAX_HP;
+            }
+            return newHP;
+          });
+        }
+      }
+
+      // Bomb-ship collisions
+      const waterY = getWaterSurfaceY(ch);
+      const bombHits = checkBombHitsShip(boatX, boatW, waterY);
+      if (bombHits > 0) {
+        shake(0, 1);
+        setShipHP(prev => {
+          const newHP = prev - bombHits;
+          if (newHP <= 0) {
+            gameOverRef.current = true;
+            setGameOver(true);
+            setGameOverReason("Carrier destroyed!");
+          }
+          return Math.max(newHP, 0);
+        });
+      }
+
       // Update water particles
       updateParticles(1 / 60);
 
