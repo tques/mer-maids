@@ -259,25 +259,17 @@ const Index = () => {
           spawnExplosion(pos.x, pos.y, 20);
           shake(0, 1);
           invulnRef.current = INVULN_DURATION;
-          setPlayerHP(prev => {
-            const newHP = prev - playerHits;
-            if (newHP <= 0) {
-              setPlayerLives(prevLives => {
-                const newLives = prevLives - 1;
-                if (newLives <= 0) {
-                  gameOverRef.current = true;
-                  setGameOver(true);
-                  setGameOverReason("All ships lost!");
-                } else {
-                  // Reset HP for next life
-                  setPlayerHP(PLAYER_MAX_HP);
-                }
-                return newLives;
-              });
-              return PLAYER_MAX_HP;
+          playerHPRef.current -= playerHits;
+          if (playerHPRef.current <= 0) {
+            playerLivesRef.current -= 1;
+            if (playerLivesRef.current <= 0) {
+              gameOverRef.current = true;
+              setGameOver(true);
+              setGameOverReason("All ships lost!");
+            } else {
+              playerHPRef.current = PLAYER_MAX_HP;
             }
-            return newHP;
-          });
+          }
         }
       }
 
@@ -286,15 +278,12 @@ const Index = () => {
       const bombHits = checkBombHitsShip(boatX, boatW, waterY);
       if (bombHits > 0) {
         shake(0, 1);
-        setShipHP(prev => {
-          const newHP = prev - bombHits;
-          if (newHP <= 0) {
-            gameOverRef.current = true;
-            setGameOver(true);
-            setGameOverReason("Carrier destroyed!");
-          }
-          return Math.max(newHP, 0);
-        });
+        shipHPRef.current = Math.max(shipHPRef.current - bombHits, 0);
+        if (shipHPRef.current <= 0) {
+          gameOverRef.current = true;
+          setGameOver(true);
+          setGameOverReason("Carrier destroyed!");
+        }
       }
 
       // Update water particles
