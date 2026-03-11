@@ -388,7 +388,7 @@ const Index = () => {
       ctx.fillStyle = "#aaa";
       ctx.fillText("HP", hudX, hudY + 22);
       for (let i = 0; i < PLAYER_MAX_HP; i++) {
-        ctx.fillStyle = i < playerHP ? "#D93636" : "#444";
+        ctx.fillStyle = i < playerHPRef.current ? "#D93636" : "#444";
         ctx.fillRect(hudX + 30 + i * 18, hudY + 12, 14, 10);
       }
 
