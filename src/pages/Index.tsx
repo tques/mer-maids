@@ -445,7 +445,32 @@ const Index = () => {
       }}
     >
       <canvas ref={canvasRef} className="absolute inset-0" />
-      {showHint && !gameOver && (
+      {!gameStarted && !gameOver && (
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.75)", cursor: "pointer" }}
+          onClick={() => {
+            gameStartedRef.current = true;
+            setGameStarted(true);
+            setShowHint(false);
+            resetEnemies();
+          }}
+        >
+          <div className="text-5xl font-bold tracking-widest uppercase mb-6" style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}>
+            CARRIER DEFENSE
+          </div>
+          <div className="max-w-md text-center space-y-3 mb-10" style={{ color: "#ccc", fontFamily: "var(--font-mono)", fontSize: "14px", lineHeight: "1.8" }}>
+            <p><span style={{ color: "#D93636" }}>LEFT CLICK</span> — hold to fly toward cursor</p>
+            <p><span style={{ color: "#D93636" }}>RIGHT CLICK</span> — fire projectiles</p>
+            <p><span style={{ color: "#74b9ff" }}>A / D</span> — barrel roll left / right</p>
+            <p className="mt-4 opacity-70">Defend your carrier from enemy bombers and fighters. Dive underwater to evade — but you'll slow down.</p>
+          </div>
+          <div className="text-sm tracking-widest uppercase animate-pulse" style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}>
+            Click anywhere to start
+          </div>
+        </div>
+      )}
+      {showHint && gameStarted && !gameOver && (
         <div
           className="absolute bottom-6 left-1/2 -translate-x-1/2 tracking-widest uppercase text-sm opacity-40 pointer-events-none"
           style={{ color: "var(--canvas)", fontFamily: "var(--font-mono)" }}
