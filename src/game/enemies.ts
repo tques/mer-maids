@@ -174,7 +174,7 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
     let angleDiff = targetAngle - c.angle;
     while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
     while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-    c.angle += angleDiff * (playerSubmerged ? 0.03 : 0.04); // gentler turns in patrol
+    c.angle += angleDiff * (playerVisible ? 0.04 : 0.03);
 
     c.x += Math.cos(c.angle) * c.speed;
     c.y += Math.sin(c.angle) * c.speed;
