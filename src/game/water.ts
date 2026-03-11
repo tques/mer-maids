@@ -1,7 +1,7 @@
 // Water system: rendering, splash particles, and physics
 
 export const WATER_RATIO = 0.25; // bottom 25% of canvas
-export const WATER_SPEED_FACTOR = 0.70; // speed multiplier when submerged (30% reduction)
+export const WATER_SPEED_FACTOR = 0.40; // speed multiplier when submerged (60% reduction)
 export const WAVE_AMPLITUDE = 6;
 export const WAVE_FREQUENCY = 0.02;
 export const WAVE_SPEED = 0.002;
