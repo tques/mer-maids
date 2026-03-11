@@ -121,9 +121,10 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
     if (e.x < -60 || e.x > cw + 60) e.alive = false;
   }
 
-  // --- Chaser spawning (blue, tracks player) ---
+  // --- Chaser spawning (blue, tracks player, max 3) ---
   chaserSpawnTimer -= dt;
-  if (chaserSpawnTimer <= 0) {
+  const aliveChasers = chasers.filter(c => c.alive).length;
+  if (chaserSpawnTimer <= 0 && aliveChasers < 3) {
     chaserSpawnTimer = CHASER_SPAWN_INTERVAL + Math.random() * 3;
     const fromLeft = Math.random() > 0.5;
     chasers.push({
