@@ -58,11 +58,11 @@ let chaserSpawnTimer = 3;
 
 const ENEMY_SIZE = 16;
 const CHASER_SIZE = 14;
-const BOMB_SIZE = 8;
+const BOMB_SIZE = 14;
 const BOMBER_SPAWN_INTERVAL = 8; // much less frequent
 const CHASER_SPAWN_INTERVAL = 5;
 const BOMB_INTERVAL = 1.8;
-const BOMB_GRAVITY = 0.12;
+const BOMB_GRAVITY = 0.06;
 const CHASER_SPEED = 2.2;
 const CHASER_BULLET_SPEED = 4;
 const CHASER_SHOOT_INTERVAL = 1.2;
