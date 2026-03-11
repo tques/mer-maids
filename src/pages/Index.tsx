@@ -329,35 +329,94 @@ const Index = () => {
         ctx.fill();
       }
 
-      // Triangle pointing at mouse
-      ctx.save();
-      ctx.translate(pos.x, pos.y);
-      ctx.rotate(angle);
-      
-      // Barrel roll = rotation around forward axis → in 2D this is a scale on the perpendicular (Y) axis
-      // Goes 1 → 0 → -1 → 0 → 1 like a spinning top / coin flip
-      if (roll.active) {
-        const elapsed = performance.now() - roll.startTime;
-        const t = Math.min(elapsed / ROLL_DURATION, 1);
-        const rollAngle = roll.dir * Math.PI * 2 * t;
-        const scaleY = Math.cos(rollAngle);
-        ctx.scale(1, scaleY);
+      // Triangle pointing at mouse (flash when invulnerable)
+      const isInvuln = invulnRef.current > 0;
+      const showPlayer = !isInvuln || Math.floor(performance.now() / 80) % 2 === 0;
+      if (showPlayer) {
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        ctx.rotate(angle);
+        
+        if (roll.active) {
+          const elapsed = performance.now() - roll.startTime;
+          const t = Math.min(elapsed / ROLL_DURATION, 1);
+          const rollAngle = roll.dir * Math.PI * 2 * t;
+          const scaleY = Math.cos(rollAngle);
+          ctx.scale(1, scaleY);
+        }
+
+        ctx.shadowColor = "rgba(0,0,0,0.3)";
+        ctx.shadowBlur = 12;
+        ctx.shadowOffsetY = 4;
+
+        ctx.beginPath();
+        ctx.moveTo(TRI_SIZE, 0);
+        ctx.lineTo(-TRI_SIZE * 0.7, -TRI_SIZE * 0.6);
+        ctx.lineTo(-TRI_SIZE * 0.7, TRI_SIZE * 0.6);
+        ctx.closePath();
+        ctx.fillStyle = isInvuln ? "#ff8888" : "#D93636";
+        ctx.fill();
+
+        ctx.shadowColor = "transparent";
+        ctx.restore();
       }
 
-      // Shadow
-      ctx.shadowColor = "rgba(0,0,0,0.3)";
-      ctx.shadowBlur = 12;
-      ctx.shadowOffsetY = 4;
+      // HUD
+      ctx.save();
+      ctx.font = "bold 14px monospace";
+      ctx.textAlign = "left";
 
-      ctx.beginPath();
-      ctx.moveTo(TRI_SIZE, 0);
-      ctx.lineTo(-TRI_SIZE * 0.7, -TRI_SIZE * 0.6);
-      ctx.lineTo(-TRI_SIZE * 0.7, TRI_SIZE * 0.6);
-      ctx.closePath();
+      // Player lives & HP (top-left)
+      const hudY = 28;
+      const hudX = 16;
+      ctx.fillStyle = "rgba(0,0,0,0.4)";
+      ctx.fillRect(hudX - 4, hudY - 16, 200, 52);
+
       ctx.fillStyle = "#D93636";
-      ctx.fill();
+      ctx.fillText("LIVES", hudX, hudY);
+      for (let i = 0; i < PLAYER_LIVES; i++) {
+        const lx = hudX + 60 + i * 22;
+        if (i < playerLives) {
+          ctx.beginPath();
+          ctx.moveTo(lx + 8, hudY - 5);
+          ctx.lineTo(lx - 2, hudY - 10);
+          ctx.lineTo(lx - 2, hudY);
+          ctx.closePath();
+          ctx.fillStyle = "#D93636";
+          ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(lx + 8, hudY - 5);
+          ctx.lineTo(lx - 2, hudY - 10);
+          ctx.lineTo(lx - 2, hudY);
+          ctx.closePath();
+          ctx.fillStyle = "#444";
+          ctx.fill();
+        }
+      }
 
-      ctx.shadowColor = "transparent";
+      // HP bar
+      ctx.fillStyle = "#aaa";
+      ctx.fillText("HP", hudX, hudY + 22);
+      for (let i = 0; i < PLAYER_MAX_HP; i++) {
+        ctx.fillStyle = i < playerHP ? "#D93636" : "#444";
+        ctx.fillRect(hudX + 30 + i * 18, hudY + 12, 14, 10);
+      }
+
+      // Ship HP (top-right)
+      ctx.textAlign = "right";
+      const shipHudX = cw - 16;
+      ctx.fillStyle = "rgba(0,0,0,0.4)";
+      ctx.fillRect(shipHudX - 240, hudY - 16, 244, 30);
+
+      ctx.fillStyle = "#888";
+      ctx.fillText("CARRIER", shipHudX - 180, hudY);
+      for (let i = 0; i < SHIP_MAX_HP; i++) {
+        const bx = shipHudX - 170 + i * 17;
+        ctx.fillStyle = i < shipHP ? "#5a9" : "#444";
+        ctx.fillRect(bx, hudY - 12, 13, 10);
+      }
+
       ctx.restore();
 
       rafRef.current = requestAnimationFrame(loop);
