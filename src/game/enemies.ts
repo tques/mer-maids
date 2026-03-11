@@ -82,7 +82,7 @@ export function spawnExplosion(x: number, y: number, size = 30) {
   });
 }
 
-export function updateEnemies(dt: number, cw: number, ch: number, boatX: number, playerX: number, playerY: number) {
+export function updateEnemies(dt: number, cw: number, ch: number, boatX: number, boatWidth: number, playerX: number, playerY: number) {
   const waterY = getWaterSurfaceY(ch);
 
   // --- Bomber spawning (pink, infrequent) ---
