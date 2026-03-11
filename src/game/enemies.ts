@@ -185,18 +185,15 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
       if (c.angle > 0) c.angle *= 0.7;
     }
 
-    // Only shoot when player is visible or close enough underwater
+    // Only shoot when player is above water and visible
     c.shootCooldown -= dt;
-    if (c.shootCooldown <= 0 && (playerVisible || (playerSubmerged && distToPlayer < VISION_RANGE))) {
+    if (c.shootCooldown <= 0 && playerVisible) {
       c.shootCooldown = CHASER_SHOOT_INTERVAL + Math.random() * 0.5;
-      const shootAngle = playerVisible
-        ? c.angle
-        : Math.atan2(playerY - c.y, playerX - c.x);
       chaserBullets.push({
-        x: c.x + Math.cos(shootAngle) * (CHASER_SIZE + 4),
-        y: c.y + Math.sin(shootAngle) * (CHASER_SIZE + 4),
-        dx: Math.cos(shootAngle) * CHASER_BULLET_SPEED,
-        dy: Math.sin(shootAngle) * CHASER_BULLET_SPEED,
+        x: c.x + Math.cos(c.angle) * (CHASER_SIZE + 4),
+        y: c.y + Math.sin(c.angle) * (CHASER_SIZE + 4),
+        dx: Math.cos(c.angle) * CHASER_BULLET_SPEED,
+        dy: Math.sin(c.angle) * CHASER_BULLET_SPEED,
         alive: true,
       });
     }
