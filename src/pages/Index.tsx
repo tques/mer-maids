@@ -4,7 +4,7 @@ import {
   WATER_SPEED_FACTOR,
 } from "../game/water";
 import { createBoat, drawBoat, Boat } from "../game/boat";
-import { updateEnemies, checkBulletCollisions, drawEnemies } from "../game/enemies";
+import { updateEnemies, checkBulletCollisions, checkChaserBulletHitsPlayer, checkBombHitsShip, drawEnemies, spawnExplosion } from "../game/enemies";
 
 const SPEED = 4;
 const TRI_SIZE = 20;
@@ -12,7 +12,10 @@ const GRAVITY = 0.12;
 const MAX_FALL_SPEED = 7;
 const FLOAT_DURATION = 1200; // ms of coasting before gravity dominates
 const DRAG = 0.99; // momentum decay per frame (slower decay = longer coast)
-const CONTAINER_RATIO = 1.0;
+const PLAYER_MAX_HP = 3;
+const SHIP_MAX_HP = 10;
+const PLAYER_LIVES = 3;
+const INVULN_DURATION = 1500; // ms of invulnerability after hit
 const BULLET_SPEED = 8;
 const BULLET_RADIUS = 5;
 const ROLL_DISTANCE = 60;
@@ -42,8 +45,15 @@ const Index = () => {
   const velRef = useRef({ x: 0, y: 0 });
   const floatTimerRef = useRef(0);
   const wasMovingRef = useRef(false);
-  const throttleRef = useRef(1); // 0 = stalled, 1 = full power
+  const throttleRef = useRef(1);
   const [showHint, setShowHint] = useState(true);
+  const playerHPRef = useRef(PLAYER_MAX_HP);
+  const playerLivesRef = useRef(PLAYER_LIVES);
+  const shipHPRef = useRef(SHIP_MAX_HP);
+  const invulnRef = useRef(0);
+  const gameOverRef = useRef(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [gameOverReason, setGameOverReason] = useState("");
 
   const shake = useCallback((dx: number, dy: number) => {
     const el = containerRef.current;
@@ -133,6 +143,7 @@ const Index = () => {
     const ctx = canvas.getContext("2d")!;
 
     const loop = () => {
+      if (gameOverRef.current) return;
       const { width: cw, height: ch } = canvas;
       const pos = posRef.current;
       const mouse = mouseRef.current;
@@ -239,6 +250,42 @@ const Index = () => {
       // Bullet-enemy/bomb collisions
       bulletsRef.current = checkBulletCollisions(bulletsRef.current);
 
+      // Enemy projectile collisions
+      if (invulnRef.current > 0) {
+        invulnRef.current -= 16;
+      } else {
+        const playerHits = checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
+        if (playerHits > 0) {
+          spawnExplosion(pos.x, pos.y, 20);
+          shake(0, 1);
+          invulnRef.current = INVULN_DURATION;
+          playerHPRef.current -= playerHits;
+          if (playerHPRef.current <= 0) {
+            playerLivesRef.current -= 1;
+            if (playerLivesRef.current <= 0) {
+              gameOverRef.current = true;
+              setGameOver(true);
+              setGameOverReason("All ships lost!");
+            } else {
+              playerHPRef.current = PLAYER_MAX_HP;
+            }
+          }
+        }
+      }
+
+      // Bomb-ship collisions
+      const waterY = getWaterSurfaceY(ch);
+      const bombHits = checkBombHitsShip(boatX, boatW, waterY);
+      if (bombHits > 0) {
+        shake(0, 1);
+        shipHPRef.current = Math.max(shipHPRef.current - bombHits, 0);
+        if (shipHPRef.current <= 0) {
+          gameOverRef.current = true;
+          setGameOver(true);
+          setGameOverReason("Carrier destroyed!");
+        }
+      }
+
       // Update water particles
       updateParticles(1 / 60);
 
@@ -271,35 +318,94 @@ const Index = () => {
         ctx.fill();
       }
 
-      // Triangle pointing at mouse
-      ctx.save();
-      ctx.translate(pos.x, pos.y);
-      ctx.rotate(angle);
-      
-      // Barrel roll = rotation around forward axis → in 2D this is a scale on the perpendicular (Y) axis
-      // Goes 1 → 0 → -1 → 0 → 1 like a spinning top / coin flip
-      if (roll.active) {
-        const elapsed = performance.now() - roll.startTime;
-        const t = Math.min(elapsed / ROLL_DURATION, 1);
-        const rollAngle = roll.dir * Math.PI * 2 * t;
-        const scaleY = Math.cos(rollAngle);
-        ctx.scale(1, scaleY);
+      // Triangle pointing at mouse (flash when invulnerable)
+      const isInvuln = invulnRef.current > 0;
+      const showPlayer = !isInvuln || Math.floor(performance.now() / 80) % 2 === 0;
+      if (showPlayer) {
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        ctx.rotate(angle);
+        
+        if (roll.active) {
+          const elapsed = performance.now() - roll.startTime;
+          const t = Math.min(elapsed / ROLL_DURATION, 1);
+          const rollAngle = roll.dir * Math.PI * 2 * t;
+          const scaleY = Math.cos(rollAngle);
+          ctx.scale(1, scaleY);
+        }
+
+        ctx.shadowColor = "rgba(0,0,0,0.3)";
+        ctx.shadowBlur = 12;
+        ctx.shadowOffsetY = 4;
+
+        ctx.beginPath();
+        ctx.moveTo(TRI_SIZE, 0);
+        ctx.lineTo(-TRI_SIZE * 0.7, -TRI_SIZE * 0.6);
+        ctx.lineTo(-TRI_SIZE * 0.7, TRI_SIZE * 0.6);
+        ctx.closePath();
+        ctx.fillStyle = isInvuln ? "#ff8888" : "#D93636";
+        ctx.fill();
+
+        ctx.shadowColor = "transparent";
+        ctx.restore();
       }
 
-      // Shadow
-      ctx.shadowColor = "rgba(0,0,0,0.3)";
-      ctx.shadowBlur = 12;
-      ctx.shadowOffsetY = 4;
+      // HUD
+      ctx.save();
+      ctx.font = "bold 14px monospace";
+      ctx.textAlign = "left";
 
-      ctx.beginPath();
-      ctx.moveTo(TRI_SIZE, 0);
-      ctx.lineTo(-TRI_SIZE * 0.7, -TRI_SIZE * 0.6);
-      ctx.lineTo(-TRI_SIZE * 0.7, TRI_SIZE * 0.6);
-      ctx.closePath();
+      // Player lives & HP (top-left)
+      const hudY = 28;
+      const hudX = 16;
+      ctx.fillStyle = "rgba(0,0,0,0.4)";
+      ctx.fillRect(hudX - 4, hudY - 16, 200, 52);
+
       ctx.fillStyle = "#D93636";
-      ctx.fill();
+      ctx.fillText("LIVES", hudX, hudY);
+      for (let i = 0; i < PLAYER_LIVES; i++) {
+        const lx = hudX + 60 + i * 22;
+        if (i < playerLivesRef.current) {
+          ctx.beginPath();
+          ctx.moveTo(lx + 8, hudY - 5);
+          ctx.lineTo(lx - 2, hudY - 10);
+          ctx.lineTo(lx - 2, hudY);
+          ctx.closePath();
+          ctx.fillStyle = "#D93636";
+          ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(lx + 8, hudY - 5);
+          ctx.lineTo(lx - 2, hudY - 10);
+          ctx.lineTo(lx - 2, hudY);
+          ctx.closePath();
+          ctx.fillStyle = "#444";
+          ctx.fill();
+        }
+      }
 
-      ctx.shadowColor = "transparent";
+      // HP bar
+      ctx.fillStyle = "#aaa";
+      ctx.fillText("HP", hudX, hudY + 22);
+      for (let i = 0; i < PLAYER_MAX_HP; i++) {
+        ctx.fillStyle = i < playerHPRef.current ? "#D93636" : "#444";
+        ctx.fillRect(hudX + 30 + i * 18, hudY + 12, 14, 10);
+      }
+
+      // Ship HP (top-right)
+      ctx.textAlign = "right";
+      const shipHudX = cw - 16;
+      ctx.fillStyle = "rgba(0,0,0,0.4)";
+      ctx.fillRect(shipHudX - 240, hudY - 16, 244, 30);
+
+      ctx.fillStyle = "#888";
+      ctx.fillText("CARRIER", shipHudX - 180, hudY);
+      for (let i = 0; i < SHIP_MAX_HP; i++) {
+        const bx = shipHudX - 170 + i * 17;
+        ctx.fillStyle = i < shipHPRef.current ? "#5a9" : "#444";
+        ctx.fillRect(bx, hudY - 12, 13, 10);
+      }
+
       ctx.restore();
 
       rafRef.current = requestAnimationFrame(loop);
@@ -335,12 +441,34 @@ const Index = () => {
       }}
     >
       <canvas ref={canvasRef} className="absolute inset-0" />
-      {showHint && (
+      {showHint && !gameOver && (
         <div
           className="absolute bottom-6 left-1/2 -translate-x-1/2 tracking-widest uppercase text-sm opacity-40 pointer-events-none"
           style={{ color: "var(--canvas)", fontFamily: "var(--font-mono)" }}
         >
           left click to move · right click to fire
+        </div>
+      )}
+      {gameOver && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
+          <div className="text-4xl font-bold tracking-widest uppercase mb-4" style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}>
+            GAME OVER
+          </div>
+          <div className="text-lg tracking-wider uppercase mb-8 opacity-70" style={{ color: "#ccc", fontFamily: "var(--font-mono)" }}>
+            {gameOverReason}
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 text-sm tracking-widest uppercase border cursor-pointer"
+            style={{
+              color: "#D93636",
+              borderColor: "#D93636",
+              backgroundColor: "transparent",
+              fontFamily: "var(--font-mono)",
+            }}
+          >
+            Try Again
+          </button>
         </div>
       )}
     </div>
