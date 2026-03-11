@@ -402,7 +402,7 @@ const Index = () => {
       ctx.fillText("CARRIER", shipHudX - 180, hudY);
       for (let i = 0; i < SHIP_MAX_HP; i++) {
         const bx = shipHudX - 170 + i * 17;
-        ctx.fillStyle = i < shipHP ? "#5a9" : "#444";
+        ctx.fillStyle = i < shipHPRef.current ? "#5a9" : "#444";
         ctx.fillRect(bx, hudY - 12, 13, 10);
       }
 
