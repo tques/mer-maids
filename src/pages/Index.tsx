@@ -143,6 +143,7 @@ const Index = () => {
     const ctx = canvas.getContext("2d")!;
 
     const loop = () => {
+      if (gameOverRef.current) return;
       const { width: cw, height: ch } = canvas;
       const pos = posRef.current;
       const mouse = mouseRef.current;
