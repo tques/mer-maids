@@ -47,13 +47,13 @@ const Index = () => {
   const wasMovingRef = useRef(false);
   const throttleRef = useRef(1);
   const [showHint, setShowHint] = useState(true);
-  const [playerHP, setPlayerHP] = useState(PLAYER_MAX_HP);
-  const [playerLives, setPlayerLives] = useState(PLAYER_LIVES);
-  const [shipHP, setShipHP] = useState(SHIP_MAX_HP);
-  const [gameOver, setGameOver] = useState(false);
-  const [gameOverReason, setGameOverReason] = useState("");
+  const playerHPRef = useRef(PLAYER_MAX_HP);
+  const playerLivesRef = useRef(PLAYER_LIVES);
+  const shipHPRef = useRef(SHIP_MAX_HP);
   const invulnRef = useRef(0);
   const gameOverRef = useRef(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [gameOverReason, setGameOverReason] = useState("");
 
   const shake = useCallback((dx: number, dy: number) => {
     const el = containerRef.current;
