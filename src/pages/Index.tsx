@@ -8,6 +8,9 @@ import { updateEnemies, checkBulletCollisions, drawEnemies } from "../game/enemi
 
 const SPEED = 4;
 const TRI_SIZE = 20;
+const GRAVITY = 0.15;
+const MAX_FALL_SPEED = 6;
+const FLOAT_DURATION = 300; // ms of float before gravity kicks in
 const CONTAINER_RATIO = 0.85;
 const BULLET_SPEED = 8;
 const BULLET_RADIUS = 5;
@@ -35,6 +38,9 @@ const Index = () => {
   const wasSubmergedRef = useRef(false);
   const lastPosRef = useRef({ x: 0, y: 0 });
   const boatRef = useRef<Boat | null>(null);
+  const velYRef = useRef(0);
+  const floatTimerRef = useRef(0);
+  const wasMovingRef = useRef(false);
   const [showHint, setShowHint] = useState(true);
 
   const shake = useCallback((dx: number, dy: number) => {
@@ -162,12 +168,23 @@ const Index = () => {
       lastPosRef.current = { x: pos.x, y: pos.y };
 
       // Move toward mouse (always, including during roll)
-      if (keysRef.current.has("w")) {
+      const isMoving = keysRef.current.has("w");
+      if (isMoving) {
         const dist = Math.hypot(mouse.x - pos.x, mouse.y - pos.y);
         if (dist > 5) {
           pos.x += Math.cos(angle) * SPEED * speedMult;
           pos.y += Math.sin(angle) * SPEED * speedMult;
         }
+        velYRef.current = 0;
+        floatTimerRef.current = 0;
+        wasMovingRef.current = true;
+      } else if (wasMovingRef.current) {
+        // Gravity: float briefly then fall
+        floatTimerRef.current += 16;
+        if (floatTimerRef.current > FLOAT_DURATION) {
+          velYRef.current = Math.min(velYRef.current + GRAVITY, MAX_FALL_SPEED);
+        }
+        pos.y += velYRef.current;
       }
 
       // Clamp & collide
