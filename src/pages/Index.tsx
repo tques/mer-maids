@@ -188,7 +188,7 @@ const Index = () => {
 
       // Update enemies & bombs
       const boatX = boatRef.current ? boatRef.current.x : cw / 2;
-      updateEnemies(1 / 60, cw, ch, boatX);
+      updateEnemies(1 / 60, cw, ch, boatX, pos.x, pos.y);
 
       // Bullet-enemy/bomb collisions
       bulletsRef.current = checkBulletCollisions(bulletsRef.current);
