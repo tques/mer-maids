@@ -7,6 +7,7 @@ import { createBoat, drawBoat, Boat } from "../game/boat";
 import { updateEnemies, checkBulletCollisions, drawEnemies } from "../game/enemies";
 
 const SPEED = 4;
+const TRI_SIZE = 20;
 const GRAVITY = 0.15;
 const MAX_FALL_SPEED = 6;
 const FLOAT_DURATION = 300; // ms of float before gravity kicks in
