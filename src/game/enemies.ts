@@ -37,6 +37,7 @@ export interface Bomb {
   rotation: number;
   rotSpeed: number;
   alive: boolean;
+  hangTime: number; // seconds to pause before falling
 }
 
 export interface Explosion {
