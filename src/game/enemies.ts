@@ -117,6 +117,7 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
         vy: 0, rotation: 0,
         rotSpeed: (Math.random() - 0.5) * 8,
         alive: true,
+        hangTime: 0.5 + Math.random() * 0.3,
       });
     }
     if (e.x < -60 || e.x > cw + 60) e.alive = false;
