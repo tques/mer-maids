@@ -70,8 +70,37 @@ const CHASER_SHOOT_INTERVAL = 1.2;
 
 export function getEnemies() { return enemies; }
 export function getChasers() { return chasers; }
+export function getChaserBullets() { return chaserBullets; }
 export function getBombs() { return bombs; }
 export function getExplosions() { return explosions; }
+
+/** Check if any chaser bullets hit the player. Returns number of hits and removes those bullets. */
+export function checkChaserBulletHitsPlayer(px: number, py: number, radius: number): number {
+  let hits = 0;
+  for (const cb of chaserBullets) {
+    if (!cb.alive) continue;
+    if (Math.hypot(cb.x - px, cb.y - py) < radius + 3) {
+      cb.alive = false;
+      hits++;
+    }
+  }
+  return hits;
+}
+
+/** Check if any bombs hit the ship. Returns number of hits and removes those bombs. */
+export function checkBombHitsShip(boatX: number, boatWidth: number, shipY: number): number {
+  let hits = 0;
+  const hw = boatWidth / 2;
+  for (const b of bombs) {
+    if (!b.alive) continue;
+    if (b.y > shipY - 10 && b.y < shipY + 20 && b.x > boatX - hw && b.x < boatX + hw) {
+      b.alive = false;
+      spawnExplosion(b.x, b.y, 25);
+      hits++;
+    }
+  }
+  return hits;
+}
 
 export function spawnExplosion(x: number, y: number, size = 30) {
   explosions.push({
