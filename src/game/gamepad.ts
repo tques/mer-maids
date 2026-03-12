@@ -4,7 +4,7 @@ export interface GamepadState {
   // Left stick direction (normalized)
   stickX: number;
   stickY: number;
-  stickActive: boolean; // stick deflected past deadzone
+  stickActive: boolean;
 
   // Right stick direction (normalized)
   rightStickX: number;
@@ -17,15 +17,15 @@ export interface GamepadState {
   dpadUp: boolean;
   dpadDown: boolean;
 
-  // Fire button (any face button)
+  // Fire button
   fire: boolean;
 
-  // Shoulder buttons
-  leftShoulder: boolean;  // L1 (button 4) or L2 (button 6)
+  // Thrust (LT, LB, or Y/Triangle)
+  thrust: boolean;
 
   // Menu buttons
-  start: boolean;         // Start/Options (button 9)
-  faceA: boolean;         // A button (button 0) — for menu confirm
+  start: boolean;
+  faceA: boolean;
 
   // Connected
   connected: boolean;
@@ -45,7 +45,7 @@ let lastState: GamepadState = {
   dpadUp: false,
   dpadDown: false,
   fire: false,
-  leftShoulder: false,
+  thrust: false,
   start: false,
   faceA: false,
   connected: false,
@@ -69,7 +69,7 @@ export function pollGamepad(): GamepadState {
       stickActive: false,
       rightStickActive: false,
       fire: false,
-      leftShoulder: false,
+      thrust: false,
       start: false,
       faceA: false,
       dpadLeft: false,
@@ -106,20 +106,21 @@ export function pollGamepad(): GamepadState {
   const dpadLeft = gp.buttons[14]?.pressed ?? false;
   const dpadRight = gp.buttons[15]?.pressed ?? false;
 
-  // Fire: any face button (A=0, B=1, X=2, Y=3), R1 (5), or RT (7, analog)
+  // Fire: face buttons (A=0, B=1, X=2), R1 (5), RT (7 analog)
   const fire =
     (gp.buttons[0]?.pressed ?? false) ||
     (gp.buttons[1]?.pressed ?? false) ||
     (gp.buttons[2]?.pressed ?? false) ||
-    (gp.buttons[3]?.pressed ?? false) ||
     (gp.buttons[5]?.pressed ?? false) ||
     (gp.buttons[7]?.pressed ?? false) ||
-    (gp.buttons[7]?.value ?? 0) > 0.15; // RT analog
+    (gp.buttons[7]?.value ?? 0) > 0.15;
 
-  // Left trigger: LT only (button 6, analog trigger)
-  const leftShoulder =
+  // Thrust: Y/Triangle (3), LB (4), LT (6 analog)
+  const thrust =
+    (gp.buttons[3]?.pressed ?? false) ||
+    (gp.buttons[4]?.pressed ?? false) ||
     (gp.buttons[6]?.pressed ?? false) ||
-    (gp.buttons[6]?.value ?? 0) > 0.15; // LT analog
+    (gp.buttons[6]?.value ?? 0) > 0.15;
 
   // Start/Options button (9)
   const start = gp.buttons[9]?.pressed ?? false;
@@ -139,7 +140,7 @@ export function pollGamepad(): GamepadState {
     dpadUp,
     dpadDown,
     fire,
-    leftShoulder,
+    thrust,
     start,
     faceA,
     connected: true,

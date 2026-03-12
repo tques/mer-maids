@@ -387,8 +387,8 @@ const Index = () => {
       }
 
       // Move toward world-space mouse or gamepad stick
-      if (gp.leftShoulder || gp.fire) gamepadAimingRef.current = true;
-      const isMoving = keysRef.current.has("w") || gp.leftShoulder;
+      if (gp.thrust || gp.fire) gamepadAimingRef.current = true;
+      const isMoving = keysRef.current.has("w") || gp.thrust;
       const hasFuel = fuelRef.current > 0;
       const vel = velRef.current;
       if (isMoving && hasFuel) {
@@ -1002,7 +1002,7 @@ const Index = () => {
             style={{ color: "#ccc", fontFamily: "var(--font-mono)", fontSize: "14px", lineHeight: "1.8" }}
           >
             <p>
-              <span style={{ color: "#D93636" }}>LEFT CLICK / LT</span> — hold to fly toward cursor / stick
+              <span style={{ color: "#D93636" }}>LEFT CLICK / Y · LB · LT</span> — hold to fly toward cursor / stick
             </p>
             <p>
               <span style={{ color: "#D93636" }}>RIGHT CLICK / FACE BUTTONS</span> — fire projectiles
