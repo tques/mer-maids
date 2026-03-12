@@ -280,31 +280,35 @@ const Index = () => {
       }
 
       // Handle pause menu navigation with gamepad
+      const PAUSE_MENU_COUNT = 3;
       if (pausedRef.current && gp.connected) {
         const dpadUpPressed = gp.dpadUp && !gpDpadUpPrev.current;
         const dpadDownPressed = gp.dpadDown && !gpDpadDownPrev.current;
         gpDpadUpPrev.current = gp.dpadUp;
         gpDpadDownPrev.current = gp.dpadDown;
 
-        if (dpadUpPressed || dpadDownPressed) {
-          const newIdx = dpadUpPressed
-            ? (pauseMenuIndexRef.current === 0 ? 1 : 0)
-            : (pauseMenuIndexRef.current === 1 ? 0 : 1);
+        if (dpadUpPressed) {
+          const newIdx = (pauseMenuIndexRef.current - 1 + PAUSE_MENU_COUNT) % PAUSE_MENU_COUNT;
+          pauseMenuIndexRef.current = newIdx;
+          setPauseMenuIndex(newIdx);
+        }
+        if (dpadDownPressed) {
+          const newIdx = (pauseMenuIndexRef.current + 1) % PAUSE_MENU_COUNT;
           pauseMenuIndexRef.current = newIdx;
           setPauseMenuIndex(newIdx);
         }
 
         if (faceAPressed) {
           if (pauseMenuIndexRef.current === 0) {
-            // Resume
             pausedRef.current = false;
             setPaused(false);
             rafRef.current = requestAnimationFrame(loop);
           } else if (pauseMenuIndexRef.current === 1) {
-            // Toggle stick
             const newVal = !useRightStickRef.current;
             useRightStickRef.current = newVal;
             setUseRightStick(newVal);
+          } else if (pauseMenuIndexRef.current === 2) {
+            window.location.reload();
           }
         }
         // Don't process game logic while paused
