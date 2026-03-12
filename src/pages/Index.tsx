@@ -41,7 +41,7 @@ const Index = () => {
   const rollRef = useRef<{ active: boolean; dir: -1 | 1; startTime: number; startX: number; startY: number; perpX: number; perpY: number; spinAngle: number }>({ active: false, dir: 1, startTime: 0, startX: 0, startY: 0, perpX: 0, perpY: 0, spinAngle: 0 });
   const rightMouseRef = useRef(false);
   const shootCooldownRef = useRef(0);
-  const SHOOT_INTERVAL = 120; // ms between shots when holding
+  const SHOOT_INTERVAL = 280; // ms between shots when holding
   const wasSubmergedRef = useRef(false);
   const lastPosRef = useRef({ x: 0, y: 0 });
   const boatRef = useRef<Boat | null>(null);
@@ -57,6 +57,8 @@ const Index = () => {
   const shipHPRef = useRef(SHIP_MAX_HP);
   const invulnRef = useRef(0);
   const gameOverRef = useRef(false);
+  const pausedRef = useRef(false);
+  const [paused, setPaused] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [gameOverReason, setGameOverReason] = useState("");
 
@@ -110,6 +112,14 @@ const Index = () => {
 
     const onKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
+      if (key === "escape" && gameStartedRef.current && !gameOverRef.current) {
+        pausedRef.current = !pausedRef.current;
+        setPaused(pausedRef.current);
+        if (!pausedRef.current) {
+          rafRef.current = requestAnimationFrame(loop);
+        }
+        return;
+      }
       if (key === "a" || key === "d") {
         e.preventDefault();
         setShowHint(false);
@@ -119,7 +129,6 @@ const Index = () => {
           const mouse = mouseRef.current;
           const angle = Math.atan2(mouse.y - pos.y, mouse.x - pos.x);
           const dir = key === "a" ? -1 : 1;
-          // Perpendicular to aim direction
           const perpX = -Math.sin(angle) * dir;
           const perpY = Math.cos(angle) * dir;
           roll.active = true;
@@ -142,6 +151,7 @@ const Index = () => {
 
     const loop = () => {
       if (gameOverRef.current) return;
+      if (pausedRef.current) return;
       const { width: cw, height: ch } = canvas;
       const pos = posRef.current;
       const mouse = mouseRef.current;
@@ -224,13 +234,14 @@ const Index = () => {
         pos.y += vel.y;
       }
 
-      // Clamp & collide
-      let hitX = 0, hitY = 0;
-      if (pos.x < TRI_SIZE) { pos.x = TRI_SIZE; hitX = -1; }
-      if (pos.x > cw - TRI_SIZE) { pos.x = cw - TRI_SIZE; hitX = 1; }
+      // Horizontal wrapping
+      if (pos.x < -TRI_SIZE) pos.x = cw + TRI_SIZE;
+      else if (pos.x > cw + TRI_SIZE) pos.x = -TRI_SIZE;
+
+      // Vertical clamp & collide
+      let hitY = 0;
       if (pos.y < TRI_SIZE) { pos.y = TRI_SIZE; hitY = -1; }
       if (pos.y > ch - TRI_SIZE) { pos.y = ch - TRI_SIZE; hitY = 1; }
-      if (hitX) shake(hitX, 0);
       if (hitY) shake(0, hitY);
 
       // Continuous fire while holding right mouse
@@ -490,6 +501,16 @@ const Index = () => {
           style={{ color: "var(--canvas)", fontFamily: "var(--font-mono)" }}
         >
           left click to move · right click to fire
+        </div>
+      )}
+      {paused && !gameOver && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
+          <div className="text-4xl font-bold tracking-widest uppercase mb-4" style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}>
+            PAUSED
+          </div>
+          <div className="text-sm tracking-widest uppercase opacity-50" style={{ color: "#ccc", fontFamily: "var(--font-mono)" }}>
+            Press ESC to resume
+          </div>
         </div>
       )}
       {gameOver && (
