@@ -135,47 +135,77 @@ export function spawnExplosion(x: number, y: number, size = 30, scoreValue?: num
   }
 }
 
+export function fleeAllEnemies() {
+  for (const e of enemies) {
+    if (e.alive) e.dir = e.x < 1500 ? -1 : 1;
+    e.speed = 4;
+    e.bombCooldown = 999;
+  }
+  for (const c of chasers) {
+    if (c.alive) {
+      c.angle = c.x < 1500 ? Math.PI : 0;
+      c.speed = 5;
+      c.shootCooldown = 999;
+    }
+  }
+}
+
+export function areEnemiesGone(): boolean {
+  return enemies.filter(e => e.alive).length === 0 &&
+    chasers.filter(c => c.alive).length === 0;
+}
+
 export function updateEnemies(
   dt: number, worldWidth: number, viewH: number,
   boatX: number, boatWidth: number,
   playerX: number, playerY: number,
-  viewHalfW: number
+  viewHalfW: number,
+  waveDifficulty: number = 1,
+  fleeing: boolean = false
 ) {
   const waterY = getWaterSurfaceY(viewH);
   gameTime += dt;
 
-  const difficulty = Math.min(gameTime / 180, 1);
+  const timeDifficulty = Math.min(gameTime / 180, 1);
+  const difficulty = Math.min(timeDifficulty * waveDifficulty, 2.5);
 
-  // --- Bomber spawning (pink) ---
-  const bomberInterval = 20 - difficulty * 14;
-  bomberSpawnTimer -= dt;
-  if (bomberSpawnTimer <= 0 && gameTime > 15) {
-    bomberSpawnTimer = bomberInterval + Math.random() * 4;
-    const fromLeft = Math.random() > 0.5;
-    const dir = fromLeft ? 1 : -1;
-    // Spawn near the boat, off to the side
-    const spawnX = fromLeft
-      ? boatX - boatWidth - 200 - Math.random() * 200
-      : boatX + boatWidth + 200 + Math.random() * 200;
-    // Spawn above the top of the screen, dropping in
-    enemies.push({
-      x: spawnX,
-      y: -30 - Math.random() * 60,
-      speed: 1.2 + Math.random() * 0.8,
-      dir: dir as 1 | -1,
-      angle: 0,
-      targetX: boatX + (Math.random() - 0.5) * viewHalfW,
-      bombCooldown: 0.5 + Math.random(),
-      alive: true,
-    });
+  // Don't spawn if fleeing
+  if (!fleeing) {
+    // --- Bomber spawning (pink) ---
+    const bomberInterval = Math.max((20 - difficulty * 7), 3);
+    bomberSpawnTimer -= dt;
+    if (bomberSpawnTimer <= 0 && gameTime > 10 / waveDifficulty) {
+      bomberSpawnTimer = bomberInterval + Math.random() * 4;
+      const fromLeft = Math.random() > 0.5;
+      const dir = fromLeft ? 1 : -1;
+      const spawnX = fromLeft
+        ? boatX - boatWidth - 200 - Math.random() * 200
+        : boatX + boatWidth + 200 + Math.random() * 200;
+      enemies.push({
+        x: spawnX,
+        y: -30 - Math.random() * 60,
+        speed: 1.2 + Math.random() * 0.8,
+        dir: dir as 1 | -1,
+        angle: 0,
+        targetX: boatX + (Math.random() - 0.5) * viewHalfW,
+        bombCooldown: 0.5 + Math.random(),
+        alive: true,
+      });
+    }
   }
 
-  // Update bombers — descend to cruising altitude then fly horizontally
+  // Update bombers
   for (const e of enemies) {
     if (!e.alive) continue;
+    if (fleeing) {
+      e.x += e.dir * e.speed;
+      e.y -= 1.5;
+      if (e.y < -100 || Math.abs(e.x - playerX) > viewHalfW * 4) e.alive = false;
+      continue;
+    }
     const cruiseY = 40 + Math.abs(Math.sin(e.targetX * 0.01)) * waterY * 0.25;
     if (e.y < cruiseY) {
-      e.y += 1.2; // descend into play area
+      e.y += 1.2;
     } else {
       e.y += Math.sin(performance.now() * 0.003 + e.x * 0.01) * 0.3;
     }
@@ -191,13 +221,12 @@ export function updateEnemies(
         hangTime: 0.5 + Math.random() * 0.3,
       });
     }
-    // Despawn if far from player
     if (Math.abs(e.x - playerX) > viewHalfW * 4) e.alive = false;
   }
 
   // --- Chaser spawning (blue) ---
-  const maxChasers = gameTime < 10 ? 0 : Math.min(1 + Math.floor(difficulty * 5), 6);
-  const chaserInterval = 12 - difficulty * 7;
+  const maxChasers = fleeing ? 0 : (gameTime < 8 / waveDifficulty ? 0 : Math.min(1 + Math.floor(difficulty * 3), 8));
+  const chaserInterval = Math.max((12 - difficulty * 4), 2);
   chaserSpawnTimer -= dt;
   const aliveChasers = chasers.filter(c => c.alive).length;
   if (chaserSpawnTimer <= 0 && aliveChasers < maxChasers) {
@@ -224,6 +253,20 @@ export function updateEnemies(
   for (const c of chasers) {
     if (!c.alive) continue;
 
+    if (fleeing) {
+      // Fly away upward and outward
+      const fleeDir = c.x < 1500 ? -1 : 1;
+      const fleeAngle = Math.atan2(-1, fleeDir);
+      let angleDiff = fleeAngle - c.angle;
+      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+      c.angle += angleDiff * 0.05;
+      c.x += Math.cos(c.angle) * 5;
+      c.y += Math.sin(c.angle) * 5;
+      if (c.y < -100 || Math.abs(c.x - playerX) > viewHalfW * 4) c.alive = false;
+      continue;
+    }
+
     const distToPlayer = Math.hypot(playerX - c.x, playerY - c.y);
     const VISION_RANGE = 350;
     const playerVisible = !playerSubmerged && distToPlayer < VISION_RANGE;
@@ -239,7 +282,6 @@ export function updateEnemies(
       targetX = c.x + patrolDir * 200;
       targetY = (c as any)._patrolAlt as number;
 
-      // Patrol within view range of player
       if (c.x < playerX - viewHalfW) (c as any)._patrolDir = 1;
       else if (c.x > playerX + viewHalfW) (c as any)._patrolDir = -1;
     } else {

@@ -4,8 +4,9 @@ import {
   WATER_SPEED_FACTOR,
 } from "../game/water";
 import { createBoat, drawBoat, collideWithBoat, Boat } from "../game/boat";
-import { updateEnemies, checkBulletCollisions, checkChaserBulletHitsPlayer, checkBombHitsShip, drawEnemies, spawnExplosion, resetEnemies } from "../game/enemies";
+import { updateEnemies, checkBulletCollisions, checkChaserBulletHitsPlayer, checkBombHitsShip, drawEnemies, spawnExplosion, resetEnemies, fleeAllEnemies } from "../game/enemies";
 import { resetPowerups, checkScoreRewards, checkPowerupPickup, updatePowerups, drawPowerups } from "../game/powerups";
+import { createWaveState, updateWave, getWaveDifficulty, drawWaveTransition, drawWaveHUD, WaveState } from "../game/waves";
 
 const SPEED = 4;
 const TRI_SIZE = 20;
@@ -74,6 +75,7 @@ const Index = () => {
   const ammoBoxRef = useRef<AmmoBox | null>(null);
   const ammoBoxAlertRef = useRef(0);
   const scoreRef = useRef(0);
+  const waveRef = useRef<WaveState>(createWaveState());
   const [paused, setPaused] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [gameOverReason, setGameOverReason] = useState("");
@@ -305,7 +307,24 @@ const Index = () => {
       const boatX = boatRef.current ? boatRef.current.x : WORLD_WIDTH / 2;
       const boatW = boatRef.current ? boatRef.current.width : 400;
       if (gameStartedRef.current) {
-        updateEnemies(1 / 60, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2);
+        const wave = waveRef.current;
+        const waveDiff = getWaveDifficulty(wave.wave);
+
+        // Update wave system
+        const waveResult = updateWave(wave, 1 / 60, scoreRef.current);
+        if (waveResult.waveCompleted) {
+          fleeAllEnemies();
+        }
+        if (waveResult.newLife) {
+          playerLivesRef.current = Math.min(playerLivesRef.current + 1, PLAYER_LIVES + 5);
+          playerHPRef.current = PLAYER_MAX_HP;
+        }
+        if (waveResult.startNextWave) {
+          resetEnemies();
+          resetPowerups();
+        }
+
+        updateEnemies(1 / 60, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
         const result = checkBulletCollisions(bulletsRef.current);
         bulletsRef.current = result.remaining;
         scoreRef.current += result.score;
@@ -364,9 +383,8 @@ const Index = () => {
 
         // Powerup pickup
         const pickedUp = checkPowerupPickup(pos.x, pos.y, TRI_SIZE);
-        if (pickedUp === "ship") {
-          playerLivesRef.current = Math.min(playerLivesRef.current + 1, PLAYER_LIVES + 2);
-          playerHPRef.current = PLAYER_MAX_HP;
+        if (pickedUp === "health") {
+          playerHPRef.current = Math.min(playerHPRef.current + 1, PLAYER_MAX_HP);
         } else if (pickedUp === "repair") {
           shipHPRef.current = Math.min(shipHPRef.current + 3, SHIP_MAX_HP);
         }
@@ -608,7 +626,13 @@ const Index = () => {
       ctx.textAlign = "center";
       ctx.fillText(`SCORE: ${scoreRef.current}`, cw / 2, 30);
 
+      // Wave HUD
+      drawWaveHUD(ctx, waveRef.current, cw);
+
       ctx.restore();
+
+      // Wave transition overlay (drawn after HUD restore, in screen space)
+      drawWaveTransition(ctx, waveRef.current, cw, ch);
 
       rafRef.current = requestAnimationFrame(loop);
     };
@@ -652,6 +676,7 @@ const Index = () => {
             setGameStarted(true);
             setShowHint(false);
             scoreRef.current = 0;
+            waveRef.current = createWaveState();
             resetEnemies();
             resetPowerups();
           }}
@@ -696,6 +721,9 @@ const Index = () => {
           </div>
           <div className="text-lg tracking-wider uppercase mb-2 opacity-70" style={{ color: "#ccc", fontFamily: "var(--font-mono)" }}>
             {gameOverReason}
+          </div>
+          <div className="text-sm tracking-wider mb-2 opacity-50" style={{ color: "#aaa", fontFamily: "var(--font-mono)" }}>
+            Survived to Wave {waveRef.current.wave}
           </div>
           <div className="text-2xl font-bold tracking-widest mb-8" style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}>
             SCORE: {scoreRef.current}
