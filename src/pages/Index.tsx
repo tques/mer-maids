@@ -449,6 +449,9 @@ const Index = () => {
           drawBoat(ctx, boatRef.current, viewH);
         }
 
+        // Powerups
+        drawPowerups(ctx);
+
         // Player bullets
         ctx.fillStyle = "#D93636";
         for (const b of bulletsRef.current) {
