@@ -319,11 +319,15 @@ const Index = () => {
       const aimStickY = useRightStickRef.current ? gp.rightStickY : gp.stickY;
       const aimStickActive = useRightStickRef.current ? gp.rightStickActive : gp.stickActive;
 
-      // Angle: prefer gamepad stick if active, otherwise mouse
+      // Angle: prefer gamepad stick if active, keep last gamepad angle if in gamepad mode, otherwise mouse
       let angle: number;
       if (aimStickActive) {
-        gamepadAimingRef.current = true; // switch to gamepad aiming
+        gamepadAimingRef.current = true;
         angle = Math.atan2(aimStickY, aimStickX);
+        lastGamepadAngleRef.current = angle;
+      } else if (gamepadAimingRef.current) {
+        // Stick released but still in gamepad mode — keep last angle
+        angle = lastGamepadAngleRef.current;
       } else {
         angle = Math.atan2(wmy - pos.y, wmx - pos.x);
       }
