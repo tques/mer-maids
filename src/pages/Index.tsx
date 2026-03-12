@@ -996,7 +996,7 @@ const Index = () => {
             style={{ color: "#ccc", fontFamily: "var(--font-mono)", fontSize: "14px", lineHeight: "1.8" }}
           >
             <p>
-              <span style={{ color: "#D93636" }}>LEFT CLICK / L1+L2</span> — hold to fly toward cursor / stick
+              <span style={{ color: "#D93636" }}>LEFT CLICK / LT</span> — hold to fly toward cursor / stick
             </p>
             <p>
               <span style={{ color: "#D93636" }}>RIGHT CLICK / FACE BUTTONS</span> — fire projectiles
