@@ -118,8 +118,13 @@ export function drawWater(
   const x0 = visibleStartX != null ? Math.max(-5, Math.floor(visibleStartX) - 10) : -5;
   const x1 = visibleEndX != null ? Math.min(cw + 5, Math.ceil(visibleEndX) + 10) : cw + 5;
 
-  // Wave surface path
+  // Clip to exact world tile to prevent overlap with adjacent copies
   ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, cw, ch);
+  ctx.clip();
+
+  // Wave surface path (extends slightly past edges for seamless fill)
   ctx.beginPath();
   ctx.moveTo(x0, ch);
   for (let x = x0; x <= x1; x += 3) {
