@@ -28,6 +28,7 @@ import {
   WaveState,
 } from "../game/waves";
 import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail, getShipPitch } from "../game/jettrail";
+import { pollGamepad } from "../game/gamepad";
 
 const SPEED = 5.5;              // was 4 — base thrust power increased 37%
 const TRI_SIZE = 20;
@@ -96,6 +97,7 @@ const Index = () => {
   const lastPosRef = useRef({ x: 0, y: 0 });
   const boatRef = useRef<Boat | null>(null);
   const velRef = useRef({ x: 0, y: 0 });
+  const gpDpadPrev = useRef({ left: false, right: false });
   
   const wasMovingRef = useRef(false);
   const throttleRef = useRef(1);
@@ -231,11 +233,39 @@ const Index = () => {
       const viewH = ch / ZOOM;
       const pos = posRef.current;
 
+      // Poll gamepad
+      const gp = pollGamepad();
+
       // World-space mouse
       const camX = pos.x - viewW / 2;
       const wmx = mouseRef.current.x / ZOOM + camX;
       const wmy = mouseRef.current.y / ZOOM;
-      const angle = Math.atan2(wmy - pos.y, wmx - pos.x);
+
+      // Angle: prefer gamepad stick if active, otherwise mouse
+      let angle: number;
+      if (gp.stickActive) {
+        angle = Math.atan2(gp.stickY, gp.stickX);
+      } else {
+        angle = Math.atan2(wmy - pos.y, wmx - pos.x);
+      }
+
+      // Gamepad d-pad → barrel rolls (edge-triggered)
+      const prevDpad = gpDpadPrev.current;
+      if (gp.dpadLeft && !prevDpad.left && !rollRef.current.active) {
+        const perpX = -Math.sin(angle) * -1;
+        const perpY = Math.cos(angle) * -1;
+        const r = rollRef.current;
+        r.active = true; r.dir = -1; r.startTime = performance.now();
+        r.startX = pos.x; r.startY = pos.y; r.perpX = perpX; r.perpY = perpY; r.spinAngle = 0;
+      }
+      if (gp.dpadRight && !prevDpad.right && !rollRef.current.active) {
+        const perpX = -Math.sin(angle) * 1;
+        const perpY = Math.cos(angle) * 1;
+        const r = rollRef.current;
+        r.active = true; r.dir = 1; r.startTime = performance.now();
+        r.startX = pos.x; r.startY = pos.y; r.perpX = perpX; r.perpY = perpY; r.spinAngle = 0;
+      }
+      gpDpadPrev.current = { left: gp.dpadLeft, right: gp.dpadRight };
 
       // Barrel roll
       const roll = rollRef.current;
@@ -273,8 +303,8 @@ const Index = () => {
         fuelRef.current = Math.min(fuelRef.current + FUEL_REFILL_RATE * dt, MAX_FUEL);
       }
 
-      // Move toward world-space mouse
-      const isMoving = keysRef.current.has("w");
+      // Move toward world-space mouse or gamepad stick
+      const isMoving = keysRef.current.has("w") || gp.stickActive;
       const hasFuel = fuelRef.current > 0;
       const vel = velRef.current;
       if (isMoving && hasFuel) {
@@ -371,8 +401,8 @@ const Index = () => {
       // Recalculate camera after position update
       const finalCamX = pos.x - viewW / 2;
 
-      // Continuous fire (ammo gated)
-      if (rightMouseRef.current && ammoRef.current > 0) {
+      // Continuous fire (ammo gated) — mouse right-click or gamepad buttons
+      if ((rightMouseRef.current || gp.fire) && ammoRef.current > 0) {
         shootCooldownRef.current -= 16;
         if (shootCooldownRef.current <= 0) {
           shootCooldownRef.current = SHOOT_INTERVAL;
