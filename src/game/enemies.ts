@@ -300,8 +300,13 @@ export function updateEnemies(
   explosions = explosions.filter(ex => ex.life > 0);
 }
 
-export function checkBulletCollisions(bullets: { x: number; y: number; dx: number; dy: number; id: number }[]) {
+export const SCORE_BOMBER = 150;
+export const SCORE_CHASER = 100;
+export const SCORE_BOMB = 25;
+
+export function checkBulletCollisions(bullets: { x: number; y: number; dx: number; dy: number; id: number }[]): { remaining: typeof bullets; score: number } {
   const remainingBullets: typeof bullets = [];
+  let score = 0;
 
   for (const b of bullets) {
     let hit = false;
@@ -312,6 +317,7 @@ export function checkBulletCollisions(bullets: { x: number; y: number; dx: numbe
       if (dist < ENEMY_SIZE + 5) {
         e.alive = false;
         spawnExplosion(e.x, e.y, 35);
+        score += SCORE_BOMBER;
         hit = true;
         break;
       }
@@ -324,6 +330,7 @@ export function checkBulletCollisions(bullets: { x: number; y: number; dx: numbe
         if (dist < CHASER_SIZE + 5) {
           c.alive = false;
           spawnExplosion(c.x, c.y, 30);
+          score += SCORE_CHASER;
           hit = true;
           break;
         }
@@ -337,6 +344,7 @@ export function checkBulletCollisions(bullets: { x: number; y: number; dx: numbe
         if (dist < BOMB_SIZE + 5) {
           bomb.alive = false;
           spawnExplosion(bomb.x, bomb.y, 20);
+          score += SCORE_BOMB;
           hit = true;
           break;
         }
@@ -346,7 +354,7 @@ export function checkBulletCollisions(bullets: { x: number; y: number; dx: numbe
     if (!hit) remainingBullets.push(b);
   }
 
-  return remainingBullets;
+  return { remaining: remainingBullets, score };
 }
 
 export function drawEnemies(ctx: CanvasRenderingContext2D) {

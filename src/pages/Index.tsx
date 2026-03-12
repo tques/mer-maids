@@ -3,8 +3,9 @@ import {
   getWaterSurfaceY, isSubmerged, spawnSplash, updateParticles, drawWater,
   WATER_SPEED_FACTOR,
 } from "../game/water";
-import { createBoat, drawBoat, Boat } from "../game/boat";
+import { createBoat, drawBoat, collideWithBoat, Boat } from "../game/boat";
 import { updateEnemies, checkBulletCollisions, checkChaserBulletHitsPlayer, checkBombHitsShip, drawEnemies, spawnExplosion, resetEnemies } from "../game/enemies";
+import { resetPowerups, checkScoreRewards, checkPowerupPickup, updatePowerups, drawPowerups } from "../game/powerups";
 
 const SPEED = 4;
 const TRI_SIZE = 20;
@@ -71,7 +72,8 @@ const Index = () => {
   const pausedRef = useRef(false);
   const ammoRef = useRef(MAX_AMMO);
   const ammoBoxRef = useRef<AmmoBox | null>(null);
-  const ammoBoxAlertRef = useRef(0); // countdown for HUD flash
+  const ammoBoxAlertRef = useRef(0);
+  const scoreRef = useRef(0);
   const [paused, setPaused] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [gameOverReason, setGameOverReason] = useState("");
@@ -304,7 +306,9 @@ const Index = () => {
       const boatW = boatRef.current ? boatRef.current.width : 400;
       if (gameStartedRef.current) {
         updateEnemies(1 / 60, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2);
-        bulletsRef.current = checkBulletCollisions(bulletsRef.current);
+        const result = checkBulletCollisions(bulletsRef.current);
+        bulletsRef.current = result.remaining;
+        scoreRef.current += result.score;
       }
 
       // Enemy projectile collisions
@@ -342,28 +346,49 @@ const Index = () => {
             setGameOverReason("Carrier destroyed!");
           }
         }
+        }
+
+        // Boat collision
+        if (boatRef.current) {
+          const pushOut = collideWithBoat(pos.x, pos.y, TRI_SIZE, boatRef.current, viewH);
+          if (pushOut) {
+            pos.x = pushOut.x;
+            pos.y = pushOut.y;
+            velRef.current.x *= 0.3;
+            velRef.current.y *= -0.5;
+          }
+        }
+
+        // Powerup rewards based on score
+        checkScoreRewards(scoreRef.current, boatX, boatW, viewH);
+        updatePowerups();
+
+        // Powerup pickup
+        const pickedUp = checkPowerupPickup(pos.x, pos.y, TRI_SIZE);
+        if (pickedUp === "ship") {
+          playerLivesRef.current = Math.min(playerLivesRef.current + 1, PLAYER_LIVES + 2);
+          playerHPRef.current = PLAYER_MAX_HP;
+        } else if (pickedUp === "repair") {
+          shipHPRef.current = Math.min(shipHPRef.current + 3, SHIP_MAX_HP);
+        }
       }
 
       // === AMMO BOX SYSTEM ===
       if (gameStartedRef.current) {
-        // Spawn ammo box when ammo is low and none exists
         if (ammoRef.current <= AMMO_LOW_THRESHOLD && !ammoBoxRef.current) {
           const edgeX = Math.random() < 0.5 ? 20 : WORLD_WIDTH - 20;
           const surfY = getWaterSurfaceY(viewH);
           const boxY = 40 + Math.random() * (surfY - 80);
           ammoBoxRef.current = { x: edgeX, y: boxY, spawnTime: performance.now() };
-          ammoBoxAlertRef.current = 3000; // 3s HUD flash
+          ammoBoxAlertRef.current = 3000;
         }
 
-        // Tick alert timer
         if (ammoBoxAlertRef.current > 0) {
           ammoBoxAlertRef.current -= 16;
         }
 
-        // Check pickup collision
         const box = ammoBoxRef.current;
         if (box) {
-          // Wrap-aware distance
           let ddx = Math.abs(pos.x - box.x);
           if (ddx > WORLD_WIDTH / 2) ddx = WORLD_WIDTH - ddx;
           const ddy = Math.abs(pos.y - box.y);
@@ -423,6 +448,9 @@ const Index = () => {
         if (boatRef.current) {
           drawBoat(ctx, boatRef.current, viewH);
         }
+
+        // Powerups
+        drawPowerups(ctx);
 
         // Player bullets
         ctx.fillStyle = "#D93636";
@@ -575,6 +603,12 @@ const Index = () => {
         ctx.fillRect(bx, hudY - 12, 13, 10);
       }
 
+      // Score display
+      ctx.fillStyle = "#f7d794";
+      ctx.font = "bold 18px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(`SCORE: ${scoreRef.current}`, cw / 2, 30);
+
       ctx.restore();
 
       rafRef.current = requestAnimationFrame(loop);
@@ -618,7 +652,9 @@ const Index = () => {
             gameStartedRef.current = true;
             setGameStarted(true);
             setShowHint(false);
+            scoreRef.current = 0;
             resetEnemies();
+            resetPowerups();
           }}
         >
           <div className="text-5xl font-bold tracking-widest uppercase mb-6" style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}>
@@ -659,8 +695,11 @@ const Index = () => {
           <div className="text-4xl font-bold tracking-widest uppercase mb-4" style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}>
             GAME OVER
           </div>
-          <div className="text-lg tracking-wider uppercase mb-8 opacity-70" style={{ color: "#ccc", fontFamily: "var(--font-mono)" }}>
+          <div className="text-lg tracking-wider uppercase mb-2 opacity-70" style={{ color: "#ccc", fontFamily: "var(--font-mono)" }}>
             {gameOverReason}
+          </div>
+          <div className="text-2xl font-bold tracking-widest mb-8" style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}>
+            SCORE: {scoreRef.current}
           </div>
           <button
             onClick={() => window.location.reload()}
