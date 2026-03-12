@@ -383,9 +383,8 @@ const Index = () => {
 
         // Powerup pickup
         const pickedUp = checkPowerupPickup(pos.x, pos.y, TRI_SIZE);
-        if (pickedUp === "ship") {
-          playerLivesRef.current = Math.min(playerLivesRef.current + 1, PLAYER_LIVES + 2);
-          playerHPRef.current = PLAYER_MAX_HP;
+        if (pickedUp === "health") {
+          playerHPRef.current = Math.min(playerHPRef.current + 1, PLAYER_MAX_HP);
         } else if (pickedUp === "repair") {
           shipHPRef.current = Math.min(shipHPRef.current + 3, SHIP_MAX_HP);
         }
