@@ -175,7 +175,7 @@ export function updateEnemies(
   }
 
   // --- Chaser spawning (blue) ---
-  const maxChasers = gameTime < 10 ? 0 : Math.min(1 + Math.floor(difficulty * 2), 3);
+  const maxChasers = gameTime < 10 ? 0 : Math.min(1 + Math.floor(difficulty * 5), 6);
   const chaserInterval = 12 - difficulty * 7;
   chaserSpawnTimer -= dt;
   const aliveChasers = chasers.filter(c => c.alive).length;
