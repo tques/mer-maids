@@ -233,11 +233,39 @@ const Index = () => {
       const viewH = ch / ZOOM;
       const pos = posRef.current;
 
+      // Poll gamepad
+      const gp = pollGamepad();
+
       // World-space mouse
       const camX = pos.x - viewW / 2;
       const wmx = mouseRef.current.x / ZOOM + camX;
       const wmy = mouseRef.current.y / ZOOM;
-      const angle = Math.atan2(wmy - pos.y, wmx - pos.x);
+
+      // Angle: prefer gamepad stick if active, otherwise mouse
+      let angle: number;
+      if (gp.stickActive) {
+        angle = Math.atan2(gp.stickY, gp.stickX);
+      } else {
+        angle = Math.atan2(wmy - pos.y, wmx - pos.x);
+      }
+
+      // Gamepad d-pad → barrel rolls (edge-triggered)
+      const prevDpad = gpDpadPrev.current;
+      if (gp.dpadLeft && !prevDpad.left && !rollRef.current.active) {
+        const perpX = -Math.sin(angle) * -1;
+        const perpY = Math.cos(angle) * -1;
+        const r = rollRef.current;
+        r.active = true; r.dir = -1; r.startTime = performance.now();
+        r.startX = pos.x; r.startY = pos.y; r.perpX = perpX; r.perpY = perpY; r.spinAngle = 0;
+      }
+      if (gp.dpadRight && !prevDpad.right && !rollRef.current.active) {
+        const perpX = -Math.sin(angle) * 1;
+        const perpY = Math.cos(angle) * 1;
+        const r = rollRef.current;
+        r.active = true; r.dir = 1; r.startTime = performance.now();
+        r.startX = pos.x; r.startY = pos.y; r.perpX = perpX; r.perpY = perpY; r.spinAngle = 0;
+      }
+      gpDpadPrev.current = { left: gp.dpadLeft, right: gp.dpadRight };
 
       // Barrel roll
       const roll = rollRef.current;
