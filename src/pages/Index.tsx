@@ -234,13 +234,14 @@ const Index = () => {
         pos.y += vel.y;
       }
 
-      // Clamp & collide
-      let hitX = 0, hitY = 0;
-      if (pos.x < TRI_SIZE) { pos.x = TRI_SIZE; hitX = -1; }
-      if (pos.x > cw - TRI_SIZE) { pos.x = cw - TRI_SIZE; hitX = 1; }
+      // Horizontal wrapping
+      if (pos.x < -TRI_SIZE) pos.x = cw + TRI_SIZE;
+      else if (pos.x > cw + TRI_SIZE) pos.x = -TRI_SIZE;
+
+      // Vertical clamp & collide
+      let hitY = 0;
       if (pos.y < TRI_SIZE) { pos.y = TRI_SIZE; hitY = -1; }
       if (pos.y > ch - TRI_SIZE) { pos.y = ch - TRI_SIZE; hitY = 1; }
-      if (hitX) shake(hitX, 0);
       if (hitY) shake(0, hitY);
 
       // Continuous fire while holding right mouse
