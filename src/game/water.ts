@@ -172,7 +172,7 @@ export function drawWater(
   // Secondary deeper highlight
   ctx.beginPath();
   for (let x = x0; x <= x1; x += 4) {
-    const wy = getWaveY(x, baseY) + 5;
+    const wy = getWaveY(x, baseY, cw) + 5;
     if (x === x0) ctx.moveTo(x, wy);
     else ctx.lineTo(x, wy);
   }
