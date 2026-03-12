@@ -310,6 +310,14 @@ const Index = () => {
           vel.y += THRUST_GRAVITY;
         }
 
+        // Buoyancy when submerged — push toward surface
+        if (submerged) {
+          const surfaceY = getWaterSurfaceY(viewH);
+          const depth = pos.y - surfaceY;
+          const buoyancyForce = BUOYANCY * Math.min(depth / 40, 1);
+          vel.y -= buoyancyForce;
+        }
+
         pos.x += vel.x;
         pos.y += vel.y;
 
@@ -318,15 +326,23 @@ const Index = () => {
 
         wasMovingRef.current = true;
       } else {
-        // Not thrusting (released button, or no fuel) — natural gravity + air drag
+        // Not thrusting — natural gravity + air drag, more momentum retained
         throttleRef.current = Math.max(throttleRef.current - 0.03, 0);
 
         vel.x *= AIR_DRAG;
         vel.y *= AIR_DRAG;
 
-        // Constant gravity, always pulling down
+        // Gravity in air, buoyancy in water
         if (!submerged) {
           vel.y = Math.min(vel.y + GRAVITY, MAX_FALL_SPEED);
+        } else {
+          const surfaceY = getWaterSurfaceY(viewH);
+          const depth = pos.y - surfaceY;
+          const buoyancyForce = BUOYANCY * Math.min(depth / 40, 1);
+          vel.y -= buoyancyForce;
+          // Water drag (heavier than air)
+          vel.x *= 0.97;
+          vel.y *= 0.97;
         }
 
         pos.x += vel.x;
