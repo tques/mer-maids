@@ -106,19 +106,20 @@ export function pollGamepad(): GamepadState {
   const dpadLeft = gp.buttons[14]?.pressed ?? false;
   const dpadRight = gp.buttons[15]?.pressed ?? false;
 
-  // Fire: any face button (A=0, B=1, X=2, Y=3) or right shoulder (R1=5, R2=7)
+  // Fire: any face button (A=0, B=1, X=2, Y=3), R1 (5), or RT (7, analog)
   const fire =
     (gp.buttons[0]?.pressed ?? false) ||
     (gp.buttons[1]?.pressed ?? false) ||
     (gp.buttons[2]?.pressed ?? false) ||
     (gp.buttons[3]?.pressed ?? false) ||
     (gp.buttons[5]?.pressed ?? false) ||
-    (gp.buttons[7]?.pressed ?? false);
+    (gp.buttons[7]?.pressed ?? false) ||
+    (gp.buttons[7]?.value ?? 0) > 0.15; // RT analog
 
   // Left trigger: LT only (button 6, analog trigger)
   const leftShoulder =
     (gp.buttons[6]?.pressed ?? false) ||
-    (gp.buttons[6]?.value ?? 0) > 0.15; // analog trigger
+    (gp.buttons[6]?.value ?? 0) > 0.15; // LT analog
 
   // Start/Options button (9)
   const start = gp.buttons[9]?.pressed ?? false;

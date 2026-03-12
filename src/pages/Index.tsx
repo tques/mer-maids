@@ -128,6 +128,7 @@ const Index = () => {
   const [pauseMenuIndex, setPauseMenuIndex] = useState(0);
   const pauseMenuIndexRef = useRef(0);
   const gamepadAimingRef = useRef(false); // true when gamepad stick was last used for aiming
+  const lastGamepadAngleRef = useRef(0); // remember last stick angle when stick returns to center
   const loopRef = useRef<(() => void) | null>(null);
 
   // Helper: convert screen mouse to world coords
@@ -318,11 +319,15 @@ const Index = () => {
       const aimStickY = useRightStickRef.current ? gp.rightStickY : gp.stickY;
       const aimStickActive = useRightStickRef.current ? gp.rightStickActive : gp.stickActive;
 
-      // Angle: prefer gamepad stick if active, otherwise mouse
+      // Angle: prefer gamepad stick if active, keep last gamepad angle if in gamepad mode, otherwise mouse
       let angle: number;
       if (aimStickActive) {
-        gamepadAimingRef.current = true; // switch to gamepad aiming
+        gamepadAimingRef.current = true;
         angle = Math.atan2(aimStickY, aimStickX);
+        lastGamepadAngleRef.current = angle;
+      } else if (gamepadAimingRef.current) {
+        // Stick released but still in gamepad mode — keep last angle
+        angle = lastGamepadAngleRef.current;
       } else {
         angle = Math.atan2(wmy - pos.y, wmx - pos.x);
       }
@@ -382,6 +387,7 @@ const Index = () => {
       }
 
       // Move toward world-space mouse or gamepad stick
+      if (gp.leftShoulder || gp.fire) gamepadAimingRef.current = true;
       const isMoving = keysRef.current.has("w") || gp.leftShoulder;
       const hasFuel = fuelRef.current > 0;
       const vel = velRef.current;
