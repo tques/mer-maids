@@ -626,7 +626,13 @@ const Index = () => {
       ctx.textAlign = "center";
       ctx.fillText(`SCORE: ${scoreRef.current}`, cw / 2, 30);
 
+      // Wave HUD
+      drawWaveHUD(ctx, waveRef.current, cw);
+
       ctx.restore();
+
+      // Wave transition overlay (drawn after HUD restore, in screen space)
+      drawWaveTransition(ctx, waveRef.current, cw, ch);
 
       rafRef.current = requestAnimationFrame(loop);
     };
