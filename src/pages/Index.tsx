@@ -28,6 +28,10 @@ const ZOOM = 1.4;
 const MAX_AMMO = 30;
 const AMMO_LOW_THRESHOLD = 8;
 const AMMO_BOX_SIZE = 22;
+const MAX_FUEL = 100;
+const FUEL_BURN_RATE = 4;      // fuel/sec while flying
+const FUEL_REFILL_RATE = 25;   // fuel/sec while submerged
+const FUEL_LOW_THRESHOLD = 25;
 
 interface Bullet {
   x: number;
