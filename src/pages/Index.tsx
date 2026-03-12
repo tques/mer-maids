@@ -303,8 +303,8 @@ const Index = () => {
         fuelRef.current = Math.min(fuelRef.current + FUEL_REFILL_RATE * dt, MAX_FUEL);
       }
 
-      // Move toward world-space mouse
-      const isMoving = keysRef.current.has("w");
+      // Move toward world-space mouse or gamepad stick
+      const isMoving = keysRef.current.has("w") || gp.stickActive;
       const hasFuel = fuelRef.current > 0;
       const vel = velRef.current;
       if (isMoving && hasFuel) {
