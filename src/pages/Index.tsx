@@ -933,13 +933,19 @@ const Index = () => {
       // Paused: handled in game loop above
       // But we need to keep polling when paused since game loop stops
       if (pausedRef.current && gp.connected) {
+        const PAUSE_MENU_COUNT = 3;
         const dpadUpPressed = gp.dpadUp && !gpDpadUpPrev.current;
         const dpadDownPressed = gp.dpadDown && !gpDpadDownPrev.current;
         gpDpadUpPrev.current = gp.dpadUp;
         gpDpadDownPrev.current = gp.dpadDown;
 
-        if (dpadUpPressed || dpadDownPressed) {
-          const newIdx = pauseMenuIndexRef.current === 0 ? 1 : 0;
+        if (dpadUpPressed) {
+          const newIdx = (pauseMenuIndexRef.current - 1 + PAUSE_MENU_COUNT) % PAUSE_MENU_COUNT;
+          pauseMenuIndexRef.current = newIdx;
+          setPauseMenuIndex(newIdx);
+        }
+        if (dpadDownPressed) {
+          const newIdx = (pauseMenuIndexRef.current + 1) % PAUSE_MENU_COUNT;
           pauseMenuIndexRef.current = newIdx;
           setPauseMenuIndex(newIdx);
         }
@@ -953,6 +959,8 @@ const Index = () => {
             const newVal = !useRightStickRef.current;
             useRightStickRef.current = newVal;
             setUseRightStick(newVal);
+          } else if (pauseMenuIndexRef.current === 2) {
+            window.location.reload();
           }
         }
 
