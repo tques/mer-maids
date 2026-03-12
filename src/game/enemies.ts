@@ -253,6 +253,20 @@ export function updateEnemies(
   for (const c of chasers) {
     if (!c.alive) continue;
 
+    if (fleeing) {
+      // Fly away upward and outward
+      const fleeDir = c.x < 1500 ? -1 : 1;
+      const fleeAngle = Math.atan2(-1, fleeDir);
+      let angleDiff = fleeAngle - c.angle;
+      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+      c.angle += angleDiff * 0.05;
+      c.x += Math.cos(c.angle) * 5;
+      c.y += Math.sin(c.angle) * 5;
+      if (c.y < -100 || Math.abs(c.x - playerX) > viewHalfW * 4) c.alive = false;
+      continue;
+    }
+
     const distToPlayer = Math.hypot(playerX - c.x, playerY - c.y);
     const VISION_RANGE = 350;
     const playerVisible = !playerSubmerged && distToPlayer < VISION_RANGE;
@@ -268,7 +282,6 @@ export function updateEnemies(
       targetX = c.x + patrolDir * 200;
       targetY = (c as any)._patrolAlt as number;
 
-      // Patrol within view range of player
       if (c.x < playerX - viewHalfW) (c as any)._patrolDir = 1;
       else if (c.x > playerX + viewHalfW) (c as any)._patrolDir = -1;
     } else {
