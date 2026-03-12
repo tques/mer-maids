@@ -740,6 +740,8 @@ const Index = () => {
             waveRef.current = createWaveState();
             resetEnemies();
             resetPowerups();
+            resetJetTrail();
+            fuelRef.current = MAX_FUEL;
           }}
         >
           <div className="text-5xl font-bold tracking-widest uppercase mb-6" style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}>
