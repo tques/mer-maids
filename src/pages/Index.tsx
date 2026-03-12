@@ -1021,7 +1021,7 @@ const Index = () => {
             className="text-sm tracking-wider uppercase mb-8 opacity-60"
             style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}
           >
-            Protect your carrier. Survive the waves.
+            Marine Emergency Response unit. Defend the floating city.
           </div>
 
           <div className="max-w-lg text-center mb-8" style={{ fontFamily: "var(--font-mono)" }}>
