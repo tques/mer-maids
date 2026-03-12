@@ -344,6 +344,37 @@ const Index = () => {
         }
       }
 
+      // === AMMO BOX SYSTEM ===
+      if (gameStartedRef.current) {
+        // Spawn ammo box when ammo is low and none exists
+        if (ammoRef.current <= AMMO_LOW_THRESHOLD && !ammoBoxRef.current) {
+          const edgeX = Math.random() < 0.5 ? 20 : WORLD_WIDTH - 20;
+          const surfY = getWaterSurfaceY(viewH);
+          const boxY = 40 + Math.random() * (surfY - 80);
+          ammoBoxRef.current = { x: edgeX, y: boxY, spawnTime: performance.now() };
+          ammoBoxAlertRef.current = 3000; // 3s HUD flash
+        }
+
+        // Tick alert timer
+        if (ammoBoxAlertRef.current > 0) {
+          ammoBoxAlertRef.current -= 16;
+        }
+
+        // Check pickup collision
+        const box = ammoBoxRef.current;
+        if (box) {
+          // Wrap-aware distance
+          let ddx = Math.abs(pos.x - box.x);
+          if (ddx > WORLD_WIDTH / 2) ddx = WORLD_WIDTH - ddx;
+          const ddy = Math.abs(pos.y - box.y);
+          if (ddx < TRI_SIZE + AMMO_BOX_SIZE && ddy < TRI_SIZE + AMMO_BOX_SIZE) {
+            ammoRef.current = MAX_AMMO;
+            ammoBoxRef.current = null;
+            ammoBoxAlertRef.current = 0;
+          }
+        }
+      }
+
       // Update water particles
       updateParticles(1 / 60);
 
