@@ -28,6 +28,7 @@ import {
   WaveState,
 } from "../game/waves";
 import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail, getShipPitch } from "../game/jettrail";
+import { pollGamepad } from "../game/gamepad";
 
 const SPEED = 5.5;              // was 4 — base thrust power increased 37%
 const TRI_SIZE = 20;
