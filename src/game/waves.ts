@@ -125,7 +125,7 @@ export function drawWaveTransition(ctx: CanvasRenderingContext2D, state: WaveSta
 
   // Show extra life message
   const nextWave = state.wave + 1;
-  if (nextWave % 2 === 1 && nextWave > 1) {
+  if (nextWave % 3 === 1 && nextWave > 1) {
     ctx.fillStyle = "#D93636";
     ctx.font = "bold 14px monospace";
     ctx.fillText("+ EXTRA LIFE", cw / 2, ch / 2 + 50);
