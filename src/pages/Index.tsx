@@ -572,7 +572,7 @@ const Index = () => {
           if (shipHPRef.current <= 0) {
             gameOverRef.current = true;
             setGameOver(true);
-            setGameOverReason("Carrier destroyed!");
+            setGameOverReason("City destroyed!");
           }
         }
 
