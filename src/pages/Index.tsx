@@ -877,6 +877,74 @@ const Index = () => {
     };
   }, [shake, getWorldMouse]);
 
+  // Gamepad polling for menus (when game loop isn't running)
+  useEffect(() => {
+    let rafId = 0;
+    const pollMenuGamepad = () => {
+      const gp = pollGamepad();
+      const faceAPressed = gp.faceA && !gpFaceAPrev.current;
+      const startPressed = gp.start && !gpStartPrev.current;
+      gpFaceAPrev.current = gp.faceA;
+      gpStartPrev.current = gp.start;
+
+      // Start screen: A or Start to begin
+      if (!gameStartedRef.current && !gameOverRef.current && (faceAPressed || startPressed)) {
+        gameStartedRef.current = true;
+        setGameStarted(true);
+        setShowHint(false);
+        scoreRef.current = 0;
+        waveRef.current = createWaveState();
+        resetEnemies();
+        resetPowerups();
+        resetJetTrail();
+        fuelRef.current = MAX_FUEL;
+      }
+
+      // Game over: A to restart
+      if (gameOverRef.current && faceAPressed) {
+        window.location.reload();
+      }
+
+      // Paused: handled in game loop above
+      // But we need to keep polling when paused since game loop stops
+      if (pausedRef.current && gp.connected) {
+        const dpadUpPressed = gp.dpadUp && !gpDpadUpPrev.current;
+        const dpadDownPressed = gp.dpadDown && !gpDpadDownPrev.current;
+        gpDpadUpPrev.current = gp.dpadUp;
+        gpDpadDownPrev.current = gp.dpadDown;
+
+        if (dpadUpPressed || dpadDownPressed) {
+          const newIdx = pauseMenuIndexRef.current === 0 ? 1 : 0;
+          pauseMenuIndexRef.current = newIdx;
+          setPauseMenuIndex(newIdx);
+        }
+
+        if (faceAPressed) {
+          if (pauseMenuIndexRef.current === 0) {
+            pausedRef.current = false;
+            setPaused(false);
+            rafRef.current = requestAnimationFrame(() => {
+              // Re-trigger loop by restarting from useEffect's loop
+            });
+          } else if (pauseMenuIndexRef.current === 1) {
+            const newVal = !useRightStickRef.current;
+            useRightStickRef.current = newVal;
+            setUseRightStick(newVal);
+          }
+        }
+
+        if (startPressed) {
+          pausedRef.current = false;
+          setPaused(false);
+        }
+      }
+
+      rafId = requestAnimationFrame(pollMenuGamepad);
+    };
+    rafId = requestAnimationFrame(pollMenuGamepad);
+    return () => cancelAnimationFrame(rafId);
+  }, []);
+
   return (
     <div
       ref={containerRef}
@@ -914,16 +982,16 @@ const Index = () => {
             style={{ color: "#ccc", fontFamily: "var(--font-mono)", fontSize: "14px", lineHeight: "1.8" }}
           >
             <p>
-              <span style={{ color: "#D93636" }}>LEFT CLICK</span> — hold to fly toward cursor
+              <span style={{ color: "#D93636" }}>LEFT CLICK / L1+L2</span> — hold to fly toward cursor / stick
             </p>
             <p>
-              <span style={{ color: "#D93636" }}>RIGHT CLICK</span> — fire projectiles
+              <span style={{ color: "#D93636" }}>RIGHT CLICK / FACE BUTTONS</span> — fire projectiles
             </p>
             <p>
-              <span style={{ color: "#74b9ff" }}>A / D</span> — barrel roll left / right
+              <span style={{ color: "#74b9ff" }}>A / D / D-PAD ◄►</span> — barrel roll left / right
             </p>
             <p>
-              <span style={{ color: "#74b9ff" }}>ESC</span> — pause
+              <span style={{ color: "#74b9ff" }}>ESC / START</span> — pause
             </p>
             <p className="mt-4 opacity-70">
               Defend your carrier from enemy bombers and fighters. Dive underwater to refuel your water jets and evade
@@ -934,7 +1002,7 @@ const Index = () => {
             className="text-sm tracking-widest uppercase animate-pulse"
             style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}
           >
-            Click anywhere to start
+            Click or press A to start
           </div>
         </div>
       )}
@@ -952,16 +1020,51 @@ const Index = () => {
           style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
         >
           <div
-            className="text-4xl font-bold tracking-widest uppercase mb-4"
+            className="text-4xl font-bold tracking-widest uppercase mb-8"
             style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}
           >
             PAUSED
           </div>
+          <div className="flex flex-col items-center gap-4 mb-6">
+            <button
+              onClick={() => {
+                pausedRef.current = false;
+                setPaused(false);
+              }}
+              className="px-6 py-3 text-sm tracking-widest uppercase border cursor-pointer"
+              style={{
+                color: pauseMenuIndex === 0 ? "#f7d794" : "#888",
+                borderColor: pauseMenuIndex === 0 ? "#f7d794" : "#555",
+                backgroundColor: pauseMenuIndex === 0 ? "rgba(247,215,148,0.1)" : "transparent",
+                fontFamily: "var(--font-mono)",
+                minWidth: "280px",
+              }}
+            >
+              {pauseMenuIndex === 0 ? "► " : "  "}Resume
+            </button>
+            <button
+              onClick={() => {
+                const newVal = !useRightStick;
+                useRightStickRef.current = newVal;
+                setUseRightStick(newVal);
+              }}
+              className="px-6 py-3 text-sm tracking-widest uppercase border cursor-pointer"
+              style={{
+                color: pauseMenuIndex === 1 ? "#f7d794" : "#888",
+                borderColor: pauseMenuIndex === 1 ? "#f7d794" : "#555",
+                backgroundColor: pauseMenuIndex === 1 ? "rgba(247,215,148,0.1)" : "transparent",
+                fontFamily: "var(--font-mono)",
+                minWidth: "280px",
+              }}
+            >
+              {pauseMenuIndex === 1 ? "► " : "  "}Stick: {useRightStick ? "RIGHT" : "LEFT"}
+            </button>
+          </div>
           <div
-            className="text-sm tracking-widest uppercase opacity-50"
+            className="text-xs tracking-widest uppercase opacity-40"
             style={{ color: "#ccc", fontFamily: "var(--font-mono)" }}
           >
-            Press ESC to resume
+            ESC / START to resume · D-PAD to navigate · A to select
           </div>
         </div>
       )}
@@ -1004,7 +1107,7 @@ const Index = () => {
               fontFamily: "var(--font-mono)",
             }}
           >
-            Try Again
+            Try Again (A)
           </button>
         </div>
       )}
