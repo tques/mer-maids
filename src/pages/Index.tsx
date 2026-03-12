@@ -598,9 +598,10 @@ const Index = () => {
         const isInvuln = invulnRef.current > 0;
         const showPlayer = !isInvuln || Math.floor(performance.now() / 80) % 2 === 0;
         if (showPlayer) {
+          const pitchOffset = getShipPitch(throttleRef.current, keysRef.current.has("w"), velRef.current.y, isSubmerged(pos.y, viewH));
           ctx.save();
           ctx.translate(pos.x, pos.y);
-          ctx.rotate(angle);
+          ctx.rotate(angle + pitchOffset);
 
           if (roll.active) {
             const elapsed = performance.now() - roll.startTime;
