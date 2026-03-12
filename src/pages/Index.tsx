@@ -1044,6 +1044,7 @@ const Index = () => {
               onClick={() => {
                 pausedRef.current = false;
                 setPaused(false);
+                if (loopRef.current) rafRef.current = requestAnimationFrame(loopRef.current);
               }}
               className="px-6 py-3 text-sm tracking-widest uppercase border cursor-pointer"
               style={{
