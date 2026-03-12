@@ -605,7 +605,7 @@ const Index = () => {
       const hudY = 28;
       const hudX = 16;
       ctx.fillStyle = "rgba(0,0,0,0.4)";
-      ctx.fillRect(hudX - 4, hudY - 16, 200, 74);
+      ctx.fillRect(hudX - 4, hudY - 16, 200, 96);
 
       // Ammo counter
       const ammo = ammoRef.current;
