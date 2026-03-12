@@ -280,31 +280,35 @@ const Index = () => {
       }
 
       // Handle pause menu navigation with gamepad
+      const PAUSE_MENU_COUNT = 3;
       if (pausedRef.current && gp.connected) {
         const dpadUpPressed = gp.dpadUp && !gpDpadUpPrev.current;
         const dpadDownPressed = gp.dpadDown && !gpDpadDownPrev.current;
         gpDpadUpPrev.current = gp.dpadUp;
         gpDpadDownPrev.current = gp.dpadDown;
 
-        if (dpadUpPressed || dpadDownPressed) {
-          const newIdx = dpadUpPressed
-            ? (pauseMenuIndexRef.current === 0 ? 1 : 0)
-            : (pauseMenuIndexRef.current === 1 ? 0 : 1);
+        if (dpadUpPressed) {
+          const newIdx = (pauseMenuIndexRef.current - 1 + PAUSE_MENU_COUNT) % PAUSE_MENU_COUNT;
+          pauseMenuIndexRef.current = newIdx;
+          setPauseMenuIndex(newIdx);
+        }
+        if (dpadDownPressed) {
+          const newIdx = (pauseMenuIndexRef.current + 1) % PAUSE_MENU_COUNT;
           pauseMenuIndexRef.current = newIdx;
           setPauseMenuIndex(newIdx);
         }
 
         if (faceAPressed) {
           if (pauseMenuIndexRef.current === 0) {
-            // Resume
             pausedRef.current = false;
             setPaused(false);
             rafRef.current = requestAnimationFrame(loop);
           } else if (pauseMenuIndexRef.current === 1) {
-            // Toggle stick
             const newVal = !useRightStickRef.current;
             useRightStickRef.current = newVal;
             setUseRightStick(newVal);
+          } else if (pauseMenuIndexRef.current === 2) {
+            window.location.reload();
           }
         }
         // Don't process game logic while paused
@@ -929,13 +933,19 @@ const Index = () => {
       // Paused: handled in game loop above
       // But we need to keep polling when paused since game loop stops
       if (pausedRef.current && gp.connected) {
+        const PAUSE_MENU_COUNT = 3;
         const dpadUpPressed = gp.dpadUp && !gpDpadUpPrev.current;
         const dpadDownPressed = gp.dpadDown && !gpDpadDownPrev.current;
         gpDpadUpPrev.current = gp.dpadUp;
         gpDpadDownPrev.current = gp.dpadDown;
 
-        if (dpadUpPressed || dpadDownPressed) {
-          const newIdx = pauseMenuIndexRef.current === 0 ? 1 : 0;
+        if (dpadUpPressed) {
+          const newIdx = (pauseMenuIndexRef.current - 1 + PAUSE_MENU_COUNT) % PAUSE_MENU_COUNT;
+          pauseMenuIndexRef.current = newIdx;
+          setPauseMenuIndex(newIdx);
+        }
+        if (dpadDownPressed) {
+          const newIdx = (pauseMenuIndexRef.current + 1) % PAUSE_MENU_COUNT;
           pauseMenuIndexRef.current = newIdx;
           setPauseMenuIndex(newIdx);
         }
@@ -949,6 +959,8 @@ const Index = () => {
             const newVal = !useRightStickRef.current;
             useRightStickRef.current = newVal;
             setUseRightStick(newVal);
+          } else if (pauseMenuIndexRef.current === 2) {
+            window.location.reload();
           }
         }
 
@@ -992,37 +1004,63 @@ const Index = () => {
           }}
         >
           <div
-            className="text-5xl font-bold tracking-widest uppercase mb-6"
+            className="text-5xl font-bold tracking-widest uppercase mb-4"
             style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}
           >
             CARRIER DEFENSE
           </div>
           <div
-            className="max-w-md text-center space-y-3 mb-10"
-            style={{ color: "#ccc", fontFamily: "var(--font-mono)", fontSize: "14px", lineHeight: "1.8" }}
+            className="text-sm tracking-wider uppercase mb-8 opacity-60"
+            style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}
           >
-            <p>
-              <span style={{ color: "#D93636" }}>LEFT CLICK / Y · LB · LT</span> — hold to fly toward cursor / stick
-            </p>
-            <p>
-              <span style={{ color: "#D93636" }}>RIGHT CLICK / FACE BUTTONS</span> — fire projectiles
-            </p>
-            <p>
-              <span style={{ color: "#74b9ff" }}>A / D / D-PAD ◄►</span> — barrel roll left / right
-            </p>
-            <p>
-              <span style={{ color: "#74b9ff" }}>ESC / START</span> — pause
-            </p>
-            <p className="mt-4 opacity-70">
-              Defend your carrier from enemy bombers and fighters. Dive underwater to refuel your water jets and evade
-              enemies.
-            </p>
+            Protect your carrier. Survive the waves.
           </div>
+
+          <div className="max-w-lg text-center mb-8" style={{ fontFamily: "var(--font-mono)" }}>
+            {/* Objective */}
+            <div className="mb-6 px-4 py-3 rounded" style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
+              <div className="text-xs tracking-widest uppercase mb-2" style={{ color: "#f7d794" }}>OBJECTIVE</div>
+              <p className="text-sm leading-relaxed" style={{ color: "#ccc" }}>
+                Enemy bombers and fighters attack in waves. Shoot them down before they destroy your carrier.
+                If the carrier is destroyed or you lose all lives, it's game over.
+              </p>
+            </div>
+
+            {/* Mechanics */}
+            <div className="mb-6 px-4 py-3 rounded" style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
+              <div className="text-xs tracking-widest uppercase mb-2" style={{ color: "#74b9ff" }}>KEY MECHANICS</div>
+              <div className="text-sm leading-relaxed space-y-1" style={{ color: "#ccc" }}>
+                <p><span style={{ color: "#74b9ff" }}>FUEL</span> — Flying burns fuel. <span style={{ color: "#74b9ff" }}>Dive underwater</span> to refuel.</p>
+                <p><span style={{ color: "#f0c830" }}>AMMO</span> — Limited ammo. Collect <span style={{ color: "#f0c830" }}>ammo crates</span> that drop during combat.</p>
+                <p><span style={{ color: "#5a9" }}>BARREL ROLL</span> — Dodge enemy fire with a quick lateral roll.</p>
+              </div>
+            </div>
+
+            {/* Controls in two columns */}
+            <div className="flex gap-4 text-left text-xs" style={{ color: "#999" }}>
+              <div className="flex-1 px-3 py-2 rounded" style={{ backgroundColor: "rgba(255,255,255,0.03)" }}>
+                <div className="tracking-widest uppercase mb-2" style={{ color: "#D93636", fontSize: "10px" }}>MOUSE / KEYBOARD</div>
+                <p><span style={{ color: "#ccc" }}>Left Click</span> — Thrust</p>
+                <p><span style={{ color: "#ccc" }}>Right Click</span> — Fire</p>
+                <p><span style={{ color: "#ccc" }}>A / D</span> — Barrel Roll</p>
+                <p><span style={{ color: "#ccc" }}>ESC</span> — Pause</p>
+              </div>
+              <div className="flex-1 px-3 py-2 rounded" style={{ backgroundColor: "rgba(255,255,255,0.03)" }}>
+                <div className="tracking-widest uppercase mb-2" style={{ color: "#D93636", fontSize: "10px" }}>GAMEPAD</div>
+                <p><span style={{ color: "#ccc" }}>Stick</span> — Aim</p>
+                <p><span style={{ color: "#ccc" }}>Y / LB / LT</span> — Thrust</p>
+                <p><span style={{ color: "#ccc" }}>A / B / X / RB / RT</span> — Fire</p>
+                <p><span style={{ color: "#ccc" }}>D-Pad ◄►</span> — Barrel Roll</p>
+                <p><span style={{ color: "#ccc" }}>Start</span> — Pause</p>
+              </div>
+            </div>
+          </div>
+
           <div
             className="text-sm tracking-widest uppercase animate-pulse"
             style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}
           >
-            Click or press A to start
+            Click anywhere or press A to start
           </div>
         </div>
       )}
@@ -1079,6 +1117,19 @@ const Index = () => {
               }}
             >
               {pauseMenuIndex === 1 ? "► " : "  "}Stick: {useRightStick ? "RIGHT" : "LEFT"}
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 text-sm tracking-widest uppercase border cursor-pointer"
+              style={{
+                color: pauseMenuIndex === 2 ? "#D93636" : "#888",
+                borderColor: pauseMenuIndex === 2 ? "#D93636" : "#555",
+                backgroundColor: pauseMenuIndex === 2 ? "rgba(217,54,54,0.1)" : "transparent",
+                fontFamily: "var(--font-mono)",
+                minWidth: "280px",
+              }}
+            >
+              {pauseMenuIndex === 2 ? "► " : "  "}Restart
             </button>
           </div>
           <div
