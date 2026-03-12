@@ -1,8 +1,8 @@
-// Powerup system: ship lives and boat repair spawn under the boat based on score thresholds
+// Powerup system: health kits and boat repair spawn under the boat based on score thresholds
 
-import { getWaterSurfaceY, getWaveY } from "./water";
+import { getWaterSurfaceY } from "./water";
 
-export type PowerupType = "ship" | "repair";
+export type PowerupType = "health" | "repair";
 
 export interface Powerup {
   x: number;
@@ -13,12 +13,12 @@ export interface Powerup {
 }
 
 let powerups: Powerup[] = [];
-let nextShipReward = 500;
+let nextHealthReward = 500;
 let nextRepairReward = 300;
 
 export function resetPowerups() {
   powerups = [];
-  nextShipReward = 500;
+  nextHealthReward = 500;
   nextRepairReward = 300;
 }
 
@@ -28,16 +28,16 @@ export function checkScoreRewards(score: number, boatX: number, boatWidth: numbe
   const surfaceY = getWaterSurfaceY(viewH);
   const baseY = surfaceY + 20;
 
-  if (score >= nextShipReward) {
+  if (score >= nextHealthReward) {
     const spawnX = boatX + (Math.random() - 0.5) * boatWidth * 0.6;
     powerups.push({
       x: spawnX,
       y: baseY + 10 + Math.random() * 30,
-      type: "ship",
+      type: "health",
       spawnTime: performance.now(),
       alive: true,
     });
-    nextShipReward += 800 + Math.floor(nextShipReward * 0.3);
+    nextHealthReward += 600 + Math.floor(nextHealthReward * 0.25);
   }
 
   if (score >= nextRepairReward) {
@@ -79,28 +79,25 @@ export function drawPowerups(ctx: CanvasRenderingContext2D) {
     ctx.translate(p.x, py);
 
     // Glow
-    ctx.shadowColor = p.type === "ship" ? "rgba(217, 54, 54, 0.7)" : "rgba(90, 170, 153, 0.7)";
+    ctx.shadowColor = p.type === "health" ? "rgba(217, 54, 54, 0.7)" : "rgba(90, 170, 153, 0.7)";
     ctx.shadowBlur = 18;
 
-    if (p.type === "ship") {
-      // Extra life — small red triangle
-      ctx.beginPath();
-      ctx.moveTo(10, 0);
-      ctx.lineTo(-7, -6);
-      ctx.lineTo(-7, 6);
-      ctx.closePath();
+    if (p.type === "health") {
+      // Health kit — red cross
       ctx.fillStyle = "#D93636";
-      ctx.fill();
+      ctx.fillRect(-8, -3, 16, 6);
+      ctx.fillRect(-3, -8, 6, 16);
       ctx.strokeStyle = "#ff8888";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      // "+" symbol
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-8, -3, 16, 6);
+      ctx.strokeRect(-3, -8, 6, 16);
+      // "HP" label
       ctx.fillStyle = "#fff";
-      ctx.font = "bold 10px monospace";
+      ctx.font = "bold 8px monospace";
       ctx.textAlign = "center";
-      ctx.fillText("+", 0, -12);
+      ctx.fillText("HP", 0, -14);
     } else {
-      // Repair — green wrench/cross
+      // Repair — green cross
       ctx.fillStyle = "#5a9";
       ctx.fillRect(-8, -3, 16, 6);
       ctx.fillRect(-3, -8, 6, 16);
