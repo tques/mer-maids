@@ -27,7 +27,7 @@ import {
   drawWaveHUD,
   WaveState,
 } from "../game/waves";
-import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail } from "../game/jettrail";
+import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail, getShipPitch } from "../game/jettrail";
 
 const SPEED = 4;
 const TRI_SIZE = 20;
