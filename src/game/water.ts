@@ -183,7 +183,7 @@ export function drawWater(
   // Tertiary deep shimmer
   ctx.beginPath();
   for (let x = x0; x <= x1; x += 5) {
-    const wy = getWaveY(x, baseY) + 12;
+    const wy = getWaveY(x, baseY, cw) + 12;
     if (x === x0) ctx.moveTo(x, wy);
     else ctx.lineTo(x, wy);
   }
