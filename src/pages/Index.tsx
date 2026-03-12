@@ -288,7 +288,21 @@ const Index = () => {
           throttleRef.current = 1;
         }
 
-        const power = SPEED * speedMult * throttleRef.current;
+        // Gravity-affected flight: climbing is harder, diving is easier
+        // sin(angle) > 0 means moving downward, < 0 means climbing
+        const verticalComponent = Math.sin(angle); // -1 (up) to +1 (down)
+        let gravityMod = 1.0;
+        if (!submerged) {
+          if (verticalComponent < 0) {
+            // Climbing — penalize speed proportional to steepness
+            gravityMod = 1.0 - CLIMB_PENALTY * Math.abs(verticalComponent);
+          } else {
+            // Diving — boost speed proportional to steepness
+            gravityMod = 1.0 + DIVE_BOOST * verticalComponent;
+          }
+        }
+
+        const power = SPEED * speedMult * throttleRef.current * gravityMod;
         const dist = Math.hypot(wmx - pos.x, wmy - pos.y);
         if (dist > 5) {
           const targetVx = Math.cos(angle) * power;
@@ -296,6 +310,12 @@ const Index = () => {
           vel.x += (targetVx - vel.x) * (0.05 + throttleRef.current * 0.15);
           vel.y += (targetVy - vel.y) * (0.05 + throttleRef.current * 0.15);
         }
+
+        // Passive gravity pull during thrust (subtle downward drift)
+        if (!submerged) {
+          vel.y += THRUST_GRAVITY;
+        }
+
         pos.x += vel.x;
         pos.y += vel.y;
 
