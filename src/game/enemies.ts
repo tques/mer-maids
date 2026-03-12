@@ -37,7 +37,7 @@ export interface Bomb {
   rotation: number;
   rotSpeed: number;
   alive: boolean;
-  hangTime: number; // seconds to pause before falling
+  hangTime: number;
 }
 
 export interface Explosion {
@@ -56,7 +56,7 @@ let bombs: Bomb[] = [];
 let explosions: Explosion[] = [];
 let bomberSpawnTimer = 0;
 let chaserSpawnTimer = 3;
-let gameTime = 0; // total elapsed game time in seconds
+let gameTime = 0;
 
 export function resetEnemies() {
   enemies = [];
@@ -72,8 +72,6 @@ export function resetEnemies() {
 const ENEMY_SIZE = 16;
 const CHASER_SIZE = 14;
 const BOMB_SIZE = 14;
-const BOMBER_SPAWN_INTERVAL = 8; // much less frequent
-const CHASER_SPAWN_INTERVAL = 5;
 const BOMB_INTERVAL = 1.8;
 const BOMB_GRAVITY = 0.025;
 const CHASER_SPEED = 2.2;
@@ -86,7 +84,6 @@ export function getChaserBullets() { return chaserBullets; }
 export function getBombs() { return bombs; }
 export function getExplosions() { return explosions; }
 
-/** Check if any chaser bullets hit the player. Returns number of hits and removes those bullets. */
 export function checkChaserBulletHitsPlayer(px: number, py: number, radius: number): number {
   let hits = 0;
   for (const cb of chaserBullets) {
@@ -99,7 +96,6 @@ export function checkChaserBulletHitsPlayer(px: number, py: number, radius: numb
   return hits;
 }
 
-/** Check if any bombs hit the ship. Returns number of hits and removes those bombs. */
 export function checkBombHitsShip(boatX: number, boatWidth: number, shipY: number): number {
   let hits = 0;
   const hw = boatWidth / 2;
@@ -124,28 +120,35 @@ export function spawnExplosion(x: number, y: number, size = 30) {
   });
 }
 
-export function updateEnemies(dt: number, cw: number, ch: number, boatX: number, boatWidth: number, playerX: number, playerY: number) {
-  const waterY = getWaterSurfaceY(ch);
+export function updateEnemies(
+  dt: number, worldWidth: number, viewH: number,
+  boatX: number, boatWidth: number,
+  playerX: number, playerY: number,
+  viewHalfW: number
+) {
+  const waterY = getWaterSurfaceY(viewH);
   gameTime += dt;
 
-  // Difficulty ramp: 0-1 over ~3 minutes
   const difficulty = Math.min(gameTime / 180, 1);
 
   // --- Bomber spawning (pink) ---
-  // Early game: very infrequent (every ~20s), ramps to every ~6s
   const bomberInterval = 20 - difficulty * 14;
   bomberSpawnTimer -= dt;
-  if (bomberSpawnTimer <= 0 && gameTime > 15) { // no bombers for first 15s
+  if (bomberSpawnTimer <= 0 && gameTime > 15) {
     bomberSpawnTimer = bomberInterval + Math.random() * 4;
     const fromLeft = Math.random() > 0.5;
     const dir = fromLeft ? 1 : -1;
+    // Spawn just off-camera relative to player
+    const spawnX = fromLeft
+      ? playerX - viewHalfW - 80
+      : playerX + viewHalfW + 80;
     enemies.push({
-      x: fromLeft ? -30 : cw + 30,
+      x: spawnX,
       y: 40 + Math.random() * waterY * 0.3,
       speed: 1.2 + Math.random() * 0.8,
       dir: dir as 1 | -1,
       angle: 0,
-      targetX: boatX + (Math.random() - 0.5) * cw * 0.3,
+      targetX: boatX + (Math.random() - 0.5) * viewHalfW,
       bombCooldown: 0.5 + Math.random(),
       alive: true,
     });
@@ -167,19 +170,23 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
         hangTime: 0.5 + Math.random() * 0.3,
       });
     }
-    if (e.x < -60 || e.x > cw + 60) e.alive = false;
+    // Despawn if far from player
+    if (Math.abs(e.x - playerX) > viewHalfW * 4) e.alive = false;
   }
 
-  // --- Chaser spawning (blue, tracks player, max scales with difficulty) ---
+  // --- Chaser spawning (blue) ---
   const maxChasers = gameTime < 10 ? 0 : Math.min(1 + Math.floor(difficulty * 2), 3);
-  const chaserInterval = 12 - difficulty * 7; // 12s early → 5s late
+  const chaserInterval = 12 - difficulty * 7;
   chaserSpawnTimer -= dt;
   const aliveChasers = chasers.filter(c => c.alive).length;
   if (chaserSpawnTimer <= 0 && aliveChasers < maxChasers) {
     chaserSpawnTimer = chaserInterval + Math.random() * 3;
     const fromLeft = Math.random() > 0.5;
+    const spawnX = fromLeft
+      ? playerX - viewHalfW - 80
+      : playerX + viewHalfW + 80;
     chasers.push({
-      x: fromLeft ? -30 : cw + 30,
+      x: spawnX,
       y: 40 + Math.random() * waterY * 0.5,
       speed: CHASER_SPEED,
       angle: 0,
@@ -188,33 +195,32 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
     });
   }
 
-  // Update chasers — they chase the player above water, patrol when player is submerged
+  // Update chasers
   const playerSubmerged = playerY > waterY;
-  const waterCeiling = waterY - CHASER_SIZE * 6; // generous margin above water
+  const waterCeiling = waterY - CHASER_SIZE * 6;
 
   for (const c of chasers) {
     if (!c.alive) continue;
 
     const distToPlayer = Math.hypot(playerX - c.x, playerY - c.y);
-    const VISION_RANGE = 350; // lose interest beyond this distance
+    const VISION_RANGE = 350;
     const playerVisible = !playerSubmerged && distToPlayer < VISION_RANGE;
 
     let targetX: number;
     let targetY: number;
 
     if (!playerVisible) {
-      // Patrol mode: linear back-and-forth sweeps at altitude
-      if (!(c as any)._patrolDir) (c as any)._patrolDir = c.x < cw / 2 ? 1 : -1;
+      if (!(c as any)._patrolDir) (c as any)._patrolDir = c.x < playerX ? 1 : -1;
       if (!(c as any)._patrolAlt) (c as any)._patrolAlt = waterCeiling - 60 - Math.random() * 80;
 
       const patrolDir = (c as any)._patrolDir as number;
       targetX = c.x + patrolDir * 200;
       targetY = (c as any)._patrolAlt as number;
 
-      if (c.x < 80) (c as any)._patrolDir = 1;
-      else if (c.x > cw - 80) (c as any)._patrolDir = -1;
+      // Patrol within view range of player
+      if (c.x < playerX - viewHalfW) (c as any)._patrolDir = 1;
+      else if (c.x > playerX + viewHalfW) (c as any)._patrolDir = -1;
     } else {
-      // Chase player
       (c as any)._patrolDir = null;
       (c as any)._patrolAlt = null;
       targetX = playerX;
@@ -230,13 +236,11 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
     c.x += Math.cos(c.angle) * c.speed;
     c.y += Math.sin(c.angle) * c.speed;
 
-    // Hard clamp: never enter water
     if (c.y > waterCeiling) {
       c.y = waterCeiling;
       if (c.angle > 0) c.angle *= 0.7;
     }
 
-    // Only shoot when player is above water and visible
     c.shootCooldown -= dt;
     if (c.shootCooldown <= 0 && playerVisible) {
       c.shootCooldown = CHASER_SHOOT_INTERVAL + Math.random() * 0.5;
@@ -249,8 +253,8 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
       });
     }
 
-    // Remove if too far off-screen
-    if (c.x < -200 || c.x > cw + 200 || c.y < -200 || c.y > ch + 200) c.alive = false;
+    // Despawn if far from player
+    if (Math.abs(c.x - playerX) > viewHalfW * 4) c.alive = false;
   }
 
   // Update chaser bullets
@@ -258,7 +262,7 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
     if (!cb.alive) continue;
     cb.x += cb.dx;
     cb.y += cb.dy;
-    if (cb.x < -10 || cb.x > cw + 10 || cb.y < -10 || cb.y > ch + 10) cb.alive = false;
+    if (cb.y < -10 || cb.y > viewH + 10 || Math.abs(cb.x - playerX) > viewHalfW * 3) cb.alive = false;
   }
 
   // Update bombs
@@ -266,13 +270,13 @@ export function updateEnemies(dt: number, cw: number, ch: number, boatX: number,
     if (!b.alive) continue;
     if (b.hangTime > 0) {
       b.hangTime -= dt;
-      b.rotation += b.rotSpeed * dt * 0.3; // slow tumble during hang
+      b.rotation += b.rotSpeed * dt * 0.3;
     } else {
       b.vy += BOMB_GRAVITY;
       b.y += b.vy;
       b.rotation += b.rotSpeed * dt;
     }
-    if (b.y > ch + 20) b.alive = false;
+    if (b.y > viewH + 20) b.alive = false;
   }
 
   // Update explosions
@@ -295,7 +299,6 @@ export function checkBulletCollisions(bullets: { x: number; y: number; dx: numbe
   for (const b of bullets) {
     let hit = false;
 
-    // Check against bombers
     for (const e of enemies) {
       if (!e.alive) continue;
       const dist = Math.hypot(b.x - e.x, b.y - e.y);
@@ -307,7 +310,6 @@ export function checkBulletCollisions(bullets: { x: number; y: number; dx: numbe
       }
     }
 
-    // Check against chasers
     if (!hit) {
       for (const c of chasers) {
         if (!c.alive) continue;
@@ -321,7 +323,6 @@ export function checkBulletCollisions(bullets: { x: number; y: number; dx: numbe
       }
     }
 
-    // Check against bombs
     if (!hit) {
       for (const bomb of bombs) {
         if (!bomb.alive) continue;
@@ -342,7 +343,6 @@ export function checkBulletCollisions(bullets: { x: number; y: number; dx: numbe
 }
 
 export function drawEnemies(ctx: CanvasRenderingContext2D) {
-  // Draw bombers (pink triangles)
   for (const e of enemies) {
     if (!e.alive) continue;
     ctx.save();
@@ -358,7 +358,6 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.restore();
   }
 
-  // Draw chasers (blue triangles)
   for (const c of chasers) {
     if (!c.alive) continue;
     ctx.save();
@@ -374,7 +373,6 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.restore();
   }
 
-  // Draw chaser bullets (small blue dots)
   ctx.fillStyle = "#74b9ff";
   for (const cb of chaserBullets) {
     if (!cb.alive) continue;
@@ -383,7 +381,6 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.fill();
   }
 
-  // Draw bombs (tumbling squares)
   for (const b of bombs) {
     if (!b.alive) continue;
     ctx.save();
@@ -397,7 +394,6 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.restore();
   }
 
-  // Draw explosions
   for (const ex of explosions) {
     ctx.save();
     ctx.globalAlpha = ex.life;

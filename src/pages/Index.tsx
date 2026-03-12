@@ -10,16 +10,18 @@ const SPEED = 4;
 const TRI_SIZE = 20;
 const GRAVITY = 0.12;
 const MAX_FALL_SPEED = 7;
-const FLOAT_DURATION = 1200; // ms of coasting before gravity dominates
-const DRAG = 0.99; // momentum decay per frame (slower decay = longer coast)
+const FLOAT_DURATION = 1200;
+const DRAG = 0.99;
 const PLAYER_MAX_HP = 3;
 const SHIP_MAX_HP = 10;
 const PLAYER_LIVES = 3;
-const INVULN_DURATION = 1500; // ms of invulnerability after hit
+const INVULN_DURATION = 1500;
 const BULLET_SPEED = 8;
 const BULLET_RADIUS = 5;
 const ROLL_DISTANCE = 60;
-const ROLL_DURATION = 300; // ms
+const ROLL_DURATION = 300;
+const WORLD_WIDTH = 3000;
+const ZOOM = 1.4;
 
 interface Bullet {
   x: number;
@@ -41,7 +43,7 @@ const Index = () => {
   const rollRef = useRef<{ active: boolean; dir: -1 | 1; startTime: number; startX: number; startY: number; perpX: number; perpY: number; spinAngle: number }>({ active: false, dir: 1, startTime: 0, startX: 0, startY: 0, perpX: 0, perpY: 0, spinAngle: 0 });
   const rightMouseRef = useRef(false);
   const shootCooldownRef = useRef(0);
-  const SHOOT_INTERVAL = 280; // ms between shots when holding
+  const SHOOT_INTERVAL = 280;
   const wasSubmergedRef = useRef(false);
   const lastPosRef = useRef({ x: 0, y: 0 });
   const boatRef = useRef<Boat | null>(null);
@@ -62,6 +64,19 @@ const Index = () => {
   const [gameOver, setGameOver] = useState(false);
   const [gameOverReason, setGameOverReason] = useState("");
 
+  // Helper: convert screen mouse to world coords
+  const getWorldMouse = useCallback(() => {
+    const mouse = mouseRef.current;
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: mouse.x, y: mouse.y };
+    const viewW = canvas.width / ZOOM;
+    const camX = posRef.current.x - viewW / 2;
+    return {
+      x: mouse.x / ZOOM + camX,
+      y: mouse.y / ZOOM,
+    };
+  }, []);
+
   const shake = useCallback((dx: number, dy: number) => {
     const el = containerRef.current;
     if (!el) return;
@@ -78,9 +93,10 @@ const Index = () => {
       canvas.width = container.clientWidth;
       canvas.height = container.clientHeight;
       if (posRef.current.x === 0 && posRef.current.y === 0) {
-        posRef.current = { x: canvas.width / 2, y: canvas.height / 2 };
+        const viewH = canvas.height / ZOOM;
+        posRef.current = { x: WORLD_WIDTH / 2, y: viewH * 0.4 };
       }
-      boatRef.current = createBoat(canvas.width);
+      boatRef.current = createBoat(WORLD_WIDTH);
       mouseRef.current = { x: canvas.width / 2, y: canvas.height / 2 };
     };
     resize();
@@ -99,7 +115,7 @@ const Index = () => {
         e.preventDefault();
         setShowHint(false);
         rightMouseRef.current = true;
-        shootCooldownRef.current = 0; // fire immediately
+        shootCooldownRef.current = 0;
       }
     };
 
@@ -126,8 +142,8 @@ const Index = () => {
         const roll = rollRef.current;
         if (!roll.active) {
           const pos = posRef.current;
-          const mouse = mouseRef.current;
-          const angle = Math.atan2(mouse.y - pos.y, mouse.x - pos.x);
+          const wm = getWorldMouse();
+          const angle = Math.atan2(wm.y - pos.y, wm.x - pos.x);
           const dir = key === "a" ? -1 : 1;
           const perpX = -Math.sin(angle) * dir;
           const perpY = Math.cos(angle) * dir;
@@ -153,17 +169,22 @@ const Index = () => {
       if (gameOverRef.current) return;
       if (pausedRef.current) return;
       const { width: cw, height: ch } = canvas;
+      const viewW = cw / ZOOM;
+      const viewH = ch / ZOOM;
       const pos = posRef.current;
-      const mouse = mouseRef.current;
-      const angle = Math.atan2(mouse.y - pos.y, mouse.x - pos.x);
 
-      // Barrel roll — lateral displacement is additive, not absolute
+      // World-space mouse
+      const camX = pos.x - viewW / 2;
+      const wmx = mouseRef.current.x / ZOOM + camX;
+      const wmy = mouseRef.current.y / ZOOM;
+      const angle = Math.atan2(wmy - pos.y, wmx - pos.x);
+
+      // Barrel roll
       const roll = rollRef.current;
       if (roll.active) {
         const elapsed = performance.now() - roll.startTime;
         const t = Math.min(elapsed / ROLL_DURATION, 1);
         const prevT = Math.max((elapsed - 16) / ROLL_DURATION, 0);
-        // Ease out
         const ease = (v: number) => 1 - (1 - v) * (1 - v);
         const dt = ease(t) - ease(prevT);
         pos.x += roll.perpX * ROLL_DISTANCE * dt;
@@ -172,38 +193,36 @@ const Index = () => {
         if (t >= 1) roll.active = false;
       }
 
-      // Water submersion check
-      const submerged = isSubmerged(pos.y, ch);
+      // Water submersion check (using viewH for world-space height)
+      const submerged = isSubmerged(pos.y, viewH);
       const wasSubmerged = wasSubmergedRef.current;
       const speedMult = submerged ? WATER_SPEED_FACTOR : 1;
 
       // Splash on entry/exit
       if (submerged && !wasSubmerged) {
         const vy = pos.y - lastPosRef.current.y;
-        spawnSplash(pos.x, getWaterSurfaceY(ch), vy, true);
+        spawnSplash(pos.x, getWaterSurfaceY(viewH), vy, true);
       } else if (!submerged && wasSubmerged) {
         const vy = pos.y - lastPosRef.current.y;
-        spawnSplash(pos.x, getWaterSurfaceY(ch), vy, false);
+        spawnSplash(pos.x, getWaterSurfaceY(viewH), vy, false);
       }
       wasSubmergedRef.current = submerged;
       lastPosRef.current = { x: pos.x, y: pos.y };
 
-      // Move toward mouse (always, including during roll)
+      // Move toward world-space mouse
       const isMoving = keysRef.current.has("w");
       const vel = velRef.current;
       if (isMoving) {
-        // Recover throttle gradually from stall
         const stalling = floatTimerRef.current > FLOAT_DURATION;
         if (stalling && throttleRef.current < 1) {
-          throttleRef.current = Math.min(throttleRef.current + 0.012, 1); // ~80 frames to full recovery
+          throttleRef.current = Math.min(throttleRef.current + 0.012, 1);
         } else if (!stalling) {
           throttleRef.current = 1;
         }
 
         const power = SPEED * speedMult * throttleRef.current;
-        const dist = Math.hypot(mouse.x - pos.x, mouse.y - pos.y);
+        const dist = Math.hypot(wmx - pos.x, wmy - pos.y);
         if (dist > 5) {
-          // Blend: current falling velocity lerps toward desired direction
           const targetVx = Math.cos(angle) * power;
           const targetVy = Math.sin(angle) * power;
           vel.x += (targetVx - vel.x) * (0.05 + throttleRef.current * 0.15);
@@ -212,13 +231,11 @@ const Index = () => {
         pos.x += vel.x;
         pos.y += vel.y;
 
-        // Only reset float timer once recovered
         if (throttleRef.current >= 0.95) {
           floatTimerRef.current = 0;
         }
         wasMovingRef.current = true;
       } else if (wasMovingRef.current) {
-        // Coast: maintain momentum with drag, then gravity takes over
         floatTimerRef.current += 16;
         throttleRef.current = Math.max(throttleRef.current - 0.02, 0);
 
@@ -234,27 +251,27 @@ const Index = () => {
         pos.y += vel.y;
       }
 
-      // Horizontal wrapping
-      if (pos.x < -TRI_SIZE) pos.x = cw + TRI_SIZE;
-      else if (pos.x > cw + TRI_SIZE) pos.x = -TRI_SIZE;
+      // Horizontal wrapping in world space
+      pos.x = ((pos.x % WORLD_WIDTH) + WORLD_WIDTH) % WORLD_WIDTH;
 
-      // Vertical clamp & collide
+      // Vertical clamp
       let hitY = 0;
       if (pos.y < TRI_SIZE) { pos.y = TRI_SIZE; hitY = -1; }
-      if (pos.y > ch - TRI_SIZE) { pos.y = ch - TRI_SIZE; hitY = 1; }
+      if (pos.y > viewH - TRI_SIZE) { pos.y = viewH - TRI_SIZE; hitY = 1; }
       if (hitY) shake(0, hitY);
 
-      // Continuous fire while holding right mouse
+      // Recalculate camera after position update
+      const finalCamX = pos.x - viewW / 2;
+
+      // Continuous fire
       if (rightMouseRef.current) {
         shootCooldownRef.current -= 16;
         if (shootCooldownRef.current <= 0) {
           shootCooldownRef.current = SHOOT_INTERVAL;
-          const pos2 = posRef.current;
-          const mouse2 = mouseRef.current;
-          const fireAngle = Math.atan2(mouse2.y - pos2.y, mouse2.x - pos2.x);
+          const fireAngle = angle;
           bulletsRef.current.push({
-            x: pos2.x + Math.cos(fireAngle) * (TRI_SIZE + 4),
-            y: pos2.y + Math.sin(fireAngle) * (TRI_SIZE + 4),
+            x: pos.x + Math.cos(fireAngle) * (TRI_SIZE + 4),
+            y: pos.y + Math.sin(fireAngle) * (TRI_SIZE + 4),
             dx: Math.cos(fireAngle) * BULLET_SPEED,
             dy: Math.sin(fireAngle) * BULLET_SPEED,
             id: bulletIdRef.current++,
@@ -262,22 +279,22 @@ const Index = () => {
         }
       }
 
-      // Update bullets
+      // Update bullets (world space, cull by distance from player)
       bulletsRef.current = bulletsRef.current.filter((b) => {
         b.x += b.dx;
         b.y += b.dy;
-        return b.x > -10 && b.x < cw + 10 && b.y > -10 && b.y < ch + 10;
+        return b.y > -10 && b.y < viewH + 10 && Math.abs(b.x - pos.x) < viewW * 1.5;
       });
 
-      // Update enemies & bombs (only after game starts)
-      const boatX = boatRef.current ? boatRef.current.x : cw / 2;
-      const boatW = boatRef.current ? boatRef.current.width : cw * 0.45;
+      // Update enemies
+      const boatX = boatRef.current ? boatRef.current.x : WORLD_WIDTH / 2;
+      const boatW = boatRef.current ? boatRef.current.width : 400;
       if (gameStartedRef.current) {
-        updateEnemies(1 / 60, cw, ch, boatX, boatW, pos.x, pos.y);
+        updateEnemies(1 / 60, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2);
         bulletsRef.current = checkBulletCollisions(bulletsRef.current);
       }
 
-      // Enemy projectile collisions (only when game is active)
+      // Enemy projectile collisions
       if (gameStartedRef.current) {
         if (invulnRef.current > 0) {
           invulnRef.current -= 16;
@@ -301,8 +318,7 @@ const Index = () => {
           }
         }
 
-        // Bomb-ship collisions
-        const waterY = getWaterSurfaceY(ch);
+        const waterY = getWaterSurfaceY(viewH);
         const bombHits = checkBombHitsShip(boatX, boatW, waterY);
         if (bombHits > 0) {
           shake(0, 1);
@@ -318,73 +334,100 @@ const Index = () => {
       // Update water particles
       updateParticles(1 / 60);
 
-      // Draw sunset sky gradient
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, ch);
-      skyGrad.addColorStop(0, "#0a0a1a");       // deep night
-      skyGrad.addColorStop(0.35, "#1a1a3e");    // dark indigo
-      skyGrad.addColorStop(0.55, "#2d4a6f");    // steel blue
-      skyGrad.addColorStop(0.7, "#e8a838");     // amber gold
-      skyGrad.addColorStop(0.78, "#f7d794");    // pale gold horizon
+      // === DRAWING ===
+      // Clear
+      ctx.clearRect(0, 0, cw, ch);
+
+      // Apply zoom
+      ctx.save();
+      ctx.scale(ZOOM, ZOOM);
+
+      // Draw sky gradient (view space, no camera)
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, viewH);
+      skyGrad.addColorStop(0, "#0a0a1a");
+      skyGrad.addColorStop(0.35, "#1a1a3e");
+      skyGrad.addColorStop(0.55, "#2d4a6f");
+      skyGrad.addColorStop(0.7, "#e8a838");
+      skyGrad.addColorStop(0.78, "#f7d794");
       ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, cw, ch);
+      ctx.fillRect(0, 0, viewW, viewH);
 
-      // Water (behind everything else)
-      drawWater(ctx, cw, ch);
+      // Apply camera translation
+      ctx.save();
+      ctx.translate(-finalCamX, 0);
 
-      // Enemies, bombs, explosions
-      drawEnemies(ctx);
+      // Draw wrapping copies (only visible ones)
+      for (const offset of [-WORLD_WIDTH, 0, WORLD_WIDTH]) {
+        const worldStart = offset;
+        const worldEnd = offset + WORLD_WIDTH;
+        // Skip if entirely off-screen
+        if (worldEnd < finalCamX - 100 || worldStart > finalCamX + viewW + 100) continue;
 
-      // Boat (on top of water)
-      if (boatRef.current) {
-        drawBoat(ctx, boatRef.current, ch);
-      }
-
-      // Bullets
-      ctx.fillStyle = "#D93636";
-      for (const b of bulletsRef.current) {
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, BULLET_RADIUS, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Triangle pointing at mouse (flash when invulnerable)
-      const isInvuln = invulnRef.current > 0;
-      const showPlayer = !isInvuln || Math.floor(performance.now() / 80) % 2 === 0;
-      if (showPlayer) {
         ctx.save();
-        ctx.translate(pos.x, pos.y);
-        ctx.rotate(angle);
-        
-        if (roll.active) {
-          const elapsed = performance.now() - roll.startTime;
-          const t = Math.min(elapsed / ROLL_DURATION, 1);
-          const rollAngle = roll.dir * Math.PI * 2 * t;
-          const scaleY = Math.cos(rollAngle);
-          ctx.scale(1, scaleY);
+        ctx.translate(offset, 0);
+
+        // Water
+        drawWater(ctx, WORLD_WIDTH, viewH);
+
+        // Enemies, bombs, explosions
+        drawEnemies(ctx);
+
+        // Boat
+        if (boatRef.current) {
+          drawBoat(ctx, boatRef.current, viewH);
         }
 
-        ctx.shadowColor = "rgba(0,0,0,0.3)";
-        ctx.shadowBlur = 12;
-        ctx.shadowOffsetY = 4;
+        // Player bullets
+        ctx.fillStyle = "#D93636";
+        for (const b of bulletsRef.current) {
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, BULLET_RADIUS, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
-        ctx.beginPath();
-        ctx.moveTo(TRI_SIZE, 0);
-        ctx.lineTo(-TRI_SIZE * 0.7, -TRI_SIZE * 0.6);
-        ctx.lineTo(-TRI_SIZE * 0.7, TRI_SIZE * 0.6);
-        ctx.closePath();
-        ctx.fillStyle = isInvuln ? "#ff8888" : "#D93636";
-        ctx.fill();
+        // Player triangle
+        const isInvuln = invulnRef.current > 0;
+        const showPlayer = !isInvuln || Math.floor(performance.now() / 80) % 2 === 0;
+        if (showPlayer) {
+          ctx.save();
+          ctx.translate(pos.x, pos.y);
+          ctx.rotate(angle);
 
-        ctx.shadowColor = "transparent";
-        ctx.restore();
+          if (roll.active) {
+            const elapsed = performance.now() - roll.startTime;
+            const t = Math.min(elapsed / ROLL_DURATION, 1);
+            const rollAngle = roll.dir * Math.PI * 2 * t;
+            const scaleY = Math.cos(rollAngle);
+            ctx.scale(1, scaleY);
+          }
+
+          ctx.shadowColor = "rgba(0,0,0,0.3)";
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetY = 4;
+
+          ctx.beginPath();
+          ctx.moveTo(TRI_SIZE, 0);
+          ctx.lineTo(-TRI_SIZE * 0.7, -TRI_SIZE * 0.6);
+          ctx.lineTo(-TRI_SIZE * 0.7, TRI_SIZE * 0.6);
+          ctx.closePath();
+          ctx.fillStyle = isInvuln ? "#ff8888" : "#D93636";
+          ctx.fill();
+
+          ctx.shadowColor = "transparent";
+          ctx.restore();
+        }
+
+        ctx.restore(); // offset
       }
 
-      // HUD
+      ctx.restore(); // camera translation
+      ctx.restore(); // zoom
+
+      // HUD (screen space, no transforms)
       ctx.save();
       ctx.font = "bold 14px monospace";
       ctx.textAlign = "left";
 
-      // Player lives & HP (top-left)
       const hudY = 28;
       const hudX = 16;
       ctx.fillStyle = "rgba(0,0,0,0.4)";
@@ -394,26 +437,15 @@ const Index = () => {
       ctx.fillText("LIVES", hudX, hudY);
       for (let i = 0; i < PLAYER_LIVES; i++) {
         const lx = hudX + 60 + i * 22;
-        if (i < playerLivesRef.current) {
-          ctx.beginPath();
-          ctx.moveTo(lx + 8, hudY - 5);
-          ctx.lineTo(lx - 2, hudY - 10);
-          ctx.lineTo(lx - 2, hudY);
-          ctx.closePath();
-          ctx.fillStyle = "#D93636";
-          ctx.fill();
-        } else {
-          ctx.beginPath();
-          ctx.moveTo(lx + 8, hudY - 5);
-          ctx.lineTo(lx - 2, hudY - 10);
-          ctx.lineTo(lx - 2, hudY);
-          ctx.closePath();
-          ctx.fillStyle = "#444";
-          ctx.fill();
-        }
+        ctx.beginPath();
+        ctx.moveTo(lx + 8, hudY - 5);
+        ctx.lineTo(lx - 2, hudY - 10);
+        ctx.lineTo(lx - 2, hudY);
+        ctx.closePath();
+        ctx.fillStyle = i < playerLivesRef.current ? "#D93636" : "#444";
+        ctx.fill();
       }
 
-      // HP bar
       ctx.fillStyle = "#aaa";
       ctx.fillText("HP", hudX, hudY + 22);
       for (let i = 0; i < PLAYER_MAX_HP; i++) {
@@ -421,7 +453,6 @@ const Index = () => {
         ctx.fillRect(hudX + 30 + i * 18, hudY + 12, 14, 10);
       }
 
-      // Ship HP (top-right)
       ctx.textAlign = "right";
       const shipHudX = cw - 16;
       ctx.fillStyle = "rgba(0,0,0,0.4)";
@@ -458,7 +489,7 @@ const Index = () => {
       window.removeEventListener("resize", resize);
       cancelAnimationFrame(rafRef.current);
     };
-  }, [shake]);
+  }, [shake, getWorldMouse]);
 
   return (
     <div
@@ -488,6 +519,7 @@ const Index = () => {
             <p><span style={{ color: "#D93636" }}>LEFT CLICK</span> — hold to fly toward cursor</p>
             <p><span style={{ color: "#D93636" }}>RIGHT CLICK</span> — fire projectiles</p>
             <p><span style={{ color: "#74b9ff" }}>A / D</span> — barrel roll left / right</p>
+            <p><span style={{ color: "#74b9ff" }}>ESC</span> — pause</p>
             <p className="mt-4 opacity-70">Defend your carrier from enemy bombers and fighters. Dive underwater to evade — but you'll slow down.</p>
           </div>
           <div className="text-sm tracking-widest uppercase animate-pulse" style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}>
