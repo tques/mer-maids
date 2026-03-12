@@ -676,6 +676,7 @@ const Index = () => {
             setGameStarted(true);
             setShowHint(false);
             scoreRef.current = 0;
+            waveRef.current = createWaveState();
             resetEnemies();
             resetPowerups();
           }}
