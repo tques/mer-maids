@@ -1,7 +1,7 @@
 // Water system: rendering, splash particles, and physics
 
 export const WATER_RATIO = 0.25;
-export const WATER_SPEED_FACTOR = 0.40;
+export const WATER_SPEED_FACTOR = 0.65;
 export const WAVE_AMPLITUDE = 6;
 // Wave frequencies are computed dynamically to tile over WORLD_WIDTH
 export const WAVE_SPEED = 0.002;
