@@ -503,6 +503,16 @@ const Index = () => {
           left click to move · right click to fire
         </div>
       )}
+      {paused && !gameOver && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
+          <div className="text-4xl font-bold tracking-widest uppercase mb-4" style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}>
+            PAUSED
+          </div>
+          <div className="text-sm tracking-widest uppercase opacity-50" style={{ color: "#ccc", fontFamily: "var(--font-mono)" }}>
+            Press ESC to resume
+          </div>
+        </div>
+      )}
       {gameOver && (
         <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
           <div className="text-4xl font-bold tracking-widest uppercase mb-4" style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}>
