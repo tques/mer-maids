@@ -432,6 +432,26 @@ const Index = () => {
           ctx.fill();
         }
 
+        // Ammo box
+        const box = ammoBoxRef.current;
+        if (box) {
+          const t = (performance.now() - box.spawnTime) / 400;
+          const bobY = box.y + Math.sin(t) * 4;
+          ctx.save();
+          ctx.translate(box.x, bobY);
+          // Glow
+          ctx.shadowColor = "rgba(255, 220, 60, 0.6)";
+          ctx.shadowBlur = 16;
+          // Box body
+          ctx.fillStyle = "#f0c830";
+          ctx.fillRect(-AMMO_BOX_SIZE / 2, -AMMO_BOX_SIZE / 2, AMMO_BOX_SIZE, AMMO_BOX_SIZE);
+          // Cross detail
+          ctx.fillStyle = "#805a00";
+          ctx.fillRect(-2, -AMMO_BOX_SIZE / 2 + 3, 4, AMMO_BOX_SIZE - 6);
+          ctx.fillRect(-AMMO_BOX_SIZE / 2 + 3, -2, AMMO_BOX_SIZE - 6, 4);
+          ctx.restore();
+        }
+
         // Player triangle
         const isInvuln = invulnRef.current > 0;
         const showPlayer = !isInvuln || Math.floor(performance.now() / 80) % 2 === 0;
