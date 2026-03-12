@@ -752,7 +752,7 @@ const Index = () => {
             <p><span style={{ color: "#D93636" }}>RIGHT CLICK</span> — fire projectiles</p>
             <p><span style={{ color: "#74b9ff" }}>A / D</span> — barrel roll left / right</p>
             <p><span style={{ color: "#74b9ff" }}>ESC</span> — pause</p>
-            <p className="mt-4 opacity-70">Defend your carrier from enemy bombers and fighters. Dive underwater to evade — but you'll slow down.</p>
+            <p className="mt-4 opacity-70">Defend your carrier from enemy bombers and fighters. Dive underwater to refuel your water jets and evade enemies.</p>
           </div>
           <div className="text-sm tracking-widest uppercase animate-pulse" style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}>
             Click anywhere to start
