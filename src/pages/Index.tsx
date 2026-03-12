@@ -352,23 +352,24 @@ const Index = () => {
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, viewW, viewH);
 
-      // Apply camera translation
+      // Apply camera translation (pixel-snapped to remove 1px seams at wrap boundaries)
+      const drawCamX = Math.round(finalCamX * ZOOM) / ZOOM;
       ctx.save();
-      ctx.translate(-finalCamX, 0);
+      ctx.translate(-drawCamX, 0);
 
       // Draw wrapping copies (only visible ones)
       for (const offset of [-WORLD_WIDTH, 0, WORLD_WIDTH]) {
         const worldStart = offset;
         const worldEnd = offset + WORLD_WIDTH;
         // Skip if entirely off-screen
-        if (worldEnd < finalCamX - 100 || worldStart > finalCamX + viewW + 100) continue;
+        if (worldEnd < drawCamX - 100 || worldStart > drawCamX + viewW + 100) continue;
 
         ctx.save();
         ctx.translate(offset, 0);
 
         // Water — pass visible range for performance
-        const localVisStart = finalCamX - offset;
-        const localVisEnd = finalCamX + viewW - offset;
+        const localVisStart = drawCamX - offset;
+        const localVisEnd = drawCamX + viewW - offset;
         drawWater(ctx, WORLD_WIDTH, viewH, localVisStart, localVisEnd);
 
         // Enemies, bombs, explosions
