@@ -4,7 +4,7 @@ export interface GamepadState {
   // Left stick direction (normalized)
   stickX: number;
   stickY: number;
-  stickActive: boolean; // stick deflected past deadzone
+  stickActive: boolean;
 
   // Right stick direction (normalized)
   rightStickX: number;
@@ -17,15 +17,15 @@ export interface GamepadState {
   dpadUp: boolean;
   dpadDown: boolean;
 
-  // Fire button (any face button)
+  // Fire button
   fire: boolean;
 
-  // Shoulder buttons
-  leftShoulder: boolean;  // L1 (button 4) or L2 (button 6)
+  // Thrust (LT, LB, or Y/Triangle)
+  thrust: boolean;
 
   // Menu buttons
-  start: boolean;         // Start/Options (button 9)
-  faceA: boolean;         // A button (button 0) — for menu confirm
+  start: boolean;
+  faceA: boolean;
 
   // Connected
   connected: boolean;
