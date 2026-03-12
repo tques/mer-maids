@@ -161,7 +161,7 @@ export function drawWater(
   // Primary surface highlight
   ctx.beginPath();
   for (let x = x0; x <= x1; x += 3) {
-    const wy = getWaveY(x, baseY);
+    const wy = getWaveY(x, baseY, cw);
     if (x === x0) ctx.moveTo(x, wy);
     else ctx.lineTo(x, wy);
   }
