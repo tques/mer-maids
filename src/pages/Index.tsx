@@ -306,7 +306,9 @@ const Index = () => {
       const boatW = boatRef.current ? boatRef.current.width : 400;
       if (gameStartedRef.current) {
         updateEnemies(1 / 60, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2);
-        bulletsRef.current = checkBulletCollisions(bulletsRef.current);
+        const result = checkBulletCollisions(bulletsRef.current);
+        bulletsRef.current = result.remaining;
+        scoreRef.current += result.score;
       }
 
       // Enemy projectile collisions
