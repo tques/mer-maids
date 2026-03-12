@@ -623,12 +623,28 @@ const Index = () => {
       ctx.fillText(`${ammo}`, hudX + 50 + ammoBarW + 6, hudY + 44);
       ctx.font = "bold 14px monospace";
 
+      // Fuel counter
+      const fuel = fuelRef.current;
+      const fuelColor = fuel <= FUEL_LOW_THRESHOLD ? "#74b9ff" : "#aaa";
+      ctx.fillStyle = fuelColor;
+      ctx.fillText("FUEL", hudX, hudY + 66);
+      const fuelBarW = 120;
+      const fuelFill = (fuel / MAX_FUEL) * fuelBarW;
+      ctx.fillStyle = "#333";
+      ctx.fillRect(hudX + 50, hudY + 56, fuelBarW, 10);
+      ctx.fillStyle = fuel <= FUEL_LOW_THRESHOLD ? "#74b9ff" : "#0984e3";
+      ctx.fillRect(hudX + 50, hudY + 56, fuelFill, 10);
+      ctx.fillStyle = fuelColor;
+      ctx.font = "bold 11px monospace";
+      ctx.fillText(`${Math.ceil(fuel)}`, hudX + 50 + fuelBarW + 6, hudY + 66);
+      ctx.font = "bold 14px monospace";
+
       // Ammo box alert
       if (ammoBoxRef.current && ammoBoxAlertRef.current > 0) {
         const flash = Math.sin(performance.now() / 200) > 0;
         if (flash) {
           ctx.fillStyle = "#f0c830";
-          ctx.fillText("▼ AMMO CRATE SPAWNED ▼", hudX, hudY + 64);
+          ctx.fillText("▼ AMMO CRATE SPAWNED ▼", hudX, hudY + 86);
         }
       }
 
