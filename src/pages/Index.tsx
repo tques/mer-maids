@@ -29,14 +29,14 @@ import {
 } from "../game/waves";
 import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail, getShipPitch } from "../game/jettrail";
 
-const SPEED = 4;
+const SPEED = 5.5;              // was 4 — base thrust power increased 37%
 const TRI_SIZE = 20;
 const GRAVITY = 0.09;
-const THRUST_GRAVITY = 0.018;
-const CLIMB_PENALTY = 0.20;
+const THRUST_GRAVITY = 0.014;   // was 0.018 — less drag while thrusting
+const CLIMB_PENALTY = 0.18;     // was 0.20 — climbing slightly easier
 const DIVE_BOOST = 0.15;
 const MAX_FALL_SPEED = 7;
-const AIR_DRAG = 0.995;        // more momentum retained when coasting (was 0.985)
+const AIR_DRAG = 0.995;
 const BUOYANCY = 0.14;         // upward force when submerged
 const PLAYER_MAX_HP = 3;
 const SHIP_MAX_HP = 10;
