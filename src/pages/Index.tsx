@@ -164,7 +164,7 @@ const Index = () => {
       if (posRef.current.x === 0 && posRef.current.y === 0) {
         const viewH = canvas.height / ZOOM;
         const surfaceY = getWaterSurfaceY(viewH);
-        // Start in the water, to the side of the carrier
+        // Start in the water, to the side of the city
         posRef.current = { x: WORLD_WIDTH / 2 - 420, y: surfaceY + 30 };
       }
       boatRef.current = createBoat(WORLD_WIDTH);
