@@ -27,14 +27,17 @@ import {
   drawWaveHUD,
   WaveState,
 } from "../game/waves";
-import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail } from "../game/jettrail";
+import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail, getShipPitch } from "../game/jettrail";
 
-const SPEED = 6;
+const SPEED = 4;
 const TRI_SIZE = 20;
-const GRAVITY = 0.06;
+const GRAVITY = 0.09;
+const THRUST_GRAVITY = 0.018;
+const CLIMB_PENALTY = 0.20;
+const DIVE_BOOST = 0.15;
 const MAX_FALL_SPEED = 7;
-const FLOAT_DURATION = 2400;
-const DRAG = 0.99;
+const AIR_DRAG = 0.995;        // more momentum retained when coasting (was 0.985)
+const BUOYANCY = 0.14;         // upward force when submerged
 const PLAYER_MAX_HP = 3;
 const SHIP_MAX_HP = 10;
 const PLAYER_LIVES = 3;
@@ -45,8 +48,8 @@ const ROLL_DISTANCE = 60;
 const ROLL_DURATION = 300;
 const WORLD_WIDTH = 3000;
 const ZOOM = 1.4;
-const MAX_AMMO = 90;
-const AMMO_LOW_THRESHOLD = 30;
+const MAX_AMMO = 60;
+const AMMO_LOW_THRESHOLD = 12;
 const AMMO_BOX_SIZE = 22;
 const MAX_FUEL = 50;
 const FUEL_BURN_RATE = 8; // fuel/sec while flying
@@ -93,7 +96,7 @@ const Index = () => {
   const lastPosRef = useRef({ x: 0, y: 0 });
   const boatRef = useRef<Boat | null>(null);
   const velRef = useRef({ x: 0, y: 0 });
-  const floatTimerRef = useRef(0);
+  
   const wasMovingRef = useRef(false);
   const throttleRef = useRef(1);
   const [showHint, setShowHint] = useState(true);
@@ -147,7 +150,9 @@ const Index = () => {
       canvas.height = container.clientHeight;
       if (posRef.current.x === 0 && posRef.current.y === 0) {
         const viewH = canvas.height / ZOOM;
-        posRef.current = { x: WORLD_WIDTH / 2, y: viewH * 0.4 };
+        const surfaceY = getWaterSurfaceY(viewH);
+        // Start in the water, to the side of the carrier
+        posRef.current = { x: WORLD_WIDTH / 2 - 420, y: surfaceY + 30 };
       }
       boatRef.current = createBoat(WORLD_WIDTH);
       mouseRef.current = { x: canvas.width / 2, y: canvas.height / 2 };
@@ -278,14 +283,20 @@ const Index = () => {
           fuelRef.current = Math.max(fuelRef.current - FUEL_BURN_RATE * dt, 0);
         }
 
-        const stalling = floatTimerRef.current > FLOAT_DURATION;
-        if (stalling && throttleRef.current < 1) {
-          throttleRef.current = Math.min(throttleRef.current + 0.012, 1);
-        } else if (!stalling) {
-          throttleRef.current = 1;
+        throttleRef.current = Math.min(throttleRef.current + 0.04, 1);
+
+        // Gravity-affected flight: climbing is harder, diving is easier
+        const verticalComponent = Math.sin(angle);
+        let gravityMod = 1.0;
+        if (!submerged) {
+          if (verticalComponent < 0) {
+            gravityMod = 1.0 - CLIMB_PENALTY * Math.abs(verticalComponent);
+          } else {
+            gravityMod = 1.0 + DIVE_BOOST * verticalComponent;
+          }
         }
 
-        const power = SPEED * speedMult * throttleRef.current;
+        const power = SPEED * speedMult * throttleRef.current * gravityMod;
         const dist = Math.hypot(wmx - pos.x, wmy - pos.y);
         if (dist > 5) {
           const targetVx = Math.cos(angle) * power;
@@ -293,43 +304,53 @@ const Index = () => {
           vel.x += (targetVx - vel.x) * (0.05 + throttleRef.current * 0.15);
           vel.y += (targetVy - vel.y) * (0.05 + throttleRef.current * 0.15);
         }
+
+        // Passive gravity even while thrusting
+        if (!submerged) {
+          vel.y += THRUST_GRAVITY;
+        }
+
+        // Buoyancy when submerged — push toward surface
+        if (submerged) {
+          const surfaceY = getWaterSurfaceY(viewH);
+          const depth = pos.y - surfaceY;
+          const buoyancyForce = BUOYANCY * Math.min(depth / 40, 1);
+          vel.y -= buoyancyForce;
+        }
+
         pos.x += vel.x;
         pos.y += vel.y;
 
         // Spawn jet trail when moving
         spawnJetParticles(pos.x, pos.y, angle, throttleRef.current, submerged, fuelRef.current, MAX_FUEL);
 
-        if (throttleRef.current >= 0.95) {
-          floatTimerRef.current = 0;
-        }
         wasMovingRef.current = true;
-      } else if (isMoving && !hasFuel) {
-        // Out of fuel — treat as not moving, fall with gravity
-        floatTimerRef.current += 16;
-        throttleRef.current = Math.max(throttleRef.current - 0.02, 0);
-        vel.x *= DRAG;
-        vel.y *= DRAG;
-        if (floatTimerRef.current > FLOAT_DURATION) {
-          const gravityT = Math.min((floatTimerRef.current - FLOAT_DURATION) / 800, 1);
-          vel.y = Math.min(vel.y + GRAVITY * gravityT * gravityT, MAX_FALL_SPEED);
-        }
-        pos.x += vel.x;
-        pos.y += vel.y;
-        wasMovingRef.current = true;
-      } else if (wasMovingRef.current) {
-        floatTimerRef.current += 16;
-        throttleRef.current = Math.max(throttleRef.current - 0.02, 0);
+      } else {
+        // Not thrusting — natural gravity + air drag, more momentum retained
+        throttleRef.current = Math.max(throttleRef.current - 0.03, 0);
 
-        vel.x *= DRAG;
-        vel.y *= DRAG;
+        vel.x *= AIR_DRAG;
+        vel.y *= AIR_DRAG;
 
-        if (floatTimerRef.current > FLOAT_DURATION) {
-          const gravityT = Math.min((floatTimerRef.current - FLOAT_DURATION) / 800, 1);
-          vel.y = Math.min(vel.y + GRAVITY * gravityT * gravityT, MAX_FALL_SPEED);
+        // Gravity in air, buoyancy in water
+        if (!submerged) {
+          vel.y = Math.min(vel.y + GRAVITY, MAX_FALL_SPEED);
+        } else {
+          const surfaceY = getWaterSurfaceY(viewH);
+          const depth = pos.y - surfaceY;
+          const buoyancyForce = BUOYANCY * Math.min(depth / 40, 1);
+          vel.y -= buoyancyForce;
+          // Water drag (heavier than air)
+          vel.x *= 0.97;
+          vel.y *= 0.97;
         }
 
         pos.x += vel.x;
         pos.y += vel.y;
+
+        if (Math.abs(vel.x) < 0.01 && Math.abs(vel.y) < 0.01 && !submerged) {
+          wasMovingRef.current = false;
+        }
       }
 
       // Horizontal wrapping in world space
@@ -598,9 +619,10 @@ const Index = () => {
         const isInvuln = invulnRef.current > 0;
         const showPlayer = !isInvuln || Math.floor(performance.now() / 80) % 2 === 0;
         if (showPlayer) {
+          const pitchOffset = getShipPitch(throttleRef.current, keysRef.current.has("w"), velRef.current.y, isSubmerged(pos.y, viewH));
           ctx.save();
           ctx.translate(pos.x, pos.y);
-          ctx.rotate(angle);
+          ctx.rotate(angle + pitchOffset);
 
           if (roll.active) {
             const elapsed = performance.now() - roll.startTime;
