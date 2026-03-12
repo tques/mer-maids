@@ -108,7 +108,7 @@ export function drawPowerups(ctx: CanvasRenderingContext2D) {
     ctx.fillStyle = "#fff";
     ctx.font = "bold 8px monospace";
     ctx.textAlign = "center";
-    ctx.fillText(p.type === "health" ? "HP" : "Armor", 0, -14);
+    ctx.fillText(p.type === "health" ? "HP" : "Barrier", 0, -14);
 
     ctx.restore();
   }

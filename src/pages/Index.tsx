@@ -164,7 +164,7 @@ const Index = () => {
       if (posRef.current.x === 0 && posRef.current.y === 0) {
         const viewH = canvas.height / ZOOM;
         const surfaceY = getWaterSurfaceY(viewH);
-        // Start in the water, to the side of the carrier
+        // Start in the water, to the side of the city
         posRef.current = { x: WORLD_WIDTH / 2 - 420, y: surfaceY + 30 };
       }
       boatRef.current = createBoat(WORLD_WIDTH);
@@ -572,7 +572,7 @@ const Index = () => {
           if (shipHPRef.current <= 0) {
             gameOverRef.current = true;
             setGameOver(true);
-            setGameOverReason("Carrier destroyed!");
+            setGameOverReason("City destroyed!");
           }
         }
 
@@ -754,12 +754,20 @@ const Index = () => {
           ctx.shadowBlur = 12;
           ctx.shadowOffsetY = 4;
 
+          // Mech arch/crescent shape
+          const r = TRI_SIZE * 0.9;
           ctx.beginPath();
-          ctx.moveTo(TRI_SIZE, 0);
-          ctx.lineTo(-TRI_SIZE * 0.7, -TRI_SIZE * 0.6);
-          ctx.lineTo(-TRI_SIZE * 0.7, TRI_SIZE * 0.6);
+          ctx.arc(0, 0, r, -Math.PI * 0.55, Math.PI * 0.55, false);
+          ctx.lineTo(r * 0.3, TRI_SIZE * 0.35);
+          ctx.arc(0, 0, r * 0.45, Math.PI * 0.4, -Math.PI * 0.4, true);
+          ctx.lineTo(r * Math.cos(Math.PI * 0.55), -r * Math.sin(Math.PI * 0.55));
           ctx.closePath();
           ctx.fillStyle = isInvuln ? "#ff8888" : "#D93636";
+          ctx.fill();
+          // Visor / eye slit
+          ctx.beginPath();
+          ctx.arc(r * 0.35, 0, r * 0.12, 0, Math.PI * 2);
+          ctx.fillStyle = isInvuln ? "#ffaaaa" : "#ff6b6b";
           ctx.fill();
 
           ctx.shadowColor = "transparent";
@@ -852,7 +860,7 @@ const Index = () => {
       ctx.fillRect(shipHudX - 240, hudY - 16, 244, 30);
 
       ctx.fillStyle = "#888";
-      ctx.fillText("CARRIER ARMOR", shipHudX - 180, hudY);
+      ctx.fillText("CITY BARRIER", shipHudX - 180, hudY);
       for (let i = 0; i < SHIP_MAX_HP; i++) {
         const bx = shipHudX - 170 + i * 17;
         ctx.fillStyle = i < shipHPRef.current ? "#5a9" : "#444";
@@ -1007,13 +1015,13 @@ const Index = () => {
             className="text-5xl font-bold tracking-widest uppercase mb-4"
             style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}
           >
-            CARRIER DEFENSE
+            M.E.R. MAIDS
           </div>
           <div
             className="text-sm tracking-wider uppercase mb-8 opacity-60"
             style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}
           >
-            Protect your carrier. Survive the waves.
+            Marine Emergency Response unit. Defend the floating city.
           </div>
 
           <div className="max-w-lg text-center mb-8" style={{ fontFamily: "var(--font-mono)" }}>
@@ -1021,8 +1029,9 @@ const Index = () => {
             <div className="mb-6 px-4 py-3 rounded" style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
               <div className="text-xs tracking-widest uppercase mb-2" style={{ color: "#f7d794" }}>OBJECTIVE</div>
               <p className="text-sm leading-relaxed" style={{ color: "#ccc" }}>
-                Enemy bombers and fighters attack in waves. Shoot them down before they destroy your carrier.
-                If the carrier is destroyed or you lose all lives, it's game over.
+                You are a M.E.R. Maid — a water-based mech defending a floating city.
+                Enemy bombers and fighters attack in waves. Shoot them down before they breach the city's barrier.
+                If the barrier falls or you lose all lives, it's game over.
               </p>
             </div>
 
