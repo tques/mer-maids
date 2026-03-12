@@ -22,6 +22,9 @@ const ROLL_DISTANCE = 60;
 const ROLL_DURATION = 300;
 const WORLD_WIDTH = 3000;
 const ZOOM = 1.4;
+const MAX_AMMO = 30;
+const AMMO_LOW_THRESHOLD = 8;
+const AMMO_BOX_SIZE = 22;
 
 interface Bullet {
   x: number;
@@ -29,6 +32,12 @@ interface Bullet {
   dx: number;
   dy: number;
   id: number;
+}
+
+interface AmmoBox {
+  x: number;
+  y: number;
+  spawnTime: number;
 }
 
 const Index = () => {
