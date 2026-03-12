@@ -722,6 +722,9 @@ const Index = () => {
           <div className="text-lg tracking-wider uppercase mb-2 opacity-70" style={{ color: "#ccc", fontFamily: "var(--font-mono)" }}>
             {gameOverReason}
           </div>
+          <div className="text-sm tracking-wider mb-2 opacity-50" style={{ color: "#aaa", fontFamily: "var(--font-mono)" }}>
+            Survived to Wave {waveRef.current.wave}
+          </div>
           <div className="text-2xl font-bold tracking-widest mb-8" style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}>
             SCORE: {scoreRef.current}
           </div>
