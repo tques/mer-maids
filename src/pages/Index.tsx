@@ -346,28 +346,49 @@ const Index = () => {
             setGameOverReason("Carrier destroyed!");
           }
         }
+        }
+
+        // Boat collision
+        if (boatRef.current) {
+          const pushOut = collideWithBoat(pos.x, pos.y, TRI_SIZE, boatRef.current, viewH);
+          if (pushOut) {
+            pos.x = pushOut.x;
+            pos.y = pushOut.y;
+            velRef.current.x *= 0.3;
+            velRef.current.y *= -0.5;
+          }
+        }
+
+        // Powerup rewards based on score
+        checkScoreRewards(scoreRef.current, boatX, boatW, viewH);
+        updatePowerups();
+
+        // Powerup pickup
+        const pickedUp = checkPowerupPickup(pos.x, pos.y, TRI_SIZE);
+        if (pickedUp === "ship") {
+          playerLivesRef.current = Math.min(playerLivesRef.current + 1, PLAYER_LIVES + 2);
+          playerHPRef.current = PLAYER_MAX_HP;
+        } else if (pickedUp === "repair") {
+          shipHPRef.current = Math.min(shipHPRef.current + 3, SHIP_MAX_HP);
+        }
       }
 
       // === AMMO BOX SYSTEM ===
       if (gameStartedRef.current) {
-        // Spawn ammo box when ammo is low and none exists
         if (ammoRef.current <= AMMO_LOW_THRESHOLD && !ammoBoxRef.current) {
           const edgeX = Math.random() < 0.5 ? 20 : WORLD_WIDTH - 20;
           const surfY = getWaterSurfaceY(viewH);
           const boxY = 40 + Math.random() * (surfY - 80);
           ammoBoxRef.current = { x: edgeX, y: boxY, spawnTime: performance.now() };
-          ammoBoxAlertRef.current = 3000; // 3s HUD flash
+          ammoBoxAlertRef.current = 3000;
         }
 
-        // Tick alert timer
         if (ammoBoxAlertRef.current > 0) {
           ammoBoxAlertRef.current -= 16;
         }
 
-        // Check pickup collision
         const box = ammoBoxRef.current;
         if (box) {
-          // Wrap-aware distance
           let ddx = Math.abs(pos.x - box.x);
           if (ddx > WORLD_WIDTH / 2) ddx = WORLD_WIDTH - ddx;
           const ddy = Math.abs(pos.y - box.y);
