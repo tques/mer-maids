@@ -498,7 +498,32 @@ const Index = () => {
       const hudY = 28;
       const hudX = 16;
       ctx.fillStyle = "rgba(0,0,0,0.4)";
-      ctx.fillRect(hudX - 4, hudY - 16, 200, 52);
+      ctx.fillRect(hudX - 4, hudY - 16, 200, 74);
+
+      // Ammo counter
+      const ammo = ammoRef.current;
+      const ammoColor = ammo <= AMMO_LOW_THRESHOLD ? "#f0c830" : "#aaa";
+      ctx.fillStyle = ammoColor;
+      ctx.fillText("AMMO", hudX, hudY + 44);
+      const ammoBarW = 120;
+      const ammoFill = (ammo / MAX_AMMO) * ammoBarW;
+      ctx.fillStyle = "#333";
+      ctx.fillRect(hudX + 50, hudY + 34, ammoBarW, 10);
+      ctx.fillStyle = ammo <= AMMO_LOW_THRESHOLD ? "#f0c830" : "#D93636";
+      ctx.fillRect(hudX + 50, hudY + 34, ammoFill, 10);
+      ctx.fillStyle = ammoColor;
+      ctx.font = "bold 11px monospace";
+      ctx.fillText(`${ammo}`, hudX + 50 + ammoBarW + 6, hudY + 44);
+      ctx.font = "bold 14px monospace";
+
+      // Ammo box alert
+      if (ammoBoxRef.current && ammoBoxAlertRef.current > 0) {
+        const flash = Math.sin(performance.now() / 200) > 0;
+        if (flash) {
+          ctx.fillStyle = "#f0c830";
+          ctx.fillText("▼ AMMO CRATE SPAWNED ▼", hudX, hudY + 64);
+        }
+      }
 
       ctx.fillStyle = "#D93636";
       ctx.fillText("LIVES", hudX, hudY);
