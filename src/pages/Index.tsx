@@ -72,7 +72,8 @@ const Index = () => {
   const pausedRef = useRef(false);
   const ammoRef = useRef(MAX_AMMO);
   const ammoBoxRef = useRef<AmmoBox | null>(null);
-  const ammoBoxAlertRef = useRef(0); // countdown for HUD flash
+  const ammoBoxAlertRef = useRef(0);
+  const scoreRef = useRef(0);
   const [paused, setPaused] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [gameOverReason, setGameOverReason] = useState("");
