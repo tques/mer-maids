@@ -57,6 +57,8 @@ const Index = () => {
   const shipHPRef = useRef(SHIP_MAX_HP);
   const invulnRef = useRef(0);
   const gameOverRef = useRef(false);
+  const pausedRef = useRef(false);
+  const [paused, setPaused] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [gameOverReason, setGameOverReason] = useState("");
 
