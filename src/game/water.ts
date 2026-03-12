@@ -115,8 +115,8 @@ export function drawWater(
   const baseY = getWaterSurfaceY(ch);
 
   // Determine render range — only draw what's visible for performance
-  const x0 = visibleStartX != null ? Math.max(0, Math.floor(visibleStartX) - 10) : 0;
-  const x1 = visibleEndX != null ? Math.min(cw, Math.ceil(visibleEndX) + 10) : cw;
+  const x0 = visibleStartX != null ? Math.max(-5, Math.floor(visibleStartX) - 10) : -5;
+  const x1 = visibleEndX != null ? Math.min(cw + 5, Math.ceil(visibleEndX) + 10) : cw + 5;
 
   // Wave surface path
   ctx.save();
