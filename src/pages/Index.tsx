@@ -112,6 +112,14 @@ const Index = () => {
 
     const onKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
+      if (key === "escape" && gameStartedRef.current && !gameOverRef.current) {
+        pausedRef.current = !pausedRef.current;
+        setPaused(pausedRef.current);
+        if (!pausedRef.current) {
+          rafRef.current = requestAnimationFrame(loop);
+        }
+        return;
+      }
       if (key === "a" || key === "d") {
         e.preventDefault();
         setShowHint(false);
@@ -121,7 +129,6 @@ const Index = () => {
           const mouse = mouseRef.current;
           const angle = Math.atan2(mouse.y - pos.y, mouse.x - pos.x);
           const dir = key === "a" ? -1 : 1;
-          // Perpendicular to aim direction
           const perpX = -Math.sin(angle) * dir;
           const perpY = Math.cos(angle) * dir;
           roll.active = true;
