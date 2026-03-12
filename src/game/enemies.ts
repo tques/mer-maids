@@ -187,13 +187,14 @@ export function updateEnemies(
   const aliveChasers = chasers.filter(c => c.alive).length;
   if (chaserSpawnTimer <= 0 && aliveChasers < maxChasers) {
     chaserSpawnTimer = chaserInterval + Math.random() * 3;
+    // Spawn well outside the player's view
     const fromLeft = Math.random() > 0.5;
     const spawnX = fromLeft
-      ? playerX - viewHalfW - 80
-      : playerX + viewHalfW + 80;
+      ? playerX - viewHalfW - 200 - Math.random() * 300
+      : playerX + viewHalfW + 200 + Math.random() * 300;
     chasers.push({
       x: spawnX,
-      y: 40 + Math.random() * waterY * 0.5,
+      y: 30 + Math.random() * waterY * 0.5,
       speed: CHASER_SPEED,
       angle: 0,
       shootCooldown: 2 + Math.random(),
