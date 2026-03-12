@@ -1029,8 +1029,9 @@ const Index = () => {
             <div className="mb-6 px-4 py-3 rounded" style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
               <div className="text-xs tracking-widest uppercase mb-2" style={{ color: "#f7d794" }}>OBJECTIVE</div>
               <p className="text-sm leading-relaxed" style={{ color: "#ccc" }}>
-                Enemy bombers and fighters attack in waves. Shoot them down before they destroy your carrier.
-                If the carrier is destroyed or you lose all lives, it's game over.
+                You are a M.E.R. Maid — a water-based mech defending a floating city.
+                Enemy bombers and fighters attack in waves. Shoot them down before they breach the city's barrier.
+                If the barrier falls or you lose all lives, it's game over.
               </p>
             </div>
 
