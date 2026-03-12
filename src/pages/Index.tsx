@@ -938,9 +938,7 @@ const Index = () => {
           if (pauseMenuIndexRef.current === 0) {
             pausedRef.current = false;
             setPaused(false);
-            rafRef.current = requestAnimationFrame(() => {
-              // Re-trigger loop by restarting from useEffect's loop
-            });
+            if (loopRef.current) rafRef.current = requestAnimationFrame(loopRef.current);
           } else if (pauseMenuIndexRef.current === 1) {
             const newVal = !useRightStickRef.current;
             useRightStickRef.current = newVal;
@@ -951,6 +949,7 @@ const Index = () => {
         if (startPressed) {
           pausedRef.current = false;
           setPaused(false);
+          if (loopRef.current) rafRef.current = requestAnimationFrame(loopRef.current);
         }
       }
 
