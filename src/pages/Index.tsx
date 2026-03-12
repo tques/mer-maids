@@ -98,6 +98,10 @@ const Index = () => {
   const boatRef = useRef<Boat | null>(null);
   const velRef = useRef({ x: 0, y: 0 });
   const gpDpadPrev = useRef({ left: false, right: false });
+  const gpStartPrev = useRef(false);
+  const gpFaceAPrev = useRef(false);
+  const gpDpadUpPrev = useRef(false);
+  const gpDpadDownPrev = useRef(false);
   
   const wasMovingRef = useRef(false);
   const throttleRef = useRef(1);
@@ -119,6 +123,10 @@ const Index = () => {
   const [paused, setPaused] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [gameOverReason, setGameOverReason] = useState("");
+  const [useRightStick, setUseRightStick] = useState(false);
+  const useRightStickRef = useRef(false);
+  const [pauseMenuIndex, setPauseMenuIndex] = useState(0);
+  const pauseMenuIndexRef = useRef(0);
 
   // Helper: convert screen mouse to world coords
   const getWorldMouse = useCallback(() => {
