@@ -193,8 +193,8 @@ export function drawWater(
 
   // Foam / white caps at wave peaks
   for (let x = x0; x <= x1; x += 6) {
-    const wy = getWaveY(x, baseY);
-    const slope = getWaveY(x + 3, baseY) - wy;
+    const wy = getWaveY(x, baseY, cw);
+    const slope = getWaveY(x + 3, baseY, cw) - wy;
     if (slope < -0.6) {
       ctx.globalAlpha = Math.min(Math.abs(slope) * 0.35, 0.4);
       ctx.beginPath();
