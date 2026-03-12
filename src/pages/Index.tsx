@@ -31,12 +31,13 @@ import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail, getShip
 
 const SPEED = 4;
 const TRI_SIZE = 20;
-const GRAVITY = 0.09;          // constant downward pull (always active in air)
-const THRUST_GRAVITY = 0.018;  // reduced gravity while thrusting
+const GRAVITY = 0.09;
+const THRUST_GRAVITY = 0.018;
 const CLIMB_PENALTY = 0.20;
 const DIVE_BOOST = 0.15;
 const MAX_FALL_SPEED = 7;
-const AIR_DRAG = 0.985;        // velocity decay when not thrusting
+const AIR_DRAG = 0.995;        // more momentum retained when coasting (was 0.985)
+const BUOYANCY = 0.14;         // upward force when submerged
 const PLAYER_MAX_HP = 3;
 const SHIP_MAX_HP = 10;
 const PLAYER_LIVES = 3;
