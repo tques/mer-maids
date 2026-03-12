@@ -603,6 +603,12 @@ const Index = () => {
         ctx.fillRect(bx, hudY - 12, 13, 10);
       }
 
+      // Score display
+      ctx.fillStyle = "#f7d794";
+      ctx.font = "bold 18px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(`SCORE: ${scoreRef.current}`, cw / 2, 30);
+
       ctx.restore();
 
       rafRef.current = requestAnimationFrame(loop);
