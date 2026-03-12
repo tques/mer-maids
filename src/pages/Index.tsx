@@ -27,7 +27,7 @@ import {
   drawWaveHUD,
   WaveState,
 } from "../game/waves";
-import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail } from "../game/jettrail";
+import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail, getShipPitch } from "../game/jettrail";
 
 const SPEED = 4;
 const TRI_SIZE = 20;
@@ -297,7 +297,7 @@ const Index = () => {
         pos.y += vel.y;
 
         // Spawn jet trail when moving
-        spawnJetParticles(pos.x, pos.y, angle, throttleRef.current, submerged);
+        spawnJetParticles(pos.x, pos.y, angle, throttleRef.current, submerged, fuelRef.current, MAX_FUEL);
 
         if (throttleRef.current >= 0.95) {
           floatTimerRef.current = 0;
@@ -598,9 +598,10 @@ const Index = () => {
         const isInvuln = invulnRef.current > 0;
         const showPlayer = !isInvuln || Math.floor(performance.now() / 80) % 2 === 0;
         if (showPlayer) {
+          const pitchOffset = getShipPitch(throttleRef.current, keysRef.current.has("w"), velRef.current.y, isSubmerged(pos.y, viewH));
           ctx.save();
           ctx.translate(pos.x, pos.y);
-          ctx.rotate(angle);
+          ctx.rotate(angle + pitchOffset);
 
           if (roll.active) {
             const elapsed = performance.now() - roll.startTime;
