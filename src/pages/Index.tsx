@@ -3,8 +3,9 @@ import {
   getWaterSurfaceY, isSubmerged, spawnSplash, updateParticles, drawWater,
   WATER_SPEED_FACTOR,
 } from "../game/water";
-import { createBoat, drawBoat, Boat } from "../game/boat";
+import { createBoat, drawBoat, collideWithBoat, Boat } from "../game/boat";
 import { updateEnemies, checkBulletCollisions, checkChaserBulletHitsPlayer, checkBombHitsShip, drawEnemies, spawnExplosion, resetEnemies } from "../game/enemies";
+import { resetPowerups, checkScoreRewards, checkPowerupPickup, updatePowerups, drawPowerups } from "../game/powerups";
 
 const SPEED = 4;
 const TRI_SIZE = 20;
