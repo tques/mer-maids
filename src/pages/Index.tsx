@@ -22,6 +22,9 @@ const ROLL_DISTANCE = 60;
 const ROLL_DURATION = 300;
 const WORLD_WIDTH = 3000;
 const ZOOM = 1.4;
+const MAX_AMMO = 30;
+const AMMO_LOW_THRESHOLD = 8;
+const AMMO_BOX_SIZE = 22;
 
 interface Bullet {
   x: number;
@@ -29,6 +32,12 @@ interface Bullet {
   dx: number;
   dy: number;
   id: number;
+}
+
+interface AmmoBox {
+  x: number;
+  y: number;
+  spawnTime: number;
 }
 
 const Index = () => {
@@ -60,6 +69,9 @@ const Index = () => {
   const invulnRef = useRef(0);
   const gameOverRef = useRef(false);
   const pausedRef = useRef(false);
+  const ammoRef = useRef(MAX_AMMO);
+  const ammoBoxRef = useRef<AmmoBox | null>(null);
+  const ammoBoxAlertRef = useRef(0); // countdown for HUD flash
   const [paused, setPaused] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [gameOverReason, setGameOverReason] = useState("");
@@ -263,11 +275,12 @@ const Index = () => {
       // Recalculate camera after position update
       const finalCamX = pos.x - viewW / 2;
 
-      // Continuous fire
-      if (rightMouseRef.current) {
+      // Continuous fire (ammo gated)
+      if (rightMouseRef.current && ammoRef.current > 0) {
         shootCooldownRef.current -= 16;
         if (shootCooldownRef.current <= 0) {
           shootCooldownRef.current = SHOOT_INTERVAL;
+          ammoRef.current -= 1;
           const fireAngle = angle;
           bulletsRef.current.push({
             x: pos.x + Math.cos(fireAngle) * (TRI_SIZE + 4),
@@ -331,6 +344,37 @@ const Index = () => {
         }
       }
 
+      // === AMMO BOX SYSTEM ===
+      if (gameStartedRef.current) {
+        // Spawn ammo box when ammo is low and none exists
+        if (ammoRef.current <= AMMO_LOW_THRESHOLD && !ammoBoxRef.current) {
+          const edgeX = Math.random() < 0.5 ? 20 : WORLD_WIDTH - 20;
+          const surfY = getWaterSurfaceY(viewH);
+          const boxY = 40 + Math.random() * (surfY - 80);
+          ammoBoxRef.current = { x: edgeX, y: boxY, spawnTime: performance.now() };
+          ammoBoxAlertRef.current = 3000; // 3s HUD flash
+        }
+
+        // Tick alert timer
+        if (ammoBoxAlertRef.current > 0) {
+          ammoBoxAlertRef.current -= 16;
+        }
+
+        // Check pickup collision
+        const box = ammoBoxRef.current;
+        if (box) {
+          // Wrap-aware distance
+          let ddx = Math.abs(pos.x - box.x);
+          if (ddx > WORLD_WIDTH / 2) ddx = WORLD_WIDTH - ddx;
+          const ddy = Math.abs(pos.y - box.y);
+          if (ddx < TRI_SIZE + AMMO_BOX_SIZE && ddy < TRI_SIZE + AMMO_BOX_SIZE) {
+            ammoRef.current = MAX_AMMO;
+            ammoBoxRef.current = null;
+            ammoBoxAlertRef.current = 0;
+          }
+        }
+      }
+
       // Update water particles
       updateParticles(1 / 60);
 
@@ -388,6 +432,26 @@ const Index = () => {
           ctx.fill();
         }
 
+        // Ammo box
+        const box = ammoBoxRef.current;
+        if (box) {
+          const t = (performance.now() - box.spawnTime) / 400;
+          const bobY = box.y + Math.sin(t) * 4;
+          ctx.save();
+          ctx.translate(box.x, bobY);
+          // Glow
+          ctx.shadowColor = "rgba(255, 220, 60, 0.6)";
+          ctx.shadowBlur = 16;
+          // Box body
+          ctx.fillStyle = "#f0c830";
+          ctx.fillRect(-AMMO_BOX_SIZE / 2, -AMMO_BOX_SIZE / 2, AMMO_BOX_SIZE, AMMO_BOX_SIZE);
+          // Cross detail
+          ctx.fillStyle = "#805a00";
+          ctx.fillRect(-2, -AMMO_BOX_SIZE / 2 + 3, 4, AMMO_BOX_SIZE - 6);
+          ctx.fillRect(-AMMO_BOX_SIZE / 2 + 3, -2, AMMO_BOX_SIZE - 6, 4);
+          ctx.restore();
+        }
+
         // Player triangle
         const isInvuln = invulnRef.current > 0;
         const showPlayer = !isInvuln || Math.floor(performance.now() / 80) % 2 === 0;
@@ -434,7 +498,32 @@ const Index = () => {
       const hudY = 28;
       const hudX = 16;
       ctx.fillStyle = "rgba(0,0,0,0.4)";
-      ctx.fillRect(hudX - 4, hudY - 16, 200, 52);
+      ctx.fillRect(hudX - 4, hudY - 16, 200, 74);
+
+      // Ammo counter
+      const ammo = ammoRef.current;
+      const ammoColor = ammo <= AMMO_LOW_THRESHOLD ? "#f0c830" : "#aaa";
+      ctx.fillStyle = ammoColor;
+      ctx.fillText("AMMO", hudX, hudY + 44);
+      const ammoBarW = 120;
+      const ammoFill = (ammo / MAX_AMMO) * ammoBarW;
+      ctx.fillStyle = "#333";
+      ctx.fillRect(hudX + 50, hudY + 34, ammoBarW, 10);
+      ctx.fillStyle = ammo <= AMMO_LOW_THRESHOLD ? "#f0c830" : "#D93636";
+      ctx.fillRect(hudX + 50, hudY + 34, ammoFill, 10);
+      ctx.fillStyle = ammoColor;
+      ctx.font = "bold 11px monospace";
+      ctx.fillText(`${ammo}`, hudX + 50 + ammoBarW + 6, hudY + 44);
+      ctx.font = "bold 14px monospace";
+
+      // Ammo box alert
+      if (ammoBoxRef.current && ammoBoxAlertRef.current > 0) {
+        const flash = Math.sin(performance.now() / 200) > 0;
+        if (flash) {
+          ctx.fillStyle = "#f0c830";
+          ctx.fillText("▼ AMMO CRATE SPAWNED ▼", hudX, hudY + 64);
+        }
+      }
 
       ctx.fillStyle = "#D93636";
       ctx.fillText("LIVES", hudX, hudY);
