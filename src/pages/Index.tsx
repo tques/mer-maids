@@ -249,10 +249,71 @@ const Index = () => {
       const wmx = mouseRef.current.x / ZOOM + camX;
       const wmy = mouseRef.current.y / ZOOM;
 
+      // Gamepad menu controls (edge-triggered)
+      const startPressed = gp.start && !gpStartPrev.current;
+      const faceAPressed = gp.faceA && !gpFaceAPrev.current;
+      gpStartPrev.current = gp.start;
+      gpFaceAPrev.current = gp.faceA;
+
+      // Start button → toggle pause (only in-game)
+      if (startPressed && gameStartedRef.current && !gameOverRef.current) {
+        pausedRef.current = !pausedRef.current;
+        setPaused(pausedRef.current);
+        if (pausedRef.current) {
+          // Reset pause menu
+          pauseMenuIndexRef.current = 0;
+          setPauseMenuIndex(0);
+        }
+        if (!pausedRef.current) {
+          rafRef.current = requestAnimationFrame(loop);
+        }
+        return; // skip this frame
+      }
+
+      // Handle pause menu navigation with gamepad
+      if (pausedRef.current && gp.connected) {
+        const dpadUpPressed = gp.dpadUp && !gpDpadUpPrev.current;
+        const dpadDownPressed = gp.dpadDown && !gpDpadDownPrev.current;
+        gpDpadUpPrev.current = gp.dpadUp;
+        gpDpadDownPrev.current = gp.dpadDown;
+
+        if (dpadUpPressed || dpadDownPressed) {
+          const newIdx = dpadUpPressed
+            ? (pauseMenuIndexRef.current === 0 ? 1 : 0)
+            : (pauseMenuIndexRef.current === 1 ? 0 : 1);
+          pauseMenuIndexRef.current = newIdx;
+          setPauseMenuIndex(newIdx);
+        }
+
+        if (faceAPressed) {
+          if (pauseMenuIndexRef.current === 0) {
+            // Resume
+            pausedRef.current = false;
+            setPaused(false);
+            rafRef.current = requestAnimationFrame(loop);
+          } else if (pauseMenuIndexRef.current === 1) {
+            // Toggle stick
+            const newVal = !useRightStickRef.current;
+            useRightStickRef.current = newVal;
+            setUseRightStick(newVal);
+          }
+        }
+        // Don't process game logic while paused
+        return;
+      } else {
+        gpDpadUpPrev.current = gp.dpadUp;
+        gpDpadDownPrev.current = gp.dpadDown;
+      }
+
+      // Determine which stick to use for aiming based on preference
+      const aimStickX = useRightStickRef.current ? gp.rightStickX : gp.stickX;
+      const aimStickY = useRightStickRef.current ? gp.rightStickY : gp.stickY;
+      const aimStickActive = useRightStickRef.current ? gp.rightStickActive : gp.stickActive;
+
       // Angle: prefer gamepad stick if active, otherwise mouse
       let angle: number;
-      if (gp.stickActive) {
-        angle = Math.atan2(gp.stickY, gp.stickX);
+      if (aimStickActive) {
+        angle = Math.atan2(aimStickY, aimStickX);
       } else {
         angle = Math.atan2(wmy - pos.y, wmx - pos.x);
       }
