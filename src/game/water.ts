@@ -3,7 +3,7 @@
 export const WATER_RATIO = 0.25;
 export const WATER_SPEED_FACTOR = 0.40;
 export const WAVE_AMPLITUDE = 6;
-export const WAVE_FREQUENCY = 0.025;
+// Wave frequencies are computed dynamically to tile over WORLD_WIDTH
 export const WAVE_SPEED = 0.002;
 
 export interface Splash {
@@ -33,11 +33,16 @@ export function getWaterSurfaceY(canvasHeight: number): number {
   return canvasHeight * (1 - WATER_RATIO);
 }
 
-export function getWaveY(x: number, baseY: number): number {
+export function getWaveY(x: number, baseY: number, worldWidth: number = 3000): number {
+  // Use frequencies that are exact multiples of 2π/worldWidth so waves tile seamlessly
+  const base = (2 * Math.PI) / worldWidth;
+  const f1 = base * 12;   // ~12 full cycles across the world
+  const f2 = base * 20;   // ~20 full cycles
+  const f3 = base * 7;    // ~7 full cycles
   return baseY
-    + Math.sin(x * WAVE_FREQUENCY + waveTime) * WAVE_AMPLITUDE
-    + Math.sin(x * WAVE_FREQUENCY * 1.7 + waveTime * 1.3) * WAVE_AMPLITUDE * 0.5
-    + Math.sin(x * WAVE_FREQUENCY * 0.6 + waveTime * 0.7) * WAVE_AMPLITUDE * 0.3;
+    + Math.sin(x * f1 + waveTime) * WAVE_AMPLITUDE
+    + Math.sin(x * f2 + waveTime * 1.3) * WAVE_AMPLITUDE * 0.5
+    + Math.sin(x * f3 + waveTime * 0.7) * WAVE_AMPLITUDE * 0.3;
 }
 
 export function isSubmerged(py: number, canvasHeight: number): boolean {
@@ -118,7 +123,7 @@ export function drawWater(
   ctx.beginPath();
   ctx.moveTo(x0, ch);
   for (let x = x0; x <= x1; x += 3) {
-    ctx.lineTo(x, getWaveY(x, baseY));
+    ctx.lineTo(x, getWaveY(x, baseY, cw));
   }
   ctx.lineTo(x1, ch);
   ctx.closePath();
@@ -156,7 +161,7 @@ export function drawWater(
   // Primary surface highlight
   ctx.beginPath();
   for (let x = x0; x <= x1; x += 3) {
-    const wy = getWaveY(x, baseY);
+    const wy = getWaveY(x, baseY, cw);
     if (x === x0) ctx.moveTo(x, wy);
     else ctx.lineTo(x, wy);
   }
@@ -167,7 +172,7 @@ export function drawWater(
   // Secondary deeper highlight
   ctx.beginPath();
   for (let x = x0; x <= x1; x += 4) {
-    const wy = getWaveY(x, baseY) + 5;
+    const wy = getWaveY(x, baseY, cw) + 5;
     if (x === x0) ctx.moveTo(x, wy);
     else ctx.lineTo(x, wy);
   }
@@ -178,7 +183,7 @@ export function drawWater(
   // Tertiary deep shimmer
   ctx.beginPath();
   for (let x = x0; x <= x1; x += 5) {
-    const wy = getWaveY(x, baseY) + 12;
+    const wy = getWaveY(x, baseY, cw) + 12;
     if (x === x0) ctx.moveTo(x, wy);
     else ctx.lineTo(x, wy);
   }
@@ -188,8 +193,8 @@ export function drawWater(
 
   // Foam / white caps at wave peaks
   for (let x = x0; x <= x1; x += 6) {
-    const wy = getWaveY(x, baseY);
-    const slope = getWaveY(x + 3, baseY) - wy;
+    const wy = getWaveY(x, baseY, cw);
+    const slope = getWaveY(x + 3, baseY, cw) - wy;
     if (slope < -0.6) {
       ctx.globalAlpha = Math.min(Math.abs(slope) * 0.35, 0.4);
       ctx.beginPath();
