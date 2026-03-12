@@ -123,7 +123,7 @@ export function drawWater(
   ctx.beginPath();
   ctx.moveTo(x0, ch);
   for (let x = x0; x <= x1; x += 3) {
-    ctx.lineTo(x, getWaveY(x, baseY));
+    ctx.lineTo(x, getWaveY(x, baseY, cw));
   }
   ctx.lineTo(x1, ch);
   ctx.closePath();
