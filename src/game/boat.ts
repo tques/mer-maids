@@ -11,8 +11,8 @@ export interface Boat {
 export function createBoat(worldWidth: number): Boat {
   return {
     x: worldWidth / 2,
-    width: Math.min(worldWidth * 0.12, 450),
-    hullDepth: 14,
+    width: 700, // large carrier
+    hullDepth: 18,
   };
 }
 
