@@ -297,7 +297,7 @@ const Index = () => {
         pos.y += vel.y;
 
         // Spawn jet trail when moving
-        spawnJetParticles(pos.x, pos.y, angle, throttleRef.current, submerged);
+        spawnJetParticles(pos.x, pos.y, angle, throttleRef.current, submerged, fuelRef.current, MAX_FUEL);
 
         if (throttleRef.current >= 0.95) {
           floatTimerRef.current = 0;
