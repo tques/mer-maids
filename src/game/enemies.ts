@@ -155,11 +155,16 @@ export function updateEnemies(
     });
   }
 
-  // Update bombers
+  // Update bombers — descend to cruising altitude then fly horizontally
   for (const e of enemies) {
     if (!e.alive) continue;
+    const cruiseY = 40 + Math.abs(Math.sin(e.targetX * 0.01)) * waterY * 0.25;
+    if (e.y < cruiseY) {
+      e.y += 1.2; // descend into play area
+    } else {
+      e.y += Math.sin(performance.now() * 0.003 + e.x * 0.01) * 0.3;
+    }
     e.x += e.dir * e.speed;
-    e.y += Math.sin(performance.now() * 0.003 + e.x * 0.01) * 0.3;
     e.bombCooldown -= dt;
     if (Math.abs(e.x - e.targetX) < 120 && e.bombCooldown <= 0) {
       e.bombCooldown = BOMB_INTERVAL + Math.random() * 0.5;
