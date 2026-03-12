@@ -1015,7 +1015,7 @@ const Index = () => {
             className="text-5xl font-bold tracking-widest uppercase mb-4"
             style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}
           >
-            CARRIER DEFENSE
+            M.E.R. MAIDS
           </div>
           <div
             className="text-sm tracking-wider uppercase mb-8 opacity-60"
