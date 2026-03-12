@@ -64,6 +64,7 @@ export function resetEnemies() {
   chaserBullets = [];
   bombs = [];
   explosions = [];
+  scorePopups = [];
   bomberSpawnTimer = 0;
   chaserSpawnTimer = 8;
   gameTime = 0;
@@ -110,7 +111,18 @@ export function checkBombHitsShip(boatX: number, boatWidth: number, shipY: numbe
   return hits;
 }
 
-export function spawnExplosion(x: number, y: number, size = 30) {
+export interface ScorePopup {
+  x: number;
+  y: number;
+  value: number;
+  life: number;
+}
+
+let scorePopups: ScorePopup[] = [];
+
+export function getScorePopups() { return scorePopups; }
+
+export function spawnExplosion(x: number, y: number, size = 30, scoreValue?: number) {
   explosions.push({
     x, y,
     life: 1,
@@ -118,6 +130,9 @@ export function spawnExplosion(x: number, y: number, size = 30) {
     radius: 4,
     maxRadius: size,
   });
+  if (scoreValue && scoreValue > 0) {
+    scorePopups.push({ x, y, value: scoreValue, life: 1.0 });
+  }
 }
 
 export function updateEnemies(
@@ -292,12 +307,19 @@ export function updateEnemies(
     ex.radius += (ex.maxRadius - ex.radius) * 0.15;
   }
 
+  // Update score popups
+  for (const sp of scorePopups) {
+    sp.life -= dt * 1.2;
+    sp.y -= 0.8;
+  }
+
   // Cleanup
   enemies = enemies.filter(e => e.alive);
   chasers = chasers.filter(c => c.alive);
   chaserBullets = chaserBullets.filter(cb => cb.alive);
   bombs = bombs.filter(b => b.alive);
   explosions = explosions.filter(ex => ex.life > 0);
+  scorePopups = scorePopups.filter(sp => sp.life > 0);
 }
 
 export const SCORE_BOMBER = 150;
@@ -316,7 +338,7 @@ export function checkBulletCollisions(bullets: { x: number; y: number; dx: numbe
       const dist = Math.hypot(b.x - e.x, b.y - e.y);
       if (dist < ENEMY_SIZE + 5) {
         e.alive = false;
-        spawnExplosion(e.x, e.y, 35);
+        spawnExplosion(e.x, e.y, 35, SCORE_BOMBER);
         score += SCORE_BOMBER;
         hit = true;
         break;
@@ -329,7 +351,7 @@ export function checkBulletCollisions(bullets: { x: number; y: number; dx: numbe
         const dist = Math.hypot(b.x - c.x, b.y - c.y);
         if (dist < CHASER_SIZE + 5) {
           c.alive = false;
-          spawnExplosion(c.x, c.y, 30);
+          spawnExplosion(c.x, c.y, 30, SCORE_CHASER);
           score += SCORE_CHASER;
           hit = true;
           break;
@@ -343,7 +365,7 @@ export function checkBulletCollisions(bullets: { x: number; y: number; dx: numbe
         const dist = Math.hypot(b.x - bomb.x, b.y - bomb.y);
         if (dist < BOMB_SIZE + 5) {
           bomb.alive = false;
-          spawnExplosion(bomb.x, bomb.y, 20);
+          spawnExplosion(bomb.x, bomb.y, 20, SCORE_BOMB);
           score += SCORE_BOMB;
           hit = true;
           break;
@@ -420,6 +442,19 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.arc(ex.x, ex.y, ex.radius * 0.5, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(255, 255, 200, ${ex.life * 0.8})`;
     ctx.fill();
+    ctx.restore();
+  }
+
+  // Score popups
+  for (const sp of scorePopups) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(sp.life * 2, 1);
+    ctx.font = "bold 12px monospace";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#f7d794";
+    ctx.shadowColor = "rgba(0,0,0,0.7)";
+    ctx.shadowBlur = 4;
+    ctx.fillText(`+${sp.value}`, sp.x, sp.y);
     ctx.restore();
   }
 }
