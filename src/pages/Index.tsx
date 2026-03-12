@@ -81,6 +81,7 @@ const Index = () => {
   const ammoBoxAlertRef = useRef(0);
   const scoreRef = useRef(0);
   const waveRef = useRef<WaveState>(createWaveState());
+  const fuelRef = useRef(MAX_FUEL);
   const [paused, setPaused] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [gameOverReason, setGameOverReason] = useState("");
