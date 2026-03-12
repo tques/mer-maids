@@ -97,6 +97,7 @@ const Index = () => {
   const lastPosRef = useRef({ x: 0, y: 0 });
   const boatRef = useRef<Boat | null>(null);
   const velRef = useRef({ x: 0, y: 0 });
+  const gpDpadPrev = useRef({ left: false, right: false });
   
   const wasMovingRef = useRef(false);
   const throttleRef = useRef(1);
