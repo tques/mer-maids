@@ -33,11 +33,16 @@ export function getWaterSurfaceY(canvasHeight: number): number {
   return canvasHeight * (1 - WATER_RATIO);
 }
 
-export function getWaveY(x: number, baseY: number): number {
+export function getWaveY(x: number, baseY: number, worldWidth: number = 3000): number {
+  // Use frequencies that are exact multiples of 2π/worldWidth so waves tile seamlessly
+  const base = (2 * Math.PI) / worldWidth;
+  const f1 = base * 12;   // ~12 full cycles across the world
+  const f2 = base * 20;   // ~20 full cycles
+  const f3 = base * 7;    // ~7 full cycles
   return baseY
-    + Math.sin(x * WAVE_FREQUENCY + waveTime) * WAVE_AMPLITUDE
-    + Math.sin(x * WAVE_FREQUENCY * 1.7 + waveTime * 1.3) * WAVE_AMPLITUDE * 0.5
-    + Math.sin(x * WAVE_FREQUENCY * 0.6 + waveTime * 0.7) * WAVE_AMPLITUDE * 0.3;
+    + Math.sin(x * f1 + waveTime) * WAVE_AMPLITUDE
+    + Math.sin(x * f2 + waveTime * 1.3) * WAVE_AMPLITUDE * 0.5
+    + Math.sin(x * f3 + waveTime * 0.7) * WAVE_AMPLITUDE * 0.3;
 }
 
 export function isSubmerged(py: number, canvasHeight: number): boolean {
