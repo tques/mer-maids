@@ -127,6 +127,8 @@ const Index = () => {
   const useRightStickRef = useRef(false);
   const [pauseMenuIndex, setPauseMenuIndex] = useState(0);
   const pauseMenuIndexRef = useRef(0);
+  const gamepadAimingRef = useRef(false); // true when gamepad stick was last used for aiming
+  const loopRef = useRef<(() => void) | null>(null);
 
   // Helper: convert screen mouse to world coords
   const getWorldMouse = useCallback(() => {
@@ -171,8 +173,14 @@ const Index = () => {
     window.addEventListener("resize", resize);
 
     const onMouseMove = (e: MouseEvent) => {
+      if (gamepadAimingRef.current) return; // ignore mouse movement while gamepad is active
       const rect = canvas.getBoundingClientRect();
       mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    };
+
+    const onMouseClick = () => {
+      // Any mouse click re-enables mouse aiming
+      gamepadAimingRef.current = false;
     };
 
     const onMouseDown = (e: MouseEvent) => {
@@ -313,6 +321,7 @@ const Index = () => {
       // Angle: prefer gamepad stick if active, otherwise mouse
       let angle: number;
       if (aimStickActive) {
+        gamepadAimingRef.current = true; // switch to gamepad aiming
         angle = Math.atan2(aimStickY, aimStickX);
       } else {
         angle = Math.atan2(wmy - pos.y, wmx - pos.x);
@@ -857,9 +866,13 @@ const Index = () => {
       rafRef.current = requestAnimationFrame(loop);
     };
 
+    // Store loop in ref so menu poll can restart it
+    loopRef.current = loop;
+
     canvas.addEventListener("mousemove", onMouseMove);
     canvas.addEventListener("mousedown", onMouseDown);
     canvas.addEventListener("mouseup", onMouseUp);
+    canvas.addEventListener("click", onMouseClick);
     canvas.addEventListener("contextmenu", onContextMenu);
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
@@ -869,11 +882,13 @@ const Index = () => {
       canvas.removeEventListener("mousemove", onMouseMove);
       canvas.removeEventListener("mousedown", onMouseDown);
       canvas.removeEventListener("mouseup", onMouseUp);
+      canvas.removeEventListener("click", onMouseClick);
       canvas.removeEventListener("contextmenu", onContextMenu);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("resize", resize);
       cancelAnimationFrame(rafRef.current);
+      loopRef.current = null;
     };
   }, [shake, getWorldMouse]);
 
@@ -923,9 +938,7 @@ const Index = () => {
           if (pauseMenuIndexRef.current === 0) {
             pausedRef.current = false;
             setPaused(false);
-            rafRef.current = requestAnimationFrame(() => {
-              // Re-trigger loop by restarting from useEffect's loop
-            });
+            if (loopRef.current) rafRef.current = requestAnimationFrame(loopRef.current);
           } else if (pauseMenuIndexRef.current === 1) {
             const newVal = !useRightStickRef.current;
             useRightStickRef.current = newVal;
@@ -936,6 +949,7 @@ const Index = () => {
         if (startPressed) {
           pausedRef.current = false;
           setPaused(false);
+          if (loopRef.current) rafRef.current = requestAnimationFrame(loopRef.current);
         }
       }
 
@@ -982,7 +996,7 @@ const Index = () => {
             style={{ color: "#ccc", fontFamily: "var(--font-mono)", fontSize: "14px", lineHeight: "1.8" }}
           >
             <p>
-              <span style={{ color: "#D93636" }}>LEFT CLICK / L1+L2</span> — hold to fly toward cursor / stick
+              <span style={{ color: "#D93636" }}>LEFT CLICK / LT</span> — hold to fly toward cursor / stick
             </p>
             <p>
               <span style={{ color: "#D93636" }}>RIGHT CLICK / FACE BUTTONS</span> — fire projectiles
@@ -1030,6 +1044,7 @@ const Index = () => {
               onClick={() => {
                 pausedRef.current = false;
                 setPaused(false);
+                if (loopRef.current) rafRef.current = requestAnimationFrame(loopRef.current);
               }}
               className="px-6 py-3 text-sm tracking-widest uppercase border cursor-pointer"
               style={{
