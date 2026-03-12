@@ -32,6 +32,9 @@ import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail, getShip
 const SPEED = 4;
 const TRI_SIZE = 20;
 const GRAVITY = 0.06;
+const THRUST_GRAVITY = 0.018; // passive gravity pull even while thrusting
+const CLIMB_PENALTY = 0.20;   // 20% slower when flying straight up
+const DIVE_BOOST = 0.15;      // 15% faster when diving
 const MAX_FALL_SPEED = 7;
 const FLOAT_DURATION = 2400;
 const DRAG = 0.99;
