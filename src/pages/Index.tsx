@@ -451,8 +451,9 @@ const Index = () => {
         }
       }
 
-      // Update water particles
+      // Update water particles and jet trail
       updateParticles(1 / 60);
+      updateJetTrail(1 / 60);
 
       // === DRAWING ===
       // Clear
