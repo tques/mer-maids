@@ -437,18 +437,35 @@ const Index = () => {
         if (box) {
           const t = (performance.now() - box.spawnTime) / 400;
           const bobY = box.y + Math.sin(t) * 4;
+          const s = AMMO_BOX_SIZE;
           ctx.save();
           ctx.translate(box.x, bobY);
           // Glow
           ctx.shadowColor = "rgba(255, 220, 60, 0.6)";
           ctx.shadowBlur = 16;
-          // Box body
+          // Crate body
+          ctx.fillStyle = "#c8a020";
+          ctx.fillRect(-s / 2, -s / 2, s, s);
+          // Lid highlight
           ctx.fillStyle = "#f0c830";
-          ctx.fillRect(-AMMO_BOX_SIZE / 2, -AMMO_BOX_SIZE / 2, AMMO_BOX_SIZE, AMMO_BOX_SIZE);
-          // Cross detail
+          ctx.fillRect(-s / 2, -s / 2, s, s * 0.35);
+          // Bullet icons (3 small vertical rounds)
           ctx.fillStyle = "#805a00";
-          ctx.fillRect(-2, -AMMO_BOX_SIZE / 2 + 3, 4, AMMO_BOX_SIZE - 6);
-          ctx.fillRect(-AMMO_BOX_SIZE / 2 + 3, -2, AMMO_BOX_SIZE - 6, 4);
+          const bw = 3, bh = 10;
+          ctx.fillRect(-bw * 2, -bh / 2 + 2, bw, bh);
+          ctx.fillRect(-bw / 2, -bh / 2 + 2, bw, bh);
+          ctx.fillRect(bw, -bh / 2 + 2, bw, bh);
+          // Bullet tips
+          ctx.fillStyle = "#d4a017";
+          ctx.beginPath();
+          ctx.arc(-bw * 2 + bw / 2, -bh / 2 + 2, bw / 2 + 0.5, Math.PI, 0);
+          ctx.arc(-bw / 2 + bw / 2, -bh / 2 + 2, bw / 2 + 0.5, Math.PI, 0);
+          ctx.arc(bw + bw / 2, -bh / 2 + 2, bw / 2 + 0.5, Math.PI, 0);
+          ctx.fill();
+          // Border
+          ctx.strokeStyle = "#604800";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(-s / 2, -s / 2, s, s);
           ctx.restore();
         }
 

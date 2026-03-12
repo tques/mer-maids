@@ -138,10 +138,10 @@ export function updateEnemies(
     bomberSpawnTimer = bomberInterval + Math.random() * 4;
     const fromLeft = Math.random() > 0.5;
     const dir = fromLeft ? 1 : -1;
-    // Spawn just off-camera relative to player
+    // Spawn near the boat (off-screen from boat's perspective)
     const spawnX = fromLeft
-      ? playerX - viewHalfW - 80
-      : playerX + viewHalfW + 80;
+      ? boatX - boatWidth - 200 - Math.random() * 200
+      : boatX + boatWidth + 200 + Math.random() * 200;
     enemies.push({
       x: spawnX,
       y: 40 + Math.random() * waterY * 0.3,
