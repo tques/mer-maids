@@ -31,7 +31,7 @@ import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail } from "
 
 const SPEED = 4;
 const TRI_SIZE = 20;
-const GRAVITY = 0.12;
+const GRAVITY = 0.06;
 const MAX_FALL_SPEED = 7;
 const FLOAT_DURATION = 1200;
 const DRAG = 0.99;
@@ -47,7 +47,7 @@ const WORLD_WIDTH = 3000;
 const ZOOM = 1.4;
 const MAX_AMMO = 60;
 const AMMO_LOW_THRESHOLD = 12;
-const AMMO_BOX_SIZE = 60;
+const AMMO_BOX_SIZE = 22;
 const MAX_FUEL = 50;
 const FUEL_BURN_RATE = 8; // fuel/sec while flying
 const FUEL_REFILL_RATE = 25; // fuel/sec while submerged
