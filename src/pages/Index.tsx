@@ -652,7 +652,9 @@ const Index = () => {
             gameStartedRef.current = true;
             setGameStarted(true);
             setShowHint(false);
+            scoreRef.current = 0;
             resetEnemies();
+            resetPowerups();
           }}
         >
           <div className="text-5xl font-bold tracking-widest uppercase mb-6" style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}>
