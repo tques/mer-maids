@@ -127,6 +127,8 @@ const Index = () => {
   const useRightStickRef = useRef(false);
   const [pauseMenuIndex, setPauseMenuIndex] = useState(0);
   const pauseMenuIndexRef = useRef(0);
+  const gamepadAimingRef = useRef(false); // true when gamepad stick was last used for aiming
+  const loopRef = useRef<(() => void) | null>(null);
 
   // Helper: convert screen mouse to world coords
   const getWorldMouse = useCallback(() => {

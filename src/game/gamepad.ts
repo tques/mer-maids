@@ -115,11 +115,10 @@ export function pollGamepad(): GamepadState {
     (gp.buttons[5]?.pressed ?? false) ||
     (gp.buttons[7]?.pressed ?? false);
 
-  // Left shoulder: L1 (4) or L2 (6)
+  // Left trigger: LT only (button 6, analog trigger)
   const leftShoulder =
-    (gp.buttons[4]?.pressed ?? false) ||
     (gp.buttons[6]?.pressed ?? false) ||
-    (gp.buttons[6]?.value ?? 0) > 0.3; // analog trigger
+    (gp.buttons[6]?.value ?? 0) > 0.15; // analog trigger
 
   // Start/Options button (9)
   const start = gp.buttons[9]?.pressed ?? false;
