@@ -346,7 +346,6 @@ const Index = () => {
             setGameOverReason("Carrier destroyed!");
           }
         }
-        }
 
         // Boat collision
         if (boatRef.current) {
