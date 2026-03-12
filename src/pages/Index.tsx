@@ -387,6 +387,7 @@ const Index = () => {
       }
 
       // Move toward world-space mouse or gamepad stick
+      if (gp.leftShoulder || gp.fire) gamepadAimingRef.current = true;
       const isMoving = keysRef.current.has("w") || gp.leftShoulder;
       const hasFuel = fuelRef.current > 0;
       const vel = velRef.current;
