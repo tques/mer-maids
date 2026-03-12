@@ -7,6 +7,7 @@ import { createBoat, drawBoat, collideWithBoat, Boat } from "../game/boat";
 import { updateEnemies, checkBulletCollisions, checkChaserBulletHitsPlayer, checkBombHitsShip, drawEnemies, spawnExplosion, resetEnemies, fleeAllEnemies } from "../game/enemies";
 import { resetPowerups, checkScoreRewards, checkPowerupPickup, updatePowerups, drawPowerups } from "../game/powerups";
 import { createWaveState, updateWave, getWaveDifficulty, drawWaveTransition, drawWaveHUD, WaveState } from "../game/waves";
+import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail } from "../game/jettrail";
 
 const SPEED = 4;
 const TRI_SIZE = 20;
@@ -27,6 +28,10 @@ const ZOOM = 1.4;
 const MAX_AMMO = 30;
 const AMMO_LOW_THRESHOLD = 8;
 const AMMO_BOX_SIZE = 22;
+const MAX_FUEL = 100;
+const FUEL_BURN_RATE = 4;      // fuel/sec while flying
+const FUEL_REFILL_RATE = 25;   // fuel/sec while submerged
+const FUEL_LOW_THRESHOLD = 25;
 
 interface Bullet {
   x: number;
@@ -76,6 +81,7 @@ const Index = () => {
   const ammoBoxAlertRef = useRef(0);
   const scoreRef = useRef(0);
   const waveRef = useRef<WaveState>(createWaveState());
+  const fuelRef = useRef(MAX_FUEL);
   const [paused, setPaused] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [gameOverReason, setGameOverReason] = useState("");
@@ -225,10 +231,22 @@ const Index = () => {
       wasSubmergedRef.current = submerged;
       lastPosRef.current = { x: pos.x, y: pos.y };
 
+      // Fuel system: refill when submerged, burn when flying
+      const dt = 1 / 60;
+      if (submerged) {
+        fuelRef.current = Math.min(fuelRef.current + FUEL_REFILL_RATE * dt, MAX_FUEL);
+      }
+
       // Move toward world-space mouse
       const isMoving = keysRef.current.has("w");
+      const hasFuel = fuelRef.current > 0;
       const vel = velRef.current;
-      if (isMoving) {
+      if (isMoving && hasFuel) {
+        // Burn fuel when flying (not submerged)
+        if (!submerged) {
+          fuelRef.current = Math.max(fuelRef.current - FUEL_BURN_RATE * dt, 0);
+        }
+
         const stalling = floatTimerRef.current > FLOAT_DURATION;
         if (stalling && throttleRef.current < 1) {
           throttleRef.current = Math.min(throttleRef.current + 0.012, 1);
@@ -247,9 +265,25 @@ const Index = () => {
         pos.x += vel.x;
         pos.y += vel.y;
 
+        // Spawn jet trail when moving
+        spawnJetParticles(pos.x, pos.y, angle, throttleRef.current, submerged);
+
         if (throttleRef.current >= 0.95) {
           floatTimerRef.current = 0;
         }
+        wasMovingRef.current = true;
+      } else if (isMoving && !hasFuel) {
+        // Out of fuel — treat as not moving, fall with gravity
+        floatTimerRef.current += 16;
+        throttleRef.current = Math.max(throttleRef.current - 0.02, 0);
+        vel.x *= DRAG;
+        vel.y *= DRAG;
+        if (floatTimerRef.current > FLOAT_DURATION) {
+          const gravityT = Math.min((floatTimerRef.current - FLOAT_DURATION) / 800, 1);
+          vel.y = Math.min(vel.y + GRAVITY * gravityT * gravityT, MAX_FALL_SPEED);
+        }
+        pos.x += vel.x;
+        pos.y += vel.y;
         wasMovingRef.current = true;
       } else if (wasMovingRef.current) {
         floatTimerRef.current += 16;
@@ -417,8 +451,9 @@ const Index = () => {
         }
       }
 
-      // Update water particles
+      // Update water particles and jet trail
       updateParticles(1 / 60);
+      updateJetTrail(1 / 60);
 
       // === DRAWING ===
       // Clear
@@ -553,6 +588,9 @@ const Index = () => {
           ctx.restore();
         }
 
+        // Jet trail (drawn behind player, within world offset)
+        drawJetTrail(ctx);
+
         ctx.restore(); // offset
       }
 
@@ -567,7 +605,7 @@ const Index = () => {
       const hudY = 28;
       const hudX = 16;
       ctx.fillStyle = "rgba(0,0,0,0.4)";
-      ctx.fillRect(hudX - 4, hudY - 16, 200, 74);
+      ctx.fillRect(hudX - 4, hudY - 16, 200, 96);
 
       // Ammo counter
       const ammo = ammoRef.current;
@@ -585,12 +623,28 @@ const Index = () => {
       ctx.fillText(`${ammo}`, hudX + 50 + ammoBarW + 6, hudY + 44);
       ctx.font = "bold 14px monospace";
 
+      // Fuel counter
+      const fuel = fuelRef.current;
+      const fuelColor = fuel <= FUEL_LOW_THRESHOLD ? "#74b9ff" : "#aaa";
+      ctx.fillStyle = fuelColor;
+      ctx.fillText("FUEL", hudX, hudY + 66);
+      const fuelBarW = 120;
+      const fuelFill = (fuel / MAX_FUEL) * fuelBarW;
+      ctx.fillStyle = "#333";
+      ctx.fillRect(hudX + 50, hudY + 56, fuelBarW, 10);
+      ctx.fillStyle = fuel <= FUEL_LOW_THRESHOLD ? "#74b9ff" : "#0984e3";
+      ctx.fillRect(hudX + 50, hudY + 56, fuelFill, 10);
+      ctx.fillStyle = fuelColor;
+      ctx.font = "bold 11px monospace";
+      ctx.fillText(`${Math.ceil(fuel)}`, hudX + 50 + fuelBarW + 6, hudY + 66);
+      ctx.font = "bold 14px monospace";
+
       // Ammo box alert
       if (ammoBoxRef.current && ammoBoxAlertRef.current > 0) {
         const flash = Math.sin(performance.now() / 200) > 0;
         if (flash) {
           ctx.fillStyle = "#f0c830";
-          ctx.fillText("▼ AMMO CRATE SPAWNED ▼", hudX, hudY + 64);
+          ctx.fillText("▼ AMMO CRATE SPAWNED ▼", hudX, hudY + 86);
         }
       }
 
@@ -686,6 +740,8 @@ const Index = () => {
             waveRef.current = createWaveState();
             resetEnemies();
             resetPowerups();
+            resetJetTrail();
+            fuelRef.current = MAX_FUEL;
           }}
         >
           <div className="text-5xl font-bold tracking-widest uppercase mb-6" style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}>
@@ -696,7 +752,7 @@ const Index = () => {
             <p><span style={{ color: "#D93636" }}>RIGHT CLICK</span> — fire projectiles</p>
             <p><span style={{ color: "#74b9ff" }}>A / D</span> — barrel roll left / right</p>
             <p><span style={{ color: "#74b9ff" }}>ESC</span> — pause</p>
-            <p className="mt-4 opacity-70">Defend your carrier from enemy bombers and fighters. Dive underwater to evade — but you'll slow down.</p>
+            <p className="mt-4 opacity-70">Defend your carrier from enemy bombers and fighters. Dive underwater to refuel your water jets and evade enemies.</p>
           </div>
           <div className="text-sm tracking-widest uppercase animate-pulse" style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}>
             Click anywhere to start
