@@ -866,9 +866,13 @@ const Index = () => {
       rafRef.current = requestAnimationFrame(loop);
     };
 
+    // Store loop in ref so menu poll can restart it
+    loopRef.current = loop;
+
     canvas.addEventListener("mousemove", onMouseMove);
     canvas.addEventListener("mousedown", onMouseDown);
     canvas.addEventListener("mouseup", onMouseUp);
+    canvas.addEventListener("click", onMouseClick);
     canvas.addEventListener("contextmenu", onContextMenu);
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
@@ -878,11 +882,13 @@ const Index = () => {
       canvas.removeEventListener("mousemove", onMouseMove);
       canvas.removeEventListener("mousedown", onMouseDown);
       canvas.removeEventListener("mouseup", onMouseUp);
+      canvas.removeEventListener("click", onMouseClick);
       canvas.removeEventListener("contextmenu", onContextMenu);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("resize", resize);
       cancelAnimationFrame(rafRef.current);
+      loopRef.current = null;
     };
   }, [shake, getWorldMouse]);
 
