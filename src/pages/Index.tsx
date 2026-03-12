@@ -1,12 +1,32 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import {
-  getWaterSurfaceY, isSubmerged, spawnSplash, updateParticles, drawWater,
+  getWaterSurfaceY,
+  isSubmerged,
+  spawnSplash,
+  updateParticles,
+  drawWater,
   WATER_SPEED_FACTOR,
 } from "../game/water";
 import { createBoat, drawBoat, collideWithBoat, Boat } from "../game/boat";
-import { updateEnemies, checkBulletCollisions, checkChaserBulletHitsPlayer, checkBombHitsShip, drawEnemies, spawnExplosion, resetEnemies, fleeAllEnemies } from "../game/enemies";
+import {
+  updateEnemies,
+  checkBulletCollisions,
+  checkChaserBulletHitsPlayer,
+  checkBombHitsShip,
+  drawEnemies,
+  spawnExplosion,
+  resetEnemies,
+  fleeAllEnemies,
+} from "../game/enemies";
 import { resetPowerups, checkScoreRewards, checkPowerupPickup, updatePowerups, drawPowerups } from "../game/powerups";
-import { createWaveState, updateWave, getWaveDifficulty, drawWaveTransition, drawWaveHUD, WaveState } from "../game/waves";
+import {
+  createWaveState,
+  updateWave,
+  getWaveDifficulty,
+  drawWaveTransition,
+  drawWaveHUD,
+  WaveState,
+} from "../game/waves";
 import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail } from "../game/jettrail";
 
 const SPEED = 4;
@@ -28,9 +48,9 @@ const ZOOM = 1.4;
 const MAX_AMMO = 30;
 const AMMO_LOW_THRESHOLD = 8;
 const AMMO_BOX_SIZE = 22;
-const MAX_FUEL = 100;
-const FUEL_BURN_RATE = 4;      // fuel/sec while flying
-const FUEL_REFILL_RATE = 25;   // fuel/sec while submerged
+const MAX_FUEL = 50;
+const FUEL_BURN_RATE = 4; // fuel/sec while flying
+const FUEL_REFILL_RATE = 25; // fuel/sec while submerged
 const FUEL_LOW_THRESHOLD = 25;
 
 interface Bullet {
@@ -56,7 +76,16 @@ const Index = () => {
   const bulletsRef = useRef<Bullet[]>([]);
   const bulletIdRef = useRef(0);
   const rafRef = useRef(0);
-  const rollRef = useRef<{ active: boolean; dir: -1 | 1; startTime: number; startX: number; startY: number; perpX: number; perpY: number; spinAngle: number }>({ active: false, dir: 1, startTime: 0, startX: 0, startY: 0, perpX: 0, perpY: 0, spinAngle: 0 });
+  const rollRef = useRef<{
+    active: boolean;
+    dir: -1 | 1;
+    startTime: number;
+    startX: number;
+    startY: number;
+    perpX: number;
+    perpY: number;
+    spinAngle: number;
+  }>({ active: false, dir: 1, startTime: 0, startX: 0, startY: 0, perpX: 0, perpY: 0, spinAngle: 0 });
   const rightMouseRef = useRef(false);
   const shootCooldownRef = useRef(0);
   const SHOOT_INTERVAL = 280;
@@ -103,7 +132,9 @@ const Index = () => {
     const el = containerRef.current;
     if (!el) return;
     el.style.transform = `translate(${dx * 2}px, ${dy * 2}px)`;
-    setTimeout(() => { el.style.transform = "translate(0,0)"; }, 150);
+    setTimeout(() => {
+      el.style.transform = "translate(0,0)";
+    }, 150);
   }, []);
 
   useEffect(() => {
@@ -306,8 +337,14 @@ const Index = () => {
 
       // Vertical clamp
       let hitY = 0;
-      if (pos.y < TRI_SIZE) { pos.y = TRI_SIZE; hitY = -1; }
-      if (pos.y > viewH - TRI_SIZE) { pos.y = viewH - TRI_SIZE; hitY = 1; }
+      if (pos.y < TRI_SIZE) {
+        pos.y = TRI_SIZE;
+        hitY = -1;
+      }
+      if (pos.y > viewH - TRI_SIZE) {
+        pos.y = viewH - TRI_SIZE;
+        hitY = 1;
+      }
       if (hitY) shake(0, hitY);
 
       // Recalculate camera after position update
@@ -531,7 +568,8 @@ const Index = () => {
           ctx.fillRect(-s / 2, -s / 2, s, s * 0.35);
           // Bullet icons (3 small vertical rounds)
           ctx.fillStyle = "#805a00";
-          const bw = 3, bh = 10;
+          const bw = 3,
+            bh = 10;
           ctx.fillRect(-bw * 2, -bh / 2 + 2, bw, bh);
           ctx.fillRect(-bw / 2, -bh / 2 + 2, bw, bh);
           ctx.fillRect(bw, -bh / 2 + 2, bw, bh);
@@ -744,17 +782,37 @@ const Index = () => {
             fuelRef.current = MAX_FUEL;
           }}
         >
-          <div className="text-5xl font-bold tracking-widest uppercase mb-6" style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}>
+          <div
+            className="text-5xl font-bold tracking-widest uppercase mb-6"
+            style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}
+          >
             CARRIER DEFENSE
           </div>
-          <div className="max-w-md text-center space-y-3 mb-10" style={{ color: "#ccc", fontFamily: "var(--font-mono)", fontSize: "14px", lineHeight: "1.8" }}>
-            <p><span style={{ color: "#D93636" }}>LEFT CLICK</span> — hold to fly toward cursor</p>
-            <p><span style={{ color: "#D93636" }}>RIGHT CLICK</span> — fire projectiles</p>
-            <p><span style={{ color: "#74b9ff" }}>A / D</span> — barrel roll left / right</p>
-            <p><span style={{ color: "#74b9ff" }}>ESC</span> — pause</p>
-            <p className="mt-4 opacity-70">Defend your carrier from enemy bombers and fighters. Dive underwater to refuel your water jets and evade enemies.</p>
+          <div
+            className="max-w-md text-center space-y-3 mb-10"
+            style={{ color: "#ccc", fontFamily: "var(--font-mono)", fontSize: "14px", lineHeight: "1.8" }}
+          >
+            <p>
+              <span style={{ color: "#D93636" }}>LEFT CLICK</span> — hold to fly toward cursor
+            </p>
+            <p>
+              <span style={{ color: "#D93636" }}>RIGHT CLICK</span> — fire projectiles
+            </p>
+            <p>
+              <span style={{ color: "#74b9ff" }}>A / D</span> — barrel roll left / right
+            </p>
+            <p>
+              <span style={{ color: "#74b9ff" }}>ESC</span> — pause
+            </p>
+            <p className="mt-4 opacity-70">
+              Defend your carrier from enemy bombers and fighters. Dive underwater to refuel your water jets and evade
+              enemies.
+            </p>
           </div>
-          <div className="text-sm tracking-widest uppercase animate-pulse" style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}>
+          <div
+            className="text-sm tracking-widest uppercase animate-pulse"
+            style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}
+          >
             Click anywhere to start
           </div>
         </div>
@@ -768,27 +826,51 @@ const Index = () => {
         </div>
       )}
       {paused && !gameOver && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
-          <div className="text-4xl font-bold tracking-widest uppercase mb-4" style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}>
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+        >
+          <div
+            className="text-4xl font-bold tracking-widest uppercase mb-4"
+            style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}
+          >
             PAUSED
           </div>
-          <div className="text-sm tracking-widest uppercase opacity-50" style={{ color: "#ccc", fontFamily: "var(--font-mono)" }}>
+          <div
+            className="text-sm tracking-widest uppercase opacity-50"
+            style={{ color: "#ccc", fontFamily: "var(--font-mono)" }}
+          >
             Press ESC to resume
           </div>
         </div>
       )}
       {gameOver && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.7)" }}>
-          <div className="text-4xl font-bold tracking-widest uppercase mb-4" style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}>
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+        >
+          <div
+            className="text-4xl font-bold tracking-widest uppercase mb-4"
+            style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}
+          >
             GAME OVER
           </div>
-          <div className="text-lg tracking-wider uppercase mb-2 opacity-70" style={{ color: "#ccc", fontFamily: "var(--font-mono)" }}>
+          <div
+            className="text-lg tracking-wider uppercase mb-2 opacity-70"
+            style={{ color: "#ccc", fontFamily: "var(--font-mono)" }}
+          >
             {gameOverReason}
           </div>
-          <div className="text-sm tracking-wider mb-2 opacity-50" style={{ color: "#aaa", fontFamily: "var(--font-mono)" }}>
+          <div
+            className="text-sm tracking-wider mb-2 opacity-50"
+            style={{ color: "#aaa", fontFamily: "var(--font-mono)" }}
+          >
             Survived to Wave {waveRef.current.wave}
           </div>
-          <div className="text-2xl font-bold tracking-widest mb-8" style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}>
+          <div
+            className="text-2xl font-bold tracking-widest mb-8"
+            style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}
+          >
             SCORE: {scoreRef.current}
           </div>
           <button
