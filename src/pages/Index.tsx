@@ -321,6 +321,7 @@ const Index = () => {
       // Angle: prefer gamepad stick if active, otherwise mouse
       let angle: number;
       if (aimStickActive) {
+        gamepadAimingRef.current = true; // switch to gamepad aiming
         angle = Math.atan2(aimStickY, aimStickX);
       } else {
         angle = Math.atan2(wmy - pos.y, wmx - pos.x);
