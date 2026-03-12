@@ -7,6 +7,7 @@ import { createBoat, drawBoat, collideWithBoat, Boat } from "../game/boat";
 import { updateEnemies, checkBulletCollisions, checkChaserBulletHitsPlayer, checkBombHitsShip, drawEnemies, spawnExplosion, resetEnemies, fleeAllEnemies } from "../game/enemies";
 import { resetPowerups, checkScoreRewards, checkPowerupPickup, updatePowerups, drawPowerups } from "../game/powerups";
 import { createWaveState, updateWave, getWaveDifficulty, drawWaveTransition, drawWaveHUD, WaveState } from "../game/waves";
+import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail } from "../game/jettrail";
 
 const SPEED = 4;
 const TRI_SIZE = 20;
