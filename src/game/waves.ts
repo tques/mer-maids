@@ -68,8 +68,8 @@ export function updateWave(state: WaveState, dt: number, currentScore: number): 
       state.fleeTimer = 0;
       startNextWave = true;
 
-      // Extra life every 2 waves
-      if (state.wave % 2 === 1 && state.wave > 1) {
+      // Extra life every 3 waves
+      if (state.wave % 3 === 1 && state.wave > 1) {
         newLife = true;
       }
     }
