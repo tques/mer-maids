@@ -674,7 +674,7 @@ const Index = () => {
 
         // Boat
         if (boatRef.current) {
-          drawBoat(ctx, boatRef.current, viewH);
+          drawBoat(ctx, boatRef.current, viewH, shipHPRef.current / SHIP_MAX_HP);
         }
 
         // Powerups
