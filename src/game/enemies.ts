@@ -138,13 +138,14 @@ export function updateEnemies(
     bomberSpawnTimer = bomberInterval + Math.random() * 4;
     const fromLeft = Math.random() > 0.5;
     const dir = fromLeft ? 1 : -1;
-    // Spawn near the boat (off-screen from boat's perspective)
+    // Spawn near the boat, off to the side
     const spawnX = fromLeft
       ? boatX - boatWidth - 200 - Math.random() * 200
       : boatX + boatWidth + 200 + Math.random() * 200;
+    // Spawn above the top of the screen, dropping in
     enemies.push({
       x: spawnX,
-      y: 40 + Math.random() * waterY * 0.3,
+      y: -30 - Math.random() * 60,
       speed: 1.2 + Math.random() * 0.8,
       dir: dir as 1 | -1,
       angle: 0,
@@ -154,11 +155,16 @@ export function updateEnemies(
     });
   }
 
-  // Update bombers
+  // Update bombers — descend to cruising altitude then fly horizontally
   for (const e of enemies) {
     if (!e.alive) continue;
+    const cruiseY = 40 + Math.abs(Math.sin(e.targetX * 0.01)) * waterY * 0.25;
+    if (e.y < cruiseY) {
+      e.y += 1.2; // descend into play area
+    } else {
+      e.y += Math.sin(performance.now() * 0.003 + e.x * 0.01) * 0.3;
+    }
     e.x += e.dir * e.speed;
-    e.y += Math.sin(performance.now() * 0.003 + e.x * 0.01) * 0.3;
     e.bombCooldown -= dt;
     if (Math.abs(e.x - e.targetX) < 120 && e.bombCooldown <= 0) {
       e.bombCooldown = BOMB_INTERVAL + Math.random() * 0.5;
@@ -181,13 +187,14 @@ export function updateEnemies(
   const aliveChasers = chasers.filter(c => c.alive).length;
   if (chaserSpawnTimer <= 0 && aliveChasers < maxChasers) {
     chaserSpawnTimer = chaserInterval + Math.random() * 3;
+    // Spawn well outside the player's view
     const fromLeft = Math.random() > 0.5;
     const spawnX = fromLeft
-      ? playerX - viewHalfW - 80
-      : playerX + viewHalfW + 80;
+      ? playerX - viewHalfW - 200 - Math.random() * 300
+      : playerX + viewHalfW + 200 + Math.random() * 300;
     chasers.push({
       x: spawnX,
-      y: 40 + Math.random() * waterY * 0.5,
+      y: 30 + Math.random() * waterY * 0.5,
       speed: CHASER_SPEED,
       angle: 0,
       shootCooldown: 2 + Math.random(),
