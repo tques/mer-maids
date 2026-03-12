@@ -150,7 +150,9 @@ const Index = () => {
       canvas.height = container.clientHeight;
       if (posRef.current.x === 0 && posRef.current.y === 0) {
         const viewH = canvas.height / ZOOM;
-        posRef.current = { x: WORLD_WIDTH / 2, y: viewH * 0.4 };
+        const surfaceY = getWaterSurfaceY(viewH);
+        // Start in the water, to the side of the carrier
+        posRef.current = { x: WORLD_WIDTH / 2 - 420, y: surfaceY + 30 };
       }
       boatRef.current = createBoat(WORLD_WIDTH);
       mouseRef.current = { x: canvas.width / 2, y: canvas.height / 2 };
