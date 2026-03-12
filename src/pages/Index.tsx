@@ -695,8 +695,11 @@ const Index = () => {
           <div className="text-4xl font-bold tracking-widest uppercase mb-4" style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}>
             GAME OVER
           </div>
-          <div className="text-lg tracking-wider uppercase mb-8 opacity-70" style={{ color: "#ccc", fontFamily: "var(--font-mono)" }}>
+          <div className="text-lg tracking-wider uppercase mb-2 opacity-70" style={{ color: "#ccc", fontFamily: "var(--font-mono)" }}>
             {gameOverReason}
+          </div>
+          <div className="text-2xl font-bold tracking-widest mb-8" style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}>
+            SCORE: {scoreRef.current}
           </div>
           <button
             onClick={() => window.location.reload()}
