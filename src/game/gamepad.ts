@@ -45,7 +45,7 @@ let lastState: GamepadState = {
   dpadUp: false,
   dpadDown: false,
   fire: false,
-  leftShoulder: false,
+  thrust: false,
   start: false,
   faceA: false,
   connected: false,
