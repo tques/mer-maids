@@ -511,6 +511,13 @@ const Index = () => {
           ctx.strokeStyle = "#604800";
           ctx.lineWidth = 1.5;
           ctx.strokeRect(-s / 2, -s / 2, s, s);
+          // "Ammo" label
+          ctx.shadowColor = "transparent";
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = "#fff";
+          ctx.font = "bold 8px monospace";
+          ctx.textAlign = "center";
+          ctx.fillText("Ammo", 0, -s / 2 - 6);
           ctx.restore();
         }
 
@@ -613,7 +620,7 @@ const Index = () => {
       ctx.fillRect(shipHudX - 240, hudY - 16, 244, 30);
 
       ctx.fillStyle = "#888";
-      ctx.fillText("CARRIER", shipHudX - 180, hudY);
+      ctx.fillText("CARRIER ARMOR", shipHudX - 180, hudY);
       for (let i = 0; i < SHIP_MAX_HP; i++) {
         const bx = shipHudX - 170 + i * 17;
         ctx.fillStyle = i < shipHPRef.current ? "#5a9" : "#444";
