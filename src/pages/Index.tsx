@@ -401,8 +401,8 @@ const Index = () => {
       // Recalculate camera after position update
       const finalCamX = pos.x - viewW / 2;
 
-      // Continuous fire (ammo gated)
-      if (rightMouseRef.current && ammoRef.current > 0) {
+      // Continuous fire (ammo gated) — mouse right-click or gamepad buttons
+      if ((rightMouseRef.current || gp.fire) && ammoRef.current > 0) {
         shootCooldownRef.current -= 16;
         if (shootCooldownRef.current <= 0) {
           shootCooldownRef.current = SHOOT_INTERVAL;
