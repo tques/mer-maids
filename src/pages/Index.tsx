@@ -280,23 +280,15 @@ const Index = () => {
           fuelRef.current = Math.max(fuelRef.current - FUEL_BURN_RATE * dt, 0);
         }
 
-        const stalling = floatTimerRef.current > FLOAT_DURATION;
-        if (stalling && throttleRef.current < 1) {
-          throttleRef.current = Math.min(throttleRef.current + 0.012, 1);
-        } else if (!stalling) {
-          throttleRef.current = 1;
-        }
+        throttleRef.current = Math.min(throttleRef.current + 0.04, 1);
 
         // Gravity-affected flight: climbing is harder, diving is easier
-        // sin(angle) > 0 means moving downward, < 0 means climbing
-        const verticalComponent = Math.sin(angle); // -1 (up) to +1 (down)
+        const verticalComponent = Math.sin(angle);
         let gravityMod = 1.0;
         if (!submerged) {
           if (verticalComponent < 0) {
-            // Climbing — penalize speed proportional to steepness
             gravityMod = 1.0 - CLIMB_PENALTY * Math.abs(verticalComponent);
           } else {
-            // Diving — boost speed proportional to steepness
             gravityMod = 1.0 + DIVE_BOOST * verticalComponent;
           }
         }
@@ -310,7 +302,7 @@ const Index = () => {
           vel.y += (targetVy - vel.y) * (0.05 + throttleRef.current * 0.15);
         }
 
-        // Passive gravity pull during thrust (subtle downward drift)
+        // Passive gravity even while thrusting
         if (!submerged) {
           vel.y += THRUST_GRAVITY;
         }
@@ -321,37 +313,25 @@ const Index = () => {
         // Spawn jet trail when moving
         spawnJetParticles(pos.x, pos.y, angle, throttleRef.current, submerged, fuelRef.current, MAX_FUEL);
 
-        if (throttleRef.current >= 0.95) {
-          floatTimerRef.current = 0;
-        }
         wasMovingRef.current = true;
-      } else if (isMoving && !hasFuel) {
-        // Out of fuel — treat as not moving, fall with gravity
-        floatTimerRef.current += 16;
-        throttleRef.current = Math.max(throttleRef.current - 0.02, 0);
-        vel.x *= DRAG;
-        vel.y *= DRAG;
-        if (floatTimerRef.current > FLOAT_DURATION) {
-          const gravityT = Math.min((floatTimerRef.current - FLOAT_DURATION) / 800, 1);
-          vel.y = Math.min(vel.y + GRAVITY * gravityT * gravityT, MAX_FALL_SPEED);
-        }
-        pos.x += vel.x;
-        pos.y += vel.y;
-        wasMovingRef.current = true;
-      } else if (wasMovingRef.current) {
-        floatTimerRef.current += 16;
-        throttleRef.current = Math.max(throttleRef.current - 0.02, 0);
+      } else {
+        // Not thrusting (released button, or no fuel) — natural gravity + air drag
+        throttleRef.current = Math.max(throttleRef.current - 0.03, 0);
 
-        vel.x *= DRAG;
-        vel.y *= DRAG;
+        vel.x *= AIR_DRAG;
+        vel.y *= AIR_DRAG;
 
-        if (floatTimerRef.current > FLOAT_DURATION) {
-          const gravityT = Math.min((floatTimerRef.current - FLOAT_DURATION) / 800, 1);
-          vel.y = Math.min(vel.y + GRAVITY * gravityT * gravityT, MAX_FALL_SPEED);
+        // Constant gravity, always pulling down
+        if (!submerged) {
+          vel.y = Math.min(vel.y + GRAVITY, MAX_FALL_SPEED);
         }
 
         pos.x += vel.x;
         pos.y += vel.y;
+
+        if (Math.abs(vel.x) < 0.01 && Math.abs(vel.y) < 0.01 && !submerged) {
+          wasMovingRef.current = false;
+        }
       }
 
       // Horizontal wrapping in world space
