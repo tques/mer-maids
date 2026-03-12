@@ -3,7 +3,7 @@
 export const WATER_RATIO = 0.25;
 export const WATER_SPEED_FACTOR = 0.40;
 export const WAVE_AMPLITUDE = 6;
-export const WAVE_FREQUENCY = 0.025;
+// Wave frequencies are computed dynamically to tile over WORLD_WIDTH
 export const WAVE_SPEED = 0.002;
 
 export interface Splash {
