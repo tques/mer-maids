@@ -231,10 +231,22 @@ const Index = () => {
       wasSubmergedRef.current = submerged;
       lastPosRef.current = { x: pos.x, y: pos.y };
 
+      // Fuel system: refill when submerged, burn when flying
+      const dt = 1 / 60;
+      if (submerged) {
+        fuelRef.current = Math.min(fuelRef.current + FUEL_REFILL_RATE * dt, MAX_FUEL);
+      }
+
       // Move toward world-space mouse
       const isMoving = keysRef.current.has("w");
+      const hasFuel = fuelRef.current > 0;
       const vel = velRef.current;
-      if (isMoving) {
+      if (isMoving && hasFuel) {
+        // Burn fuel when flying (not submerged)
+        if (!submerged) {
+          fuelRef.current = Math.max(fuelRef.current - FUEL_BURN_RATE * dt, 0);
+        }
+
         const stalling = floatTimerRef.current > FLOAT_DURATION;
         if (stalling && throttleRef.current < 1) {
           throttleRef.current = Math.min(throttleRef.current + 0.012, 1);
@@ -253,9 +265,25 @@ const Index = () => {
         pos.x += vel.x;
         pos.y += vel.y;
 
+        // Spawn jet trail when moving
+        spawnJetParticles(pos.x, pos.y, angle, throttleRef.current, submerged);
+
         if (throttleRef.current >= 0.95) {
           floatTimerRef.current = 0;
         }
+        wasMovingRef.current = true;
+      } else if (isMoving && !hasFuel) {
+        // Out of fuel — treat as not moving, fall with gravity
+        floatTimerRef.current += 16;
+        throttleRef.current = Math.max(throttleRef.current - 0.02, 0);
+        vel.x *= DRAG;
+        vel.y *= DRAG;
+        if (floatTimerRef.current > FLOAT_DURATION) {
+          const gravityT = Math.min((floatTimerRef.current - FLOAT_DURATION) / 800, 1);
+          vel.y = Math.min(vel.y + GRAVITY * gravityT * gravityT, MAX_FALL_SPEED);
+        }
+        pos.x += vel.x;
+        pos.y += vel.y;
         wasMovingRef.current = true;
       } else if (wasMovingRef.current) {
         floatTimerRef.current += 16;
