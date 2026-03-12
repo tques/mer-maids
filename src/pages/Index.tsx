@@ -588,6 +588,9 @@ const Index = () => {
           ctx.restore();
         }
 
+        // Jet trail (drawn behind player, within world offset)
+        drawJetTrail(ctx);
+
         ctx.restore(); // offset
       }
 
