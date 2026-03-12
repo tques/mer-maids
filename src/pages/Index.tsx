@@ -151,6 +151,7 @@ const Index = () => {
 
     const loop = () => {
       if (gameOverRef.current) return;
+      if (pausedRef.current) return;
       const { width: cw, height: ch } = canvas;
       const pos = posRef.current;
       const mouse = mouseRef.current;
