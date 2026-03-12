@@ -75,6 +75,7 @@ const Index = () => {
   const ammoBoxRef = useRef<AmmoBox | null>(null);
   const ammoBoxAlertRef = useRef(0);
   const scoreRef = useRef(0);
+  const waveRef = useRef<WaveState>(createWaveState());
   const [paused, setPaused] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [gameOverReason, setGameOverReason] = useState("");
