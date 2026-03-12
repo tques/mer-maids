@@ -95,7 +95,7 @@ const Index = () => {
   const lastPosRef = useRef({ x: 0, y: 0 });
   const boatRef = useRef<Boat | null>(null);
   const velRef = useRef({ x: 0, y: 0 });
-  const floatTimerRef = useRef(0);
+  
   const wasMovingRef = useRef(false);
   const throttleRef = useRef(1);
   const [showHint, setShowHint] = useState(true);
