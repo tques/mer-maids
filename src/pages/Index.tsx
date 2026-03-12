@@ -366,8 +366,10 @@ const Index = () => {
         ctx.save();
         ctx.translate(offset, 0);
 
-        // Water
-        drawWater(ctx, WORLD_WIDTH, viewH);
+        // Water — pass visible range for performance
+        const localVisStart = finalCamX - offset;
+        const localVisEnd = finalCamX + viewW - offset;
+        drawWater(ctx, WORLD_WIDTH, viewH, localVisStart, localVisEnd);
 
         // Enemies, bombs, explosions
         drawEnemies(ctx);
