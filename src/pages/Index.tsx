@@ -98,6 +98,10 @@ const Index = () => {
   const boatRef = useRef<Boat | null>(null);
   const velRef = useRef({ x: 0, y: 0 });
   const gpDpadPrev = useRef({ left: false, right: false });
+  const gpStartPrev = useRef(false);
+  const gpFaceAPrev = useRef(false);
+  const gpDpadUpPrev = useRef(false);
+  const gpDpadDownPrev = useRef(false);
   
   const wasMovingRef = useRef(false);
   const throttleRef = useRef(1);
@@ -119,6 +123,10 @@ const Index = () => {
   const [paused, setPaused] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [gameOverReason, setGameOverReason] = useState("");
+  const [useRightStick, setUseRightStick] = useState(false);
+  const useRightStickRef = useRef(false);
+  const [pauseMenuIndex, setPauseMenuIndex] = useState(0);
+  const pauseMenuIndexRef = useRef(0);
 
   // Helper: convert screen mouse to world coords
   const getWorldMouse = useCallback(() => {
@@ -241,10 +249,71 @@ const Index = () => {
       const wmx = mouseRef.current.x / ZOOM + camX;
       const wmy = mouseRef.current.y / ZOOM;
 
+      // Gamepad menu controls (edge-triggered)
+      const startPressed = gp.start && !gpStartPrev.current;
+      const faceAPressed = gp.faceA && !gpFaceAPrev.current;
+      gpStartPrev.current = gp.start;
+      gpFaceAPrev.current = gp.faceA;
+
+      // Start button → toggle pause (only in-game)
+      if (startPressed && gameStartedRef.current && !gameOverRef.current) {
+        pausedRef.current = !pausedRef.current;
+        setPaused(pausedRef.current);
+        if (pausedRef.current) {
+          // Reset pause menu
+          pauseMenuIndexRef.current = 0;
+          setPauseMenuIndex(0);
+        }
+        if (!pausedRef.current) {
+          rafRef.current = requestAnimationFrame(loop);
+        }
+        return; // skip this frame
+      }
+
+      // Handle pause menu navigation with gamepad
+      if (pausedRef.current && gp.connected) {
+        const dpadUpPressed = gp.dpadUp && !gpDpadUpPrev.current;
+        const dpadDownPressed = gp.dpadDown && !gpDpadDownPrev.current;
+        gpDpadUpPrev.current = gp.dpadUp;
+        gpDpadDownPrev.current = gp.dpadDown;
+
+        if (dpadUpPressed || dpadDownPressed) {
+          const newIdx = dpadUpPressed
+            ? (pauseMenuIndexRef.current === 0 ? 1 : 0)
+            : (pauseMenuIndexRef.current === 1 ? 0 : 1);
+          pauseMenuIndexRef.current = newIdx;
+          setPauseMenuIndex(newIdx);
+        }
+
+        if (faceAPressed) {
+          if (pauseMenuIndexRef.current === 0) {
+            // Resume
+            pausedRef.current = false;
+            setPaused(false);
+            rafRef.current = requestAnimationFrame(loop);
+          } else if (pauseMenuIndexRef.current === 1) {
+            // Toggle stick
+            const newVal = !useRightStickRef.current;
+            useRightStickRef.current = newVal;
+            setUseRightStick(newVal);
+          }
+        }
+        // Don't process game logic while paused
+        return;
+      } else {
+        gpDpadUpPrev.current = gp.dpadUp;
+        gpDpadDownPrev.current = gp.dpadDown;
+      }
+
+      // Determine which stick to use for aiming based on preference
+      const aimStickX = useRightStickRef.current ? gp.rightStickX : gp.stickX;
+      const aimStickY = useRightStickRef.current ? gp.rightStickY : gp.stickY;
+      const aimStickActive = useRightStickRef.current ? gp.rightStickActive : gp.stickActive;
+
       // Angle: prefer gamepad stick if active, otherwise mouse
       let angle: number;
-      if (gp.stickActive) {
-        angle = Math.atan2(gp.stickY, gp.stickX);
+      if (aimStickActive) {
+        angle = Math.atan2(aimStickY, aimStickX);
       } else {
         angle = Math.atan2(wmy - pos.y, wmx - pos.x);
       }
@@ -304,7 +373,7 @@ const Index = () => {
       }
 
       // Move toward world-space mouse or gamepad stick
-      const isMoving = keysRef.current.has("w") || gp.stickActive;
+      const isMoving = keysRef.current.has("w") || gp.leftShoulder;
       const hasFuel = fuelRef.current > 0;
       const vel = velRef.current;
       if (isMoving && hasFuel) {
@@ -808,6 +877,74 @@ const Index = () => {
     };
   }, [shake, getWorldMouse]);
 
+  // Gamepad polling for menus (when game loop isn't running)
+  useEffect(() => {
+    let rafId = 0;
+    const pollMenuGamepad = () => {
+      const gp = pollGamepad();
+      const faceAPressed = gp.faceA && !gpFaceAPrev.current;
+      const startPressed = gp.start && !gpStartPrev.current;
+      gpFaceAPrev.current = gp.faceA;
+      gpStartPrev.current = gp.start;
+
+      // Start screen: A or Start to begin
+      if (!gameStartedRef.current && !gameOverRef.current && (faceAPressed || startPressed)) {
+        gameStartedRef.current = true;
+        setGameStarted(true);
+        setShowHint(false);
+        scoreRef.current = 0;
+        waveRef.current = createWaveState();
+        resetEnemies();
+        resetPowerups();
+        resetJetTrail();
+        fuelRef.current = MAX_FUEL;
+      }
+
+      // Game over: A to restart
+      if (gameOverRef.current && faceAPressed) {
+        window.location.reload();
+      }
+
+      // Paused: handled in game loop above
+      // But we need to keep polling when paused since game loop stops
+      if (pausedRef.current && gp.connected) {
+        const dpadUpPressed = gp.dpadUp && !gpDpadUpPrev.current;
+        const dpadDownPressed = gp.dpadDown && !gpDpadDownPrev.current;
+        gpDpadUpPrev.current = gp.dpadUp;
+        gpDpadDownPrev.current = gp.dpadDown;
+
+        if (dpadUpPressed || dpadDownPressed) {
+          const newIdx = pauseMenuIndexRef.current === 0 ? 1 : 0;
+          pauseMenuIndexRef.current = newIdx;
+          setPauseMenuIndex(newIdx);
+        }
+
+        if (faceAPressed) {
+          if (pauseMenuIndexRef.current === 0) {
+            pausedRef.current = false;
+            setPaused(false);
+            rafRef.current = requestAnimationFrame(() => {
+              // Re-trigger loop by restarting from useEffect's loop
+            });
+          } else if (pauseMenuIndexRef.current === 1) {
+            const newVal = !useRightStickRef.current;
+            useRightStickRef.current = newVal;
+            setUseRightStick(newVal);
+          }
+        }
+
+        if (startPressed) {
+          pausedRef.current = false;
+          setPaused(false);
+        }
+      }
+
+      rafId = requestAnimationFrame(pollMenuGamepad);
+    };
+    rafId = requestAnimationFrame(pollMenuGamepad);
+    return () => cancelAnimationFrame(rafId);
+  }, []);
+
   return (
     <div
       ref={containerRef}
@@ -845,16 +982,16 @@ const Index = () => {
             style={{ color: "#ccc", fontFamily: "var(--font-mono)", fontSize: "14px", lineHeight: "1.8" }}
           >
             <p>
-              <span style={{ color: "#D93636" }}>LEFT CLICK</span> — hold to fly toward cursor
+              <span style={{ color: "#D93636" }}>LEFT CLICK / L1+L2</span> — hold to fly toward cursor / stick
             </p>
             <p>
-              <span style={{ color: "#D93636" }}>RIGHT CLICK</span> — fire projectiles
+              <span style={{ color: "#D93636" }}>RIGHT CLICK / FACE BUTTONS</span> — fire projectiles
             </p>
             <p>
-              <span style={{ color: "#74b9ff" }}>A / D</span> — barrel roll left / right
+              <span style={{ color: "#74b9ff" }}>A / D / D-PAD ◄►</span> — barrel roll left / right
             </p>
             <p>
-              <span style={{ color: "#74b9ff" }}>ESC</span> — pause
+              <span style={{ color: "#74b9ff" }}>ESC / START</span> — pause
             </p>
             <p className="mt-4 opacity-70">
               Defend your carrier from enemy bombers and fighters. Dive underwater to refuel your water jets and evade
@@ -865,7 +1002,7 @@ const Index = () => {
             className="text-sm tracking-widest uppercase animate-pulse"
             style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}
           >
-            Click anywhere to start
+            Click or press A to start
           </div>
         </div>
       )}
@@ -883,16 +1020,51 @@ const Index = () => {
           style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
         >
           <div
-            className="text-4xl font-bold tracking-widest uppercase mb-4"
+            className="text-4xl font-bold tracking-widest uppercase mb-8"
             style={{ color: "#f7d794", fontFamily: "var(--font-mono)" }}
           >
             PAUSED
           </div>
+          <div className="flex flex-col items-center gap-4 mb-6">
+            <button
+              onClick={() => {
+                pausedRef.current = false;
+                setPaused(false);
+              }}
+              className="px-6 py-3 text-sm tracking-widest uppercase border cursor-pointer"
+              style={{
+                color: pauseMenuIndex === 0 ? "#f7d794" : "#888",
+                borderColor: pauseMenuIndex === 0 ? "#f7d794" : "#555",
+                backgroundColor: pauseMenuIndex === 0 ? "rgba(247,215,148,0.1)" : "transparent",
+                fontFamily: "var(--font-mono)",
+                minWidth: "280px",
+              }}
+            >
+              {pauseMenuIndex === 0 ? "► " : "  "}Resume
+            </button>
+            <button
+              onClick={() => {
+                const newVal = !useRightStick;
+                useRightStickRef.current = newVal;
+                setUseRightStick(newVal);
+              }}
+              className="px-6 py-3 text-sm tracking-widest uppercase border cursor-pointer"
+              style={{
+                color: pauseMenuIndex === 1 ? "#f7d794" : "#888",
+                borderColor: pauseMenuIndex === 1 ? "#f7d794" : "#555",
+                backgroundColor: pauseMenuIndex === 1 ? "rgba(247,215,148,0.1)" : "transparent",
+                fontFamily: "var(--font-mono)",
+                minWidth: "280px",
+              }}
+            >
+              {pauseMenuIndex === 1 ? "► " : "  "}Stick: {useRightStick ? "RIGHT" : "LEFT"}
+            </button>
+          </div>
           <div
-            className="text-sm tracking-widest uppercase opacity-50"
+            className="text-xs tracking-widest uppercase opacity-40"
             style={{ color: "#ccc", fontFamily: "var(--font-mono)" }}
           >
-            Press ESC to resume
+            ESC / START to resume · D-PAD to navigate · A to select
           </div>
         </div>
       )}
@@ -935,7 +1107,7 @@ const Index = () => {
               fontFamily: "var(--font-mono)",
             }}
           >
-            Try Again
+            Try Again (A)
           </button>
         </div>
       )}
