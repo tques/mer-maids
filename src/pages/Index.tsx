@@ -173,8 +173,14 @@ const Index = () => {
     window.addEventListener("resize", resize);
 
     const onMouseMove = (e: MouseEvent) => {
+      if (gamepadAimingRef.current) return; // ignore mouse movement while gamepad is active
       const rect = canvas.getBoundingClientRect();
       mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    };
+
+    const onMouseClick = () => {
+      // Any mouse click re-enables mouse aiming
+      gamepadAimingRef.current = false;
     };
 
     const onMouseDown = (e: MouseEvent) => {
