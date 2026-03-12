@@ -307,7 +307,24 @@ const Index = () => {
       const boatX = boatRef.current ? boatRef.current.x : WORLD_WIDTH / 2;
       const boatW = boatRef.current ? boatRef.current.width : 400;
       if (gameStartedRef.current) {
-        updateEnemies(1 / 60, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2);
+        const wave = waveRef.current;
+        const waveDiff = getWaveDifficulty(wave.wave);
+
+        // Update wave system
+        const waveResult = updateWave(wave, 1 / 60, scoreRef.current);
+        if (waveResult.waveCompleted) {
+          fleeAllEnemies();
+        }
+        if (waveResult.newLife) {
+          playerLivesRef.current = Math.min(playerLivesRef.current + 1, PLAYER_LIVES + 5);
+          playerHPRef.current = PLAYER_MAX_HP;
+        }
+        if (waveResult.startNextWave) {
+          resetEnemies();
+          resetPowerups();
+        }
+
+        updateEnemies(1 / 60, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
         const result = checkBulletCollisions(bulletsRef.current);
         bulletsRef.current = result.remaining;
         scoreRef.current += result.score;
