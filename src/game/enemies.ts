@@ -97,15 +97,33 @@ export function checkChaserBulletHitsPlayer(px: number, py: number, radius: numb
   return hits;
 }
 
-export function checkBombHitsShip(boatX: number, boatWidth: number, shipY: number): number {
+export function checkBombHitsShip(boatX: number, boatWidth: number, shipY: number, barrierUp: boolean = true): number {
   let hits = 0;
   const hw = boatWidth / 2;
+  const domeRadius = hw * 0.85;
+  const domeCenterY = shipY - 10; // topY approximation (same as in boat.ts)
+
   for (const b of bombs) {
     if (!b.alive) continue;
-    if (b.y > shipY - 10 && b.y < shipY + 20 && b.x > boatX - hw && b.x < boatX + hw) {
-      b.alive = false;
-      spawnExplosion(b.x, b.y, 25);
-      hits++;
+
+    if (barrierUp) {
+      // Check collision with dome arc (semicircle above the platform)
+      const dx = b.x - boatX;
+      const dy = b.y - domeCenterY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      // Only collide with the top half of the dome and when bomb is within dome X range
+      if (dist >= domeRadius - 8 && dist <= domeRadius + 8 && b.y < domeCenterY && Math.abs(dx) < domeRadius) {
+        b.alive = false;
+        spawnExplosion(b.x, b.y, 25);
+        hits++;
+      }
+    } else {
+      // Barrier is down — bombs hit the platform directly
+      if (b.y > shipY - 10 && b.y < shipY + 20 && b.x > boatX - hw && b.x < boatX + hw) {
+        b.alive = false;
+        spawnExplosion(b.x, b.y, 25);
+        hits++;
+      }
     }
   }
   return hits;

@@ -18,6 +18,14 @@ import {
   resetEnemies,
   fleeAllEnemies,
 } from "../game/enemies";
+import {
+  resetSubmarines,
+  updateSubmarinesWithDamage,
+  checkBulletHitsSubmarine,
+  drawSubmarines,
+  fleeSubmarines,
+  areSubmarinesGone,
+} from "../game/submarine";
 import { resetPowerups, checkScoreRewards, checkPowerupPickup, updatePowerups, drawPowerups } from "../game/powerups";
 import {
   createWaveState,
@@ -524,6 +532,7 @@ const Index = () => {
         const waveResult = updateWave(wave, 1 / 60, scoreRef.current);
         if (waveResult.waveCompleted) {
           fleeAllEnemies();
+          fleeSubmarines();
         }
         if (waveResult.newLife) {
           playerLivesRef.current = Math.min(playerLivesRef.current + 1, PLAYER_LIVES + 5);
@@ -531,13 +540,27 @@ const Index = () => {
         }
         if (waveResult.startNextWave) {
           resetEnemies();
+          resetSubmarines();
           resetPowerups();
         }
 
         updateEnemies(1 / 60, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
+        const subDmg = updateSubmarinesWithDamage(1 / 60, viewH, boatX, boatW, pos.x, viewW / 2, waveDiff, wave.enemiesFleeing, gameStartedRef.current ? performance.now() / 1000 : 0);
+        if (subDmg > 0) {
+          shake(0, 1);
+          shipHPRef.current = Math.max(shipHPRef.current - subDmg, 0);
+          if (shipHPRef.current <= 0) {
+            gameOverRef.current = true;
+            setGameOver(true);
+            setGameOverReason("City destroyed!");
+          }
+        }
         const result = checkBulletCollisions(bulletsRef.current);
         bulletsRef.current = result.remaining;
         scoreRef.current += result.score;
+        const subResult = checkBulletHitsSubmarine(bulletsRef.current);
+        bulletsRef.current = subResult.remaining;
+        scoreRef.current += subResult.score;
       }
 
       // Enemy projectile collisions
@@ -565,7 +588,8 @@ const Index = () => {
         }
 
         const waterY = getWaterSurfaceY(viewH);
-        const bombHits = checkBombHitsShip(boatX, boatW, waterY);
+        const barrierUp = shipHPRef.current > 3;
+        const bombHits = checkBombHitsShip(boatX, boatW, waterY, barrierUp);
         if (bombHits > 0) {
           shake(0, 1);
           shipHPRef.current = Math.max(shipHPRef.current - bombHits, 0);
@@ -669,12 +693,16 @@ const Index = () => {
         const localVisEnd = drawCamX + viewW - offset;
         drawWater(ctx, WORLD_WIDTH, viewH, localVisStart, localVisEnd);
 
+        // Submarines (drawn under water)
+        drawSubmarines(ctx);
+
         // Enemies, bombs, explosions
         drawEnemies(ctx);
 
         // Boat
         if (boatRef.current) {
-          drawBoat(ctx, boatRef.current, viewH, shipHPRef.current / SHIP_MAX_HP);
+          const barrierUp = shipHPRef.current > 3;
+          drawBoat(ctx, boatRef.current, viewH, shipHPRef.current / SHIP_MAX_HP, barrierUp);
         }
 
         // Powerups
@@ -859,11 +887,17 @@ const Index = () => {
       ctx.fillStyle = "rgba(0,0,0,0.4)";
       ctx.fillRect(shipHudX - 240, hudY - 16, 244, 30);
 
-      ctx.fillStyle = "#888";
-      ctx.fillText("CITY BARRIER", shipHudX - 180, hudY);
+      const barrierUp = shipHPRef.current > 3;
+      ctx.fillStyle = barrierUp ? "#888" : "#c44";
+      ctx.fillText(barrierUp ? "CITY BARRIER" : "CITY HP", shipHudX - 180, hudY);
       for (let i = 0; i < SHIP_MAX_HP; i++) {
         const bx = shipHudX - 170 + i * 17;
-        ctx.fillStyle = i < shipHPRef.current ? "#5a9" : "#444";
+        const isBarrierSegment = i >= 3; // first 3 are city HP, rest is barrier
+        if (i < shipHPRef.current) {
+          ctx.fillStyle = isBarrierSegment ? "#5a9" : "#c66";
+        } else {
+          ctx.fillStyle = "#444";
+        }
         ctx.fillRect(bx, hudY - 12, 13, 10);
       }
 
@@ -928,6 +962,7 @@ const Index = () => {
         scoreRef.current = 0;
         waveRef.current = createWaveState();
         resetEnemies();
+        resetSubmarines();
         resetPowerups();
         resetJetTrail();
         fuelRef.current = MAX_FUEL;
@@ -1006,6 +1041,7 @@ const Index = () => {
             scoreRef.current = 0;
             waveRef.current = createWaveState();
             resetEnemies();
+            resetSubmarines();
             resetPowerups();
             resetJetTrail();
             fuelRef.current = MAX_FUEL;
