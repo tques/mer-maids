@@ -539,6 +539,7 @@ const Index = () => {
         }
         if (waveResult.startNextWave) {
           resetEnemies();
+          resetSubmarines();
           resetPowerups();
         }
 
