@@ -588,7 +588,8 @@ const Index = () => {
         }
 
         const waterY = getWaterSurfaceY(viewH);
-        const bombHits = checkBombHitsShip(boatX, boatW, waterY);
+        const barrierUp = shipHPRef.current > 3;
+        const bombHits = checkBombHitsShip(boatX, boatW, waterY, barrierUp);
         if (bombHits > 0) {
           shake(0, 1);
           shipHPRef.current = Math.max(shipHPRef.current - bombHits, 0);
