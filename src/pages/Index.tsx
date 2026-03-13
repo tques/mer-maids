@@ -545,9 +545,22 @@ const Index = () => {
         }
 
         updateEnemies(1 / 60, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
+        const subDmg = updateSubmarinesWithDamage(1 / 60, viewH, boatX, boatW, pos.x, viewW / 2, waveDiff, wave.enemiesFleeing, gameStartedRef.current ? performance.now() / 1000 : 0);
+        if (subDmg > 0) {
+          shake(0, 1);
+          shipHPRef.current = Math.max(shipHPRef.current - subDmg, 0);
+          if (shipHPRef.current <= 0) {
+            gameOverRef.current = true;
+            setGameOver(true);
+            setGameOverReason("City destroyed!");
+          }
+        }
         const result = checkBulletCollisions(bulletsRef.current);
         bulletsRef.current = result.remaining;
         scoreRef.current += result.score;
+        const subResult = checkBulletHitsSubmarine(bulletsRef.current);
+        bulletsRef.current = subResult.remaining;
+        scoreRef.current += subResult.score;
       }
 
       // Enemy projectile collisions
