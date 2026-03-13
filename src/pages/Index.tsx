@@ -18,6 +18,14 @@ import {
   resetEnemies,
   fleeAllEnemies,
 } from "../game/enemies";
+import {
+  resetSubmarines,
+  updateSubmarinesWithDamage,
+  checkBulletHitsSubmarine,
+  drawSubmarines,
+  fleeSubmarines,
+  areSubmarinesGone,
+} from "../game/submarine";
 import { resetPowerups, checkScoreRewards, checkPowerupPickup, updatePowerups, drawPowerups } from "../game/powerups";
 import {
   createWaveState,
