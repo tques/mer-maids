@@ -956,6 +956,7 @@ const Index = () => {
         scoreRef.current = 0;
         waveRef.current = createWaveState();
         resetEnemies();
+        resetSubmarines();
         resetPowerups();
         resetJetTrail();
         fuelRef.current = MAX_FUEL;
