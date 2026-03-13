@@ -693,12 +693,16 @@ const Index = () => {
         const localVisEnd = drawCamX + viewW - offset;
         drawWater(ctx, WORLD_WIDTH, viewH, localVisStart, localVisEnd);
 
+        // Submarines (drawn under water)
+        drawSubmarines(ctx);
+
         // Enemies, bombs, explosions
         drawEnemies(ctx);
 
         // Boat
         if (boatRef.current) {
-          drawBoat(ctx, boatRef.current, viewH, shipHPRef.current / SHIP_MAX_HP);
+          const barrierUp = shipHPRef.current > 3;
+          drawBoat(ctx, boatRef.current, viewH, shipHPRef.current / SHIP_MAX_HP, barrierUp);
         }
 
         // Powerups
