@@ -23,7 +23,7 @@ export function getBoatTopY(boat: Boat, viewH: number): number {
   return waveY - 10;
 }
 
-export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: number, hpRatio: number = 1) {
+export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: number, hpRatio: number = 1, barrierUp: boolean = true) {
   const surfaceY = getWaterSurfaceY(viewH);
   const waveY = getWaveY(boat.x, surfaceY);
   const topY = waveY - 10;
