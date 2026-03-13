@@ -887,11 +887,17 @@ const Index = () => {
       ctx.fillStyle = "rgba(0,0,0,0.4)";
       ctx.fillRect(shipHudX - 240, hudY - 16, 244, 30);
 
-      ctx.fillStyle = "#888";
-      ctx.fillText("CITY BARRIER", shipHudX - 180, hudY);
+      const barrierUp = shipHPRef.current > 3;
+      ctx.fillStyle = barrierUp ? "#888" : "#c44";
+      ctx.fillText(barrierUp ? "CITY BARRIER" : "CITY HP", shipHudX - 180, hudY);
       for (let i = 0; i < SHIP_MAX_HP; i++) {
         const bx = shipHudX - 170 + i * 17;
-        ctx.fillStyle = i < shipHPRef.current ? "#5a9" : "#444";
+        const isBarrierSegment = i >= 3; // first 3 are city HP, rest is barrier
+        if (i < shipHPRef.current) {
+          ctx.fillStyle = isBarrierSegment ? "#5a9" : "#c66";
+        } else {
+          ctx.fillStyle = "#444";
+        }
         ctx.fillRect(bx, hudY - 12, 13, 10);
       }
 
