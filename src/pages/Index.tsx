@@ -532,6 +532,7 @@ const Index = () => {
         const waveResult = updateWave(wave, 1 / 60, scoreRef.current);
         if (waveResult.waveCompleted) {
           fleeAllEnemies();
+          fleeSubmarines();
         }
         if (waveResult.newLife) {
           playerLivesRef.current = Math.min(playerLivesRef.current + 1, PLAYER_LIVES + 5);
