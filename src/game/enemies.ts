@@ -1,4 +1,4 @@
-// Enemy system: pink triangle bombers, blue chasers, tumbling bombs, explosions
+// Enemy system: pink bombers, blue chasers, homing missiles, tumbling bombs, explosions
 
 import { getWaterSurfaceY } from "./water";
 
@@ -19,6 +19,7 @@ export interface Chaser {
   speed: number;
   angle: number;
   shootCooldown: number;
+  missileCooldown: number;
   alive: boolean;
 }
 
@@ -28,6 +29,16 @@ export interface ChaserBullet {
   dx: number;
   dy: number;
   alive: boolean;
+}
+
+export interface HomingMissile {
+  x: number;
+  y: number;
+  angle: number;
+  speed: number;
+  life: number;
+  alive: boolean;
+  trail: { x: number; y: number; age: number }[];
 }
 
 export interface Bomb {
@@ -52,6 +63,7 @@ export interface Explosion {
 let enemies: Enemy[] = [];
 let chasers: Chaser[] = [];
 let chaserBullets: ChaserBullet[] = [];
+let homingMissiles: HomingMissile[] = [];
 let bombs: Bomb[] = [];
 let explosions: Explosion[] = [];
 let bomberSpawnTimer = 0;
@@ -62,6 +74,7 @@ export function resetEnemies() {
   enemies = [];
   chasers = [];
   chaserBullets = [];
+  homingMissiles = [];
   bombs = [];
   explosions = [];
   scorePopups = [];
@@ -78,10 +91,14 @@ const BOMB_GRAVITY = 0.025;
 const CHASER_SPEED = 2.2;
 const CHASER_BULLET_SPEED = 4;
 const CHASER_SHOOT_INTERVAL = 1.2;
+const MISSILE_SPEED = 3.5;
+const MISSILE_TURN_RATE = 0.045;
+const MISSILE_LIFETIME = 6; // seconds
 
 export function getEnemies() { return enemies; }
 export function getChasers() { return chasers; }
 export function getChaserBullets() { return chaserBullets; }
+export function getHomingMissiles() { return homingMissiles; }
 export function getBombs() { return bombs; }
 export function getExplosions() { return explosions; }
 
@@ -97,28 +114,50 @@ export function checkChaserBulletHitsPlayer(px: number, py: number, radius: numb
   return hits;
 }
 
+/** Check homing missiles hitting player. Returns number of hits. */
+export function checkMissileHitsPlayer(px: number, py: number, radius: number): number {
+  let hits = 0;
+  for (const m of homingMissiles) {
+    if (!m.alive) continue;
+    if (Math.hypot(m.x - px, m.y - py) < radius + 6) {
+      m.alive = false;
+      spawnExplosion(m.x, m.y, 30);
+      hits++;
+    }
+  }
+  return hits;
+}
+
+/** Deflect all active homing missiles — called when player rolls or boosts */
+export function deflectMissiles() {
+  for (const m of homingMissiles) {
+    if (!m.alive) continue;
+    // Knock the missile wildly off course
+    m.angle += (Math.random() - 0.5) * Math.PI * 1.5;
+    m.speed *= 0.6;
+    m.life = Math.min(m.life, 1.2); // expire soon
+  }
+}
+
 export function checkBombHitsShip(boatX: number, boatWidth: number, shipY: number, barrierUp: boolean = true): number {
   let hits = 0;
   const hw = boatWidth / 2;
   const domeRadius = hw * 0.85;
-  const domeCenterY = shipY - 10; // topY approximation (same as in boat.ts)
+  const domeCenterY = shipY - 10;
 
   for (const b of bombs) {
     if (!b.alive) continue;
 
     if (barrierUp) {
-      // Check collision with dome arc (semicircle above the platform)
       const dx = b.x - boatX;
       const dy = b.y - domeCenterY;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      // Only collide with the top half of the dome and when bomb is within dome X range
       if (dist >= domeRadius - 8 && dist <= domeRadius + 8 && b.y < domeCenterY && Math.abs(dx) < domeRadius) {
         b.alive = false;
         spawnExplosion(b.x, b.y, 25);
         hits++;
       }
     } else {
-      // Barrier is down — bombs hit the platform directly
       if (b.y > shipY - 10 && b.y < shipY + 20 && b.x > boatX - hw && b.x < boatX + hw) {
         b.alive = false;
         spawnExplosion(b.x, b.y, 25);
@@ -164,8 +203,11 @@ export function fleeAllEnemies() {
       c.angle = c.x < 1500 ? Math.PI : 0;
       c.speed = 5;
       c.shootCooldown = 999;
+      c.missileCooldown = 999;
     }
   }
+  // Kill all missiles when fleeing
+  for (const m of homingMissiles) m.alive = false;
 }
 
 export function areEnemiesGone(): boolean {
@@ -249,7 +291,6 @@ export function updateEnemies(
   const aliveChasers = chasers.filter(c => c.alive).length;
   if (chaserSpawnTimer <= 0 && aliveChasers < maxChasers) {
     chaserSpawnTimer = chaserInterval + Math.random() * 3;
-    // Spawn well outside the player's view
     const fromLeft = Math.random() > 0.5;
     const spawnX = fromLeft
       ? playerX - viewHalfW - 200 - Math.random() * 300
@@ -260,6 +301,7 @@ export function updateEnemies(
       speed: CHASER_SPEED,
       angle: 0,
       shootCooldown: 2 + Math.random(),
+      missileCooldown: 8 + Math.random() * 6, // first missile delayed
       alive: true,
     });
   }
@@ -272,7 +314,6 @@ export function updateEnemies(
     if (!c.alive) continue;
 
     if (fleeing) {
-      // Fly away upward and outward
       const fleeDir = c.x < 1500 ? -1 : 1;
       const fleeAngle = Math.atan2(-1, fleeDir);
       let angleDiff = fleeAngle - c.angle;
@@ -335,7 +376,23 @@ export function updateEnemies(
       });
     }
 
-    // Despawn if far from player
+    // Homing missile launch — rare, more frequent at higher waves
+    c.missileCooldown -= dt;
+    const missileInterval = Math.max(18 - waveDifficulty * 4, 5); // wave1=14s, wave5=2s
+    if (c.missileCooldown <= 0 && playerVisible) {
+      c.missileCooldown = missileInterval + Math.random() * 4;
+      const mAngle = Math.atan2(playerY - c.y, playerX - c.x);
+      homingMissiles.push({
+        x: c.x + Math.cos(mAngle) * (CHASER_SIZE + 6),
+        y: c.y + Math.sin(mAngle) * (CHASER_SIZE + 6),
+        angle: mAngle,
+        speed: MISSILE_SPEED,
+        life: MISSILE_LIFETIME,
+        alive: true,
+        trail: [],
+      });
+    }
+
     if (Math.abs(c.x - playerX) > viewHalfW * 4) c.alive = false;
   }
 
@@ -345,6 +402,31 @@ export function updateEnemies(
     cb.x += cb.dx;
     cb.y += cb.dy;
     if (cb.y < -10 || cb.y > viewH + 10 || Math.abs(cb.x - playerX) > viewHalfW * 3) cb.alive = false;
+  }
+
+  // Update homing missiles
+  for (const m of homingMissiles) {
+    if (!m.alive) continue;
+    m.life -= dt;
+    if (m.life <= 0) {
+      m.alive = false;
+      spawnExplosion(m.x, m.y, 20);
+      continue;
+    }
+    // Home toward player
+    const targetAngle = Math.atan2(playerY - m.y, playerX - m.x);
+    let angleDiff = targetAngle - m.angle;
+    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+    m.angle += angleDiff * MISSILE_TURN_RATE;
+    m.x += Math.cos(m.angle) * m.speed;
+    m.y += Math.sin(m.angle) * m.speed;
+    // Trail
+    m.trail.push({ x: m.x, y: m.y, age: 0 });
+    for (const t of m.trail) t.age += dt;
+    m.trail = m.trail.filter(t => t.age < 0.5);
+    // Cull off-screen
+    if (Math.abs(m.x - playerX) > viewHalfW * 4) m.alive = false;
   }
 
   // Update bombs
@@ -377,6 +459,7 @@ export function updateEnemies(
   enemies = enemies.filter(e => e.alive);
   chasers = chasers.filter(c => c.alive);
   chaserBullets = chaserBullets.filter(cb => cb.alive);
+  homingMissiles = homingMissiles.filter(m => m.alive);
   bombs = bombs.filter(b => b.alive);
   explosions = explosions.filter(ex => ex.life > 0);
   scorePopups = scorePopups.filter(sp => sp.life > 0);
@@ -433,6 +516,21 @@ export function checkBulletCollisions(bullets: { x: number; y: number; dx: numbe
       }
     }
 
+    // Shoot down homing missiles
+    if (!hit) {
+      for (const m of homingMissiles) {
+        if (!m.alive) continue;
+        const dist = Math.hypot(b.x - m.x, b.y - m.y);
+        if (dist < 8) {
+          m.alive = false;
+          spawnExplosion(m.x, m.y, 25, 50);
+          score += 50;
+          hit = true;
+          break;
+        }
+      }
+    }
+
     if (!hit) remainingBullets.push(b);
   }
 
@@ -440,36 +538,120 @@ export function checkBulletCollisions(bullets: { x: number; y: number; dx: numbe
 }
 
 export function drawEnemies(ctx: CanvasRenderingContext2D) {
+  // --- Pink Bombers (detailed) ---
   for (const e of enemies) {
     if (!e.alive) continue;
     ctx.save();
     ctx.translate(e.x, e.y);
     ctx.rotate(e.dir === 1 ? 0 : Math.PI);
+
+    // Shadow
+    ctx.shadowColor = "rgba(232, 67, 147, 0.4)";
+    ctx.shadowBlur = 10;
+
+    // Main fuselage
+    const s = ENEMY_SIZE;
     ctx.beginPath();
-    ctx.moveTo(ENEMY_SIZE, 0);
-    ctx.lineTo(-ENEMY_SIZE * 0.7, -ENEMY_SIZE * 0.6);
-    ctx.lineTo(-ENEMY_SIZE * 0.7, ENEMY_SIZE * 0.6);
+    ctx.moveTo(s * 1.1, 0);
+    ctx.lineTo(s * 0.2, -s * 0.5);
+    ctx.lineTo(-s * 0.8, -s * 0.55);
+    ctx.lineTo(-s * 0.6, 0);
+    ctx.lineTo(-s * 0.8, s * 0.55);
+    ctx.lineTo(s * 0.2, s * 0.5);
     ctx.closePath();
     ctx.fillStyle = "#e84393";
     ctx.fill();
+    ctx.strokeStyle = "#c0306e";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Wing stripes
+    ctx.fillStyle = "#d63384";
+    ctx.fillRect(-s * 0.5, -s * 0.45, s * 0.6, s * 0.15);
+    ctx.fillRect(-s * 0.5, s * 0.3, s * 0.6, s * 0.15);
+
+    // Cockpit
+    ctx.beginPath();
+    ctx.arc(s * 0.3, 0, s * 0.15, 0, Math.PI * 2);
+    ctx.fillStyle = "#fab1d0";
+    ctx.fill();
+
+    // Engine glow
+    ctx.beginPath();
+    ctx.arc(-s * 0.7, 0, s * 0.12, 0, Math.PI * 2);
+    ctx.fillStyle = "#ff6b9d";
+    ctx.globalAlpha = 0.6 + Math.sin(performance.now() * 0.01) * 0.3;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    ctx.shadowColor = "transparent";
     ctx.restore();
   }
 
+  // --- Blue Chasers (detailed) ---
   for (const c of chasers) {
     if (!c.alive) continue;
     ctx.save();
     ctx.translate(c.x, c.y);
     ctx.rotate(c.angle);
+
+    // Shadow
+    ctx.shadowColor = "rgba(9, 132, 227, 0.4)";
+    ctx.shadowBlur = 10;
+
+    // Main body — angular fighter shape
+    const s = CHASER_SIZE;
     ctx.beginPath();
-    ctx.moveTo(CHASER_SIZE, 0);
-    ctx.lineTo(-CHASER_SIZE * 0.7, -CHASER_SIZE * 0.6);
-    ctx.lineTo(-CHASER_SIZE * 0.7, CHASER_SIZE * 0.6);
+    ctx.moveTo(s * 1.2, 0);
+    ctx.lineTo(s * 0.3, -s * 0.35);
+    ctx.lineTo(-s * 0.3, -s * 0.6);
+    ctx.lineTo(-s * 0.7, -s * 0.4);
+    ctx.lineTo(-s * 0.5, 0);
+    ctx.lineTo(-s * 0.7, s * 0.4);
+    ctx.lineTo(-s * 0.3, s * 0.6);
+    ctx.lineTo(s * 0.3, s * 0.35);
     ctx.closePath();
     ctx.fillStyle = "#0984e3";
     ctx.fill();
+    ctx.strokeStyle = "#0652a8";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Wing detail
+    ctx.fillStyle = "#074ba0";
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.2, -s * 0.5);
+    ctx.lineTo(-s * 0.6, -s * 0.5);
+    ctx.lineTo(-s * 0.4, -s * 0.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.2, s * 0.5);
+    ctx.lineTo(-s * 0.6, s * 0.5);
+    ctx.lineTo(-s * 0.4, s * 0.2);
+    ctx.closePath();
+    ctx.fill();
+
+    // Cockpit visor
+    ctx.beginPath();
+    ctx.ellipse(s * 0.4, 0, s * 0.18, s * 0.1, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#74b9ff";
+    ctx.fill();
+
+    // Engine trails
+    ctx.beginPath();
+    ctx.arc(-s * 0.6, -s * 0.15, s * 0.08, 0, Math.PI * 2);
+    ctx.arc(-s * 0.6, s * 0.15, s * 0.08, 0, Math.PI * 2);
+    ctx.fillStyle = "#00cec9";
+    ctx.globalAlpha = 0.5 + Math.sin(performance.now() * 0.012 + c.x) * 0.4;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    ctx.shadowColor = "transparent";
     ctx.restore();
   }
 
+  // --- Chaser bullets ---
   ctx.fillStyle = "#74b9ff";
   for (const cb of chaserBullets) {
     if (!cb.alive) continue;
@@ -478,6 +660,76 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.fill();
   }
 
+  // --- Homing Missiles (very obvious) ---
+  for (const m of homingMissiles) {
+    if (!m.alive) continue;
+
+    // Draw trail first
+    for (const t of m.trail) {
+      const alpha = Math.max(0, 1 - t.age / 0.5);
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, 3 * alpha, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 100, 50, ${alpha * 0.6})`;
+      ctx.fill();
+    }
+
+    ctx.save();
+    ctx.translate(m.x, m.y);
+    ctx.rotate(m.angle);
+
+    // Pulsing glow — makes it very visible
+    const pulse = 0.7 + Math.sin(performance.now() * 0.02) * 0.3;
+    ctx.shadowColor = `rgba(255, 60, 60, ${pulse})`;
+    ctx.shadowBlur = 18;
+
+    // Missile body
+    ctx.beginPath();
+    ctx.moveTo(10, 0);
+    ctx.lineTo(3, -4);
+    ctx.lineTo(-8, -3);
+    ctx.lineTo(-10, 0);
+    ctx.lineTo(-8, 3);
+    ctx.lineTo(3, 4);
+    ctx.closePath();
+    ctx.fillStyle = "#ff4444";
+    ctx.fill();
+    ctx.strokeStyle = "#cc0000";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Warhead tip
+    ctx.beginPath();
+    ctx.arc(7, 0, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffcc00";
+    ctx.fill();
+
+    // Fins
+    ctx.fillStyle = "#cc2222";
+    ctx.fillRect(-9, -5, 4, 2);
+    ctx.fillRect(-9, 3, 4, 2);
+
+    // Engine flame
+    ctx.beginPath();
+    ctx.moveTo(-10, -2);
+    ctx.lineTo(-14 - Math.random() * 4, 0);
+    ctx.lineTo(-10, 2);
+    ctx.fillStyle = `rgba(255, 200, 50, ${0.7 + Math.random() * 0.3})`;
+    ctx.fill();
+
+    ctx.shadowColor = "transparent";
+    ctx.restore();
+
+    // Warning indicator ring
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, 16 + Math.sin(performance.now() * 0.015) * 4, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255, 50, 50, ${0.3 + Math.sin(performance.now() * 0.01) * 0.2})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // --- Bombs ---
   for (const b of bombs) {
     if (!b.alive) continue;
     ctx.save();
@@ -491,6 +743,7 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.restore();
   }
 
+  // --- Explosions ---
   for (const ex of explosions) {
     ctx.save();
     ctx.globalAlpha = ex.life;
@@ -505,7 +758,7 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.restore();
   }
 
-  // Score popups
+  // --- Score popups ---
   for (const sp of scorePopups) {
     ctx.save();
     ctx.globalAlpha = Math.min(sp.life * 2, 1);

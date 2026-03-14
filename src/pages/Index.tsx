@@ -12,6 +12,8 @@ import {
   updateEnemies,
   checkBulletCollisions,
   checkChaserBulletHitsPlayer,
+  checkMissileHitsPlayer,
+  deflectMissiles,
   checkBombHitsShip,
   drawEnemies,
   spawnExplosion,
@@ -54,6 +56,7 @@ const INVULN_DURATION = 1500;
 const BULLET_SPEED = 8;
 const BULLET_RADIUS = 5;
 const ROLL_DISTANCE = 60;
+const ROLL_FUEL_COST = 5; // fuel consumed per roll
 const ROLL_DURATION = 300;
 const WORLD_WIDTH = 3000;
 const ZOOM = 1.4;
@@ -233,7 +236,8 @@ const Index = () => {
         e.preventDefault();
         setShowHint(false);
         const roll = rollRef.current;
-        if (!roll.active) {
+        if (!roll.active && fuelRef.current >= ROLL_FUEL_COST) {
+          fuelRef.current -= ROLL_FUEL_COST;
           const pos = posRef.current;
           const wm = getWorldMouse();
           const angle = Math.atan2(wm.y - pos.y, wm.x - pos.x);
@@ -248,6 +252,7 @@ const Index = () => {
           roll.perpX = perpX;
           roll.perpY = perpY;
           roll.spinAngle = 0;
+          deflectMissiles(); // Rolling throws off homing missiles
         }
       }
     };
@@ -354,19 +359,23 @@ const Index = () => {
 
       // Gamepad d-pad → barrel rolls (edge-triggered)
       const prevDpad = gpDpadPrev.current;
-      if (gp.dpadLeft && !prevDpad.left && !rollRef.current.active) {
+      if (gp.dpadLeft && !prevDpad.left && !rollRef.current.active && fuelRef.current >= ROLL_FUEL_COST) {
+        fuelRef.current -= ROLL_FUEL_COST;
         const perpX = -Math.sin(angle) * -1;
         const perpY = Math.cos(angle) * -1;
         const r = rollRef.current;
         r.active = true; r.dir = -1; r.startTime = performance.now();
         r.startX = pos.x; r.startY = pos.y; r.perpX = perpX; r.perpY = perpY; r.spinAngle = 0;
+        deflectMissiles();
       }
-      if (gp.dpadRight && !prevDpad.right && !rollRef.current.active) {
+      if (gp.dpadRight && !prevDpad.right && !rollRef.current.active && fuelRef.current >= ROLL_FUEL_COST) {
+        fuelRef.current -= ROLL_FUEL_COST;
         const perpX = -Math.sin(angle) * 1;
         const perpY = Math.cos(angle) * 1;
         const r = rollRef.current;
         r.active = true; r.dir = 1; r.startTime = performance.now();
         r.startX = pos.x; r.startY = pos.y; r.perpX = perpX; r.perpY = perpY; r.spinAngle = 0;
+        deflectMissiles();
       }
       gpDpadPrev.current = { left: gp.dpadLeft, right: gp.dpadRight };
 
@@ -420,6 +429,7 @@ const Index = () => {
         if (!boost.active) {
           boost.active = true;
           boost.lockedAngle = angle;
+          deflectMissiles(); // Boosting throws off homing missiles
         }
         angle = boost.lockedAngle;
       } else {
@@ -608,11 +618,13 @@ const Index = () => {
           invulnRef.current -= 16;
         } else {
           const playerHits = checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
-          if (playerHits > 0) {
-            spawnExplosion(pos.x, pos.y, 20);
-            shake(0, 1);
+          const missileHits = checkMissileHitsPlayer(pos.x, pos.y, TRI_SIZE);
+          const totalHits = playerHits + missileHits * 2; // missiles deal 2 damage
+          if (totalHits > 0) {
+            spawnExplosion(pos.x, pos.y, missileHits > 0 ? 35 : 20);
+            shake(missileHits > 0 ? 1 : 0, 1);
             invulnRef.current = INVULN_DURATION;
-            playerHPRef.current -= playerHits;
+            playerHPRef.current -= totalHits;
             if (playerHPRef.current <= 0) {
               playerLivesRef.current -= 1;
               if (playerLivesRef.current <= 0) {
