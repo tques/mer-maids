@@ -28,7 +28,8 @@ const SUB_WIDTH = 50;
 const SUB_HEIGHT = 16;
 const SUB_SPEED = 0.6;
 const SUB_ATTACK_TIME = 2.0; // seconds to charge before attacking
-const SUB_DEPTH_OFFSET = 60; // how far below water surface
+const SUB_DEPTH_MIN = 50; // minimum depth below water surface
+const SUB_DEPTH_MAX = 140; // maximum depth (deep subs encourage diving)
 
 export function updateSubmarines(
   dt: number,
@@ -42,7 +43,6 @@ export function updateSubmarines(
   gameTime: number
 ) {
   const waterY = getWaterSurfaceY(viewH);
-  const subY = waterY + SUB_DEPTH_OFFSET;
   const hw = boatWidth / 2;
 
   // Spawning
@@ -57,9 +57,11 @@ export function updateSubmarines(
       const spawnX = fromLeft
         ? boatX - hw - 600 - Math.random() * 400
         : boatX + hw + 600 + Math.random() * 400;
+      // Variable depth — some spawn deeper to encourage diving
+      const depthOffset = SUB_DEPTH_MIN + Math.random() * (SUB_DEPTH_MAX - SUB_DEPTH_MIN);
       submarines.push({
         x: spawnX,
-        y: subY,
+        y: waterY + depthOffset,
         speed: SUB_SPEED + Math.random() * 0.2,
         dir: dir as 1 | -1,
         alive: true,
@@ -75,12 +77,14 @@ export function updateSubmarines(
     if (!sub.alive) continue;
 
     if (fleeing) {
-      sub.x += sub.dir * 3;
+      // Flee away from city (reverse direction)
+      sub.attacking = false;
+      sub.x -= sub.dir * 2.5;
       if (Math.abs(sub.x - playerX) > viewHalfW * 4) sub.alive = false;
       continue;
     }
 
-    sub.y = subY; // stay at depth
+    // sub keeps its spawn depth
 
     if (!sub.attacking) {
       // Move toward city
@@ -133,7 +137,6 @@ export function updateSubmarinesWithDamage(
   gameTime: number
 ): number {
   const waterY = getWaterSurfaceY(viewH);
-  const subY = waterY + SUB_DEPTH_OFFSET;
   const hw = boatWidth / 2;
   let damage = 0;
 
@@ -149,9 +152,10 @@ export function updateSubmarinesWithDamage(
       const spawnX = fromLeft
         ? boatX - hw - 600 - Math.random() * 400
         : boatX + hw + 600 + Math.random() * 400;
+      const depthOffset = SUB_DEPTH_MIN + Math.random() * (SUB_DEPTH_MAX - SUB_DEPTH_MIN);
       submarines.push({
         x: spawnX,
-        y: subY,
+        y: waterY + depthOffset,
         speed: SUB_SPEED + Math.random() * 0.2,
         dir: dir as 1 | -1,
         alive: true,
@@ -167,12 +171,13 @@ export function updateSubmarinesWithDamage(
     if (!sub.alive) continue;
 
     if (fleeing) {
-      sub.x += sub.dir * 3;
+      sub.attacking = false;
+      sub.x -= sub.dir * 2.5;
       if (Math.abs(sub.x - playerX) > viewHalfW * 4) sub.alive = false;
       continue;
     }
 
-    sub.y = subY;
+    // sub keeps its spawn depth
 
     if (!sub.attacking) {
       sub.x += sub.dir * sub.speed;

@@ -46,7 +46,7 @@ const CLIMB_PENALTY = 0.18;     // was 0.20 — climbing slightly easier
 const DIVE_BOOST = 0.15;
 const MAX_FALL_SPEED = 7;
 const AIR_DRAG = 0.995;
-const BUOYANCY = 0.14;         // upward force when submerged
+const BUOYANCY = 0.07;         // upward force when submerged (reduced for easier diving)
 const PLAYER_MAX_HP = 3;
 const SHIP_MAX_HP = 10;
 const PLAYER_LIVES = 3;
@@ -125,6 +125,8 @@ const Index = () => {
   const ammoRef = useRef(MAX_AMMO);
   const ammoBoxRef = useRef<AmmoBox | null>(null);
   const ammoBoxAlertRef = useRef(0);
+  const ammoDropBoxRef = useRef<AmmoBox | null>(null);
+  const ammoDropTimerRef = useRef(30 + Math.random() * 30);
   const scoreRef = useRef(0);
   const waveRef = useRef<WaveState>(createWaveState());
   const fuelRef = useRef(MAX_FUEL);
@@ -600,19 +602,46 @@ const Index = () => {
           }
         }
 
-        // Boat collision
+      // Boat collision — bounce player toward nearest water & punish resting
         if (boatRef.current) {
           const pushOut = collideWithBoat(pos.x, pos.y, TRI_SIZE, boatRef.current, viewH);
           if (pushOut) {
             pos.x = pushOut.x;
             pos.y = pushOut.y;
-            velRef.current.x *= 0.3;
-            velRef.current.y *= -0.5;
+            // Determine which side of the city is nearest water
+            const boat = boatRef.current;
+            const hw = boat.width / 2;
+            const toLeft = pos.x - (boat.x - hw);
+            const toRight = (boat.x + hw) - pos.x;
+            const bounceDir = toLeft < toRight ? -1 : 1;
+            // Strong horizontal bounce toward nearest water edge
+            velRef.current.x = bounceDir * 3.5;
+            velRef.current.y = -2.5; // pop upward
+            // Damage player slightly for resting on city (1 HP every contact)
+            if (invulnRef.current <= 0) {
+              playerHPRef.current -= 1;
+              invulnRef.current = INVULN_DURATION;
+              spawnExplosion(pos.x, pos.y, 15);
+              shake(bounceDir, -1);
+              if (playerHPRef.current <= 0) {
+                playerLivesRef.current -= 1;
+                if (playerLivesRef.current <= 0) {
+                  gameOverRef.current = true;
+                  setGameOver(true);
+                  setGameOverReason("All ships lost!");
+                } else {
+                  playerHPRef.current = PLAYER_MAX_HP;
+                }
+              }
+            }
           }
         }
 
-        // Powerup rewards based on score
-        checkScoreRewards(scoreRef.current, boatX, boatW, viewH);
+        // Powerup rewards based on score (only after 30s into wave to avoid wave-start spawns)
+        const waveElapsed = waveRef.current.waveTimer;
+        if (waveElapsed > 30) {
+          checkScoreRewards(scoreRef.current, boatX, boatW, viewH);
+        }
         updatePowerups();
 
         // Powerup pickup
@@ -647,6 +676,34 @@ const Index = () => {
             ammoRef.current = MAX_AMMO;
             ammoBoxRef.current = null;
             ammoBoxAlertRef.current = 0;
+          }
+        }
+      }
+
+      // === RARE AMMO DROPS (spawn near play area periodically) ===
+      if (gameStartedRef.current) {
+        ammoDropTimerRef.current -= dt;
+        if (ammoDropTimerRef.current <= 0 && !ammoDropBoxRef.current) {
+          ammoDropTimerRef.current = 40 + Math.random() * 40; // 40-80 seconds
+          const surfY = getWaterSurfaceY(viewH);
+          // Spawn randomly in the play area (not at edges)
+          const dropX = 200 + Math.random() * (WORLD_WIDTH - 400);
+          const dropY = 30 + Math.random() * (surfY - 60);
+          ammoDropBoxRef.current = { x: dropX, y: dropY, spawnTime: performance.now() };
+        }
+        const drop = ammoDropBoxRef.current;
+        if (drop) {
+          // Despawn after 20 seconds
+          if (performance.now() - drop.spawnTime > 20000) {
+            ammoDropBoxRef.current = null;
+          } else {
+            let ddx = Math.abs(pos.x - drop.x);
+            if (ddx > WORLD_WIDTH / 2) ddx = WORLD_WIDTH - ddx;
+            const ddy = Math.abs(pos.y - drop.y);
+            if (ddx < TRI_SIZE + AMMO_BOX_SIZE && ddy < TRI_SIZE + AMMO_BOX_SIZE) {
+              ammoRef.current = Math.min(ammoRef.current + 20, MAX_AMMO);
+              ammoDropBoxRef.current = null;
+            }
           }
         }
       }
@@ -758,6 +815,35 @@ const Index = () => {
           ctx.font = "bold 8px monospace";
           ctx.textAlign = "center";
           ctx.fillText("Ammo", 0, -s / 2 - 6);
+          ctx.restore();
+        }
+
+        // Rare ammo drop
+        const drop = ammoDropBoxRef.current;
+        if (drop) {
+          const t = (performance.now() - drop.spawnTime) / 500;
+          const bobY = drop.y + Math.sin(t) * 5;
+          const s = AMMO_BOX_SIZE * 0.85;
+          const fadeAge = (performance.now() - drop.spawnTime) / 20000;
+          const blinkAlpha = fadeAge > 0.7 ? (Math.sin(performance.now() / 150) > 0 ? 1 : 0.3) : 1;
+          ctx.save();
+          ctx.globalAlpha = blinkAlpha;
+          ctx.translate(drop.x, bobY);
+          ctx.shadowColor = "rgba(100, 220, 255, 0.5)";
+          ctx.shadowBlur = 14;
+          ctx.fillStyle = "#2a6080";
+          ctx.fillRect(-s / 2, -s / 2, s, s);
+          ctx.fillStyle = "#40a0d0";
+          ctx.fillRect(-s / 2, -s / 2, s, s * 0.3);
+          ctx.strokeStyle = "#1a4060";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(-s / 2, -s / 2, s, s);
+          ctx.shadowColor = "transparent";
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = "#fff";
+          ctx.font = "bold 7px monospace";
+          ctx.textAlign = "center";
+          ctx.fillText("+20", 0, 3);
           ctx.restore();
         }
 
