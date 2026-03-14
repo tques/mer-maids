@@ -851,15 +851,20 @@ const Index = () => {
         // Powerups
         drawPowerups(ctx);
 
-        // Player bullets (beam-like)
+        // Player bullets (beam-like, no shadowBlur for performance)
         for (const b of bulletsRef.current) {
           const bAngle = Math.atan2(b.dy, b.dx);
           ctx.save();
           ctx.translate(b.x, b.y);
           ctx.rotate(bAngle);
-          // Outer glow
-          ctx.shadowColor = "rgba(0, 255, 220, 0.8)";
-          ctx.shadowBlur = 10;
+          // Soft glow layer (wider, transparent — cheap fake glow)
+          ctx.beginPath();
+          ctx.moveTo(14, 0);
+          ctx.lineTo(-9, -4);
+          ctx.lineTo(-9, 4);
+          ctx.closePath();
+          ctx.fillStyle = "rgba(0, 230, 200, 0.3)";
+          ctx.fill();
           // Beam shape
           ctx.beginPath();
           ctx.moveTo(10, 0);
@@ -876,7 +881,6 @@ const Index = () => {
           ctx.closePath();
           ctx.fillStyle = "#b2fff5";
           ctx.fill();
-          ctx.shadowColor = "transparent";
           ctx.restore();
         }
 
