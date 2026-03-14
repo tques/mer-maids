@@ -602,8 +602,8 @@ const Index = () => {
 
       // Update bullets (world space, cull by distance from player)
       bulletsRef.current = bulletsRef.current.filter((b) => {
-        b.x += b.dx;
-        b.y += b.dy;
+        b.x += b.dx * dtScale;
+        b.y += b.dy * dtScale;
         return b.y > -10 && b.y < viewH + 10 && Math.abs(b.x - pos.x) < viewW * 1.5;
       });
 
