@@ -942,8 +942,7 @@ const Index = () => {
           ctx.strokeStyle = "#1a4060";
           ctx.lineWidth = 1.5;
           ctx.strokeRect(-s / 2, -s / 2, s, s);
-          ctx.shadowColor = "transparent";
-          ctx.shadowBlur = 0;
+          ctx.fillStyle = "#fff";
           ctx.fillStyle = "#fff";
           ctx.font = "bold 7px monospace";
           ctx.textAlign = "center";
