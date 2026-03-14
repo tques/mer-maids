@@ -238,57 +238,105 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
     ctx.save();
     ctx.translate(sub.x, sub.y);
 
-    // Cylinder body
     const hw = SUB_WIDTH / 2;
     const hh = SUB_HEIGHT / 2;
 
-    // Main hull — dark metallic
+    // Shadow glow
+    ctx.shadowColor = sub.attacking ? "rgba(231, 76, 60, 0.5)" : "rgba(255, 180, 40, 0.3)";
+    ctx.shadowBlur = 8;
+
+    // Main hull — yellow/red
     ctx.beginPath();
     ctx.ellipse(0, 0, hw, hh, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#2d3436";
+    ctx.fillStyle = "#f9ca24";
     ctx.fill();
-    ctx.strokeStyle = "#636e72";
+    ctx.strokeStyle = "#e58e26";
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Highlight stripe
+    // Hull stripe — darker orange band
     ctx.beginPath();
-    ctx.ellipse(0, -2, hw * 0.85, hh * 0.4, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(99, 110, 114, 0.4)";
+    ctx.ellipse(0, 0, hw * 0.9, hh * 0.5, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#e17055";
     ctx.fill();
 
-    // Conning tower (small bump on top)
-    ctx.fillStyle = "#2d3436";
-    ctx.fillRect(-6, -hh - 6, 12, 8);
-    ctx.strokeStyle = "#636e72";
-    ctx.strokeRect(-6, -hh - 6, 12, 8);
+    // Highlight stripe — top
+    ctx.beginPath();
+    ctx.ellipse(0, -2, hw * 0.8, hh * 0.25, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255, 234, 167, 0.5)";
+    ctx.fill();
 
-    // Direction indicator — front glow
-    const frontX = sub.dir * hw * 0.7;
+    // Conning tower — angular
+    ctx.beginPath();
+    ctx.moveTo(-5, -hh);
+    ctx.lineTo(-4, -hh - 7);
+    ctx.lineTo(4, -hh - 7);
+    ctx.lineTo(5, -hh);
+    ctx.closePath();
+    ctx.fillStyle = "#d63031";
+    ctx.fill();
+    ctx.strokeStyle = "#b71540";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Periscope
+    ctx.beginPath();
+    ctx.moveTo(1, -hh - 7);
+    ctx.lineTo(1, -hh - 12);
+    ctx.lineTo(4, -hh - 12);
+    ctx.strokeStyle = "#636e72";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Nose cap
+    const noseX = sub.dir * hw * 0.85;
+    ctx.beginPath();
+    ctx.arc(noseX, 0, hh * 0.6, 0, Math.PI * 2);
+    ctx.fillStyle = "#d63031";
+    ctx.fill();
+
+    // Porthole
+    const frontX = sub.dir * hw * 0.4;
     ctx.beginPath();
     ctx.arc(frontX, 0, 3, 0, Math.PI * 2);
-    ctx.fillStyle = sub.attacking ? "#e74c3c" : "#74b9ff";
+    ctx.fillStyle = sub.attacking ? "#ff4444" : "#ffeaa7";
     ctx.fill();
+    ctx.strokeStyle = "#b71540";
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+
+    // Tail fin
+    const tailX = -sub.dir * hw * 0.85;
+    ctx.beginPath();
+    ctx.moveTo(tailX, -hh * 0.3);
+    ctx.lineTo(tailX - sub.dir * 6, -hh - 3);
+    ctx.lineTo(tailX - sub.dir * 3, 0);
+    ctx.lineTo(tailX - sub.dir * 6, hh + 3);
+    ctx.lineTo(tailX, hh * 0.3);
+    ctx.closePath();
+    ctx.fillStyle = "#e17055";
+    ctx.fill();
+
+    ctx.shadowColor = "transparent";
 
     // Attack warning flash
     if (sub.attacking) {
       const flash = Math.sin(sub.flashTimer * 8) > 0;
       if (flash) {
         ctx.beginPath();
-        ctx.ellipse(0, 0, hw + 4, hh + 4, 0, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(231, 76, 60, 0.6)";
+        ctx.ellipse(0, 0, hw + 5, hh + 5, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255, 60, 40, 0.7)";
         ctx.lineWidth = 2;
         ctx.stroke();
       }
 
       // Rising bubbles
-      const bubbleCount = 3;
-      for (let i = 0; i < bubbleCount; i++) {
-        const bx = (i - 1) * 10 + Math.sin(sub.flashTimer * 3 + i) * 5;
-        const by = -hh - 10 - ((sub.flashTimer * 30 + i * 15) % 40);
+      for (let i = 0; i < 4; i++) {
+        const bx = (i - 1.5) * 8 + Math.sin(sub.flashTimer * 3 + i) * 5;
+        const by = -hh - 10 - ((sub.flashTimer * 30 + i * 12) % 45);
         ctx.beginPath();
         ctx.arc(bx, by, 2 + Math.random(), 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(116, 185, 255, 0.4)";
+        ctx.fillStyle = "rgba(255, 200, 100, 0.5)";
         ctx.fill();
       }
     }

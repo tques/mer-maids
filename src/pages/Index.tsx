@@ -938,7 +938,7 @@ const Index = () => {
           ctx.shadowBlur = 12;
           ctx.shadowOffsetY = 4;
 
-          // Mech arch/crescent shape
+          // Mech arch/crescent shape — aquatic teal
           const r = TRI_SIZE * 0.9;
           ctx.beginPath();
           ctx.arc(0, 0, r, -Math.PI * 0.55, Math.PI * 0.55, false);
@@ -946,12 +946,15 @@ const Index = () => {
           ctx.arc(0, 0, r * 0.45, Math.PI * 0.4, -Math.PI * 0.4, true);
           ctx.lineTo(r * Math.cos(Math.PI * 0.55), -r * Math.sin(Math.PI * 0.55));
           ctx.closePath();
-          ctx.fillStyle = isInvuln ? "#ff8888" : "#D93636";
+          ctx.fillStyle = isInvuln ? "#88ddff" : "#00b894";
           ctx.fill();
+          ctx.strokeStyle = isInvuln ? "#66ccee" : "#00856a";
+          ctx.lineWidth = 1;
+          ctx.stroke();
           // Visor / eye slit
           ctx.beginPath();
           ctx.arc(r * 0.35, 0, r * 0.12, 0, Math.PI * 2);
-          ctx.fillStyle = isInvuln ? "#ffaaaa" : "#ff6b6b";
+          ctx.fillStyle = isInvuln ? "#aaeeff" : "#55efc4";
           ctx.fill();
 
           ctx.shadowColor = "transparent";
