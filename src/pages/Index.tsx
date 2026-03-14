@@ -814,12 +814,33 @@ const Index = () => {
         // Powerups
         drawPowerups(ctx);
 
-        // Player bullets
-        ctx.fillStyle = "#D93636";
+        // Player bullets (beam-like)
         for (const b of bulletsRef.current) {
+          const bAngle = Math.atan2(b.dy, b.dx);
+          ctx.save();
+          ctx.translate(b.x, b.y);
+          ctx.rotate(bAngle);
+          // Outer glow
+          ctx.shadowColor = "rgba(0, 255, 220, 0.8)";
+          ctx.shadowBlur = 10;
+          // Beam shape
           ctx.beginPath();
-          ctx.arc(b.x, b.y, BULLET_RADIUS, 0, Math.PI * 2);
+          ctx.moveTo(10, 0);
+          ctx.lineTo(-7, -2.5);
+          ctx.lineTo(-7, 2.5);
+          ctx.closePath();
+          ctx.fillStyle = "#00e5cc";
           ctx.fill();
+          // Core
+          ctx.beginPath();
+          ctx.moveTo(7, 0);
+          ctx.lineTo(-4, -1.2);
+          ctx.lineTo(-4, 1.2);
+          ctx.closePath();
+          ctx.fillStyle = "#b2fff5";
+          ctx.fill();
+          ctx.shadowColor = "transparent";
+          ctx.restore();
         }
 
         // Ammo box
@@ -917,7 +938,7 @@ const Index = () => {
           ctx.shadowBlur = 12;
           ctx.shadowOffsetY = 4;
 
-          // Mech arch/crescent shape
+          // Mech arch/crescent shape — aquatic teal
           const r = TRI_SIZE * 0.9;
           ctx.beginPath();
           ctx.arc(0, 0, r, -Math.PI * 0.55, Math.PI * 0.55, false);
@@ -925,12 +946,15 @@ const Index = () => {
           ctx.arc(0, 0, r * 0.45, Math.PI * 0.4, -Math.PI * 0.4, true);
           ctx.lineTo(r * Math.cos(Math.PI * 0.55), -r * Math.sin(Math.PI * 0.55));
           ctx.closePath();
-          ctx.fillStyle = isInvuln ? "#ff8888" : "#D93636";
+          ctx.fillStyle = isInvuln ? "#88ddff" : "#00b894";
           ctx.fill();
+          ctx.strokeStyle = isInvuln ? "#66ccee" : "#00856a";
+          ctx.lineWidth = 1;
+          ctx.stroke();
           // Visor / eye slit
           ctx.beginPath();
           ctx.arc(r * 0.35, 0, r * 0.12, 0, Math.PI * 2);
-          ctx.fillStyle = isInvuln ? "#ffaaaa" : "#ff6b6b";
+          ctx.fillStyle = isInvuln ? "#aaeeff" : "#55efc4";
           ctx.fill();
 
           ctx.shadowColor = "transparent";
@@ -965,7 +989,7 @@ const Index = () => {
       const ammoFill = (ammo / MAX_AMMO) * ammoBarW;
       ctx.fillStyle = "#333";
       ctx.fillRect(hudX + 50, hudY + 34, ammoBarW, 10);
-      ctx.fillStyle = ammo <= AMMO_LOW_THRESHOLD ? "#f0c830" : "#D93636";
+      ctx.fillStyle = ammo <= AMMO_LOW_THRESHOLD ? "#f0c830" : "#00b894";
       ctx.fillRect(hudX + 50, hudY + 34, ammoFill, 10);
       ctx.fillStyle = ammoColor;
       ctx.font = "bold 11px monospace";

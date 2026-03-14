@@ -588,7 +588,7 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.restore();
   }
 
-  // --- Blue Chasers (detailed) ---
+  // --- Red/Orange Chasers (detailed) ---
   for (const c of chasers) {
     if (!c.alive) continue;
     ctx.save();
@@ -596,7 +596,7 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.rotate(c.angle);
 
     // Shadow
-    ctx.shadowColor = "rgba(9, 132, 227, 0.4)";
+    ctx.shadowColor = "rgba(255, 90, 20, 0.4)";
     ctx.shadowBlur = 10;
 
     // Main body — angular fighter shape
@@ -611,14 +611,14 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.lineTo(-s * 0.3, s * 0.6);
     ctx.lineTo(s * 0.3, s * 0.35);
     ctx.closePath();
-    ctx.fillStyle = "#0984e3";
+    ctx.fillStyle = "#e84118";
     ctx.fill();
-    ctx.strokeStyle = "#0652a8";
+    ctx.strokeStyle = "#c23616";
     ctx.lineWidth = 1;
     ctx.stroke();
 
     // Wing detail
-    ctx.fillStyle = "#074ba0";
+    ctx.fillStyle = "#b71510";
     ctx.beginPath();
     ctx.moveTo(-s * 0.2, -s * 0.5);
     ctx.lineTo(-s * 0.6, -s * 0.5);
@@ -635,14 +635,14 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     // Cockpit visor
     ctx.beginPath();
     ctx.ellipse(s * 0.4, 0, s * 0.18, s * 0.1, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#74b9ff";
+    ctx.fillStyle = "#ffc048";
     ctx.fill();
 
-    // Engine trails
+    // Engine trails — orange flame
     ctx.beginPath();
     ctx.arc(-s * 0.6, -s * 0.15, s * 0.08, 0, Math.PI * 2);
     ctx.arc(-s * 0.6, s * 0.15, s * 0.08, 0, Math.PI * 2);
-    ctx.fillStyle = "#00cec9";
+    ctx.fillStyle = "#ff9f43";
     ctx.globalAlpha = 0.5 + Math.sin(performance.now() * 0.012 + c.x) * 0.4;
     ctx.fill();
     ctx.globalAlpha = 1;
@@ -651,13 +651,34 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.restore();
   }
 
-  // --- Chaser bullets ---
-  ctx.fillStyle = "#74b9ff";
+  // --- Chaser bullets (beam-like) ---
   for (const cb of chaserBullets) {
     if (!cb.alive) continue;
+    const bAngle = Math.atan2(cb.dy, cb.dx);
+    ctx.save();
+    ctx.translate(cb.x, cb.y);
+    ctx.rotate(bAngle);
+    // Outer glow
+    ctx.shadowColor = "rgba(255, 120, 40, 0.8)";
+    ctx.shadowBlur = 8;
+    // Beam shape
     ctx.beginPath();
-    ctx.arc(cb.x, cb.y, 3, 0, Math.PI * 2);
+    ctx.moveTo(8, 0);
+    ctx.lineTo(-6, -2);
+    ctx.lineTo(-6, 2);
+    ctx.closePath();
+    ctx.fillStyle = "#ff6b35";
     ctx.fill();
+    // Core
+    ctx.beginPath();
+    ctx.moveTo(6, 0);
+    ctx.lineTo(-3, -1);
+    ctx.lineTo(-3, 1);
+    ctx.closePath();
+    ctx.fillStyle = "#ffe0b2";
+    ctx.fill();
+    ctx.shadowColor = "transparent";
+    ctx.restore();
   }
 
   // --- Homing Missiles (very obvious) ---
