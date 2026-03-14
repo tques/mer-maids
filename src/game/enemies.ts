@@ -30,6 +30,16 @@ export interface ChaserBullet {
   alive: boolean;
 }
 
+export interface HomingMissile {
+  x: number;
+  y: number;
+  angle: number;
+  speed: number;
+  life: number;       // seconds remaining before self-destruct
+  alive: boolean;
+  trail: { x: number; y: number; age: number }[];
+}
+
 export interface Bomb {
   x: number;
   y: number;
