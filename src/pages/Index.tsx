@@ -937,8 +937,6 @@ const Index = () => {
           ctx.save();
           ctx.globalAlpha = blinkAlpha;
           ctx.translate(drop.x, bobY);
-          ctx.shadowColor = "rgba(100, 220, 255, 0.5)";
-          ctx.shadowBlur = 14;
           ctx.fillStyle = "#2a6080";
           ctx.fillRect(-s / 2, -s / 2, s, s);
           ctx.fillStyle = "#40a0d0";
