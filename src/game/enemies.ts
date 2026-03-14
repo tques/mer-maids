@@ -73,6 +73,7 @@ export function resetEnemies() {
   enemies = [];
   chasers = [];
   chaserBullets = [];
+  homingMissiles = [];
   bombs = [];
   explosions = [];
   scorePopups = [];
