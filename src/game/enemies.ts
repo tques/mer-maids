@@ -25,18 +25,6 @@ export interface FrogEnemy {
   alive: boolean;
 }
 
-// Add this to your enemy types (after the existing Enemy interface)
-export interface Enemy {
-  x: number;
-  y: number;
-  speed: number;
-  dir: 1 | -1;
-  angle: number;
-  targetX: number;
-  bombCooldown: number;
-  alive: boolean;
-}
-
 // Add new interface
 export interface FrogEnemy {
   x: number;
