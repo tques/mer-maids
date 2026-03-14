@@ -124,7 +124,8 @@ const Index = () => {
   const pausedRef = useRef(false);
   const ammoRef = useRef(MAX_AMMO);
   const ammoBoxRef = useRef<AmmoBox | null>(null);
-  const ammoBoxAlertRef = useRef(0);
+  const ammoDropBoxRef = useRef<AmmoBox | null>(null);
+  const ammoDropTimerRef = useRef(30 + Math.random() * 30);
   const scoreRef = useRef(0);
   const waveRef = useRef<WaveState>(createWaveState());
   const fuelRef = useRef(MAX_FUEL);
