@@ -652,7 +652,7 @@ const Index = () => {
       // Enemy projectile collisions
       if (gameStartedRef.current) {
         if (invulnRef.current > 0) {
-          invulnRef.current -= 16;
+          invulnRef.current -= frameDelta;
         } else {
           const playerHits = checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
           const missileHits = checkMissileHitsPlayer(pos.x, pos.y, TRI_SIZE);
