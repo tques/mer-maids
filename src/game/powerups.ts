@@ -13,8 +13,8 @@ export interface Powerup {
 }
 
 let powerups: Powerup[] = [];
-let nextHealthReward = 800;
-let nextRepairReward = 600;
+let nextHealthReward = 1500;
+let nextRepairReward = 1200;
 
 export function resetPowerups() {
   powerups = [];
