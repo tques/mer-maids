@@ -791,9 +791,14 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.save();
     ctx.translate(cb.x, cb.y);
     ctx.rotate(bAngle);
-    // Outer glow (orange)
-    ctx.shadowColor = "rgba(255, 120, 40, 0.8)";
-    ctx.shadowBlur = 8;
+    // Soft glow layer (cheap fake glow, no shadowBlur)
+    ctx.beginPath();
+    ctx.moveTo(12, 0);
+    ctx.lineTo(-8, -4);
+    ctx.lineTo(-8, 4);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(255, 120, 40, 0.3)";
+    ctx.fill();
     // Beam triangle shape
     ctx.beginPath();
     ctx.moveTo(8, 0);
@@ -831,10 +836,18 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.translate(m.x, m.y);
     ctx.rotate(m.angle);
 
-    // Pulsing red glow
+    // Pulsing red glow (cheap fake, no shadowBlur)
     const pulse = 0.7 + Math.sin(performance.now() * 0.02) * 0.3;
-    ctx.shadowColor = `rgba(255, 60, 60, ${pulse})`;
-    ctx.shadowBlur = 18;
+    ctx.beginPath();
+    ctx.moveTo(14, 0);
+    ctx.lineTo(4, -7);
+    ctx.lineTo(-12, -6);
+    ctx.lineTo(-14, 0);
+    ctx.lineTo(-12, 6);
+    ctx.lineTo(4, 7);
+    ctx.closePath();
+    ctx.fillStyle = `rgba(255, 60, 60, ${pulse * 0.25})`;
+    ctx.fill();
 
     // Missile body
     ctx.beginPath();

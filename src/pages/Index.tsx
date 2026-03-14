@@ -148,6 +148,7 @@ const Index = () => {
   const fpsFramesRef = useRef(0);
   const fpsLastTimeRef = useRef(performance.now());
   const fpsDisplayRef = useRef(0);
+  const lastFrameTimeRef = useRef(performance.now());
 
   // Helper: convert screen mouse to world coords
   const getWorldMouse = useCallback(() => {
@@ -295,6 +296,10 @@ const Index = () => {
         fpsFramesRef.current = 0;
         fpsLastTimeRef.current = now;
       }
+      // Delta-time scaling: dtScale=1.0 at 60fps, ~1.2 at 50fps, etc.
+      const frameDelta = Math.min(now - lastFrameTimeRef.current, 50); // cap at 50ms to avoid spiral
+      lastFrameTimeRef.current = now;
+      const dtScale = frameDelta / (1000 / 60); // 1.0 at 60fps
       const { width: cw, height: ch } = canvas;
       const viewW = cw / ZOOM;
       const viewH = ch / ZOOM;
@@ -439,7 +444,7 @@ const Index = () => {
       lastPosRef.current = { x: pos.x, y: pos.y };
 
       // Fuel system: refill when submerged, burn when flying
-      const dt = 1 / 60;
+      const dt = dtScale / 60;
       if (submerged) {
         fuelRef.current = Math.min(fuelRef.current + FUEL_REFILL_RATE * dt, MAX_FUEL);
       }
@@ -475,7 +480,7 @@ const Index = () => {
           fuelRef.current = Math.max(fuelRef.current - FUEL_BURN_RATE * fuelMult * dt, 0);
         }
 
-        throttleRef.current = Math.min(throttleRef.current + 0.04, 1);
+        throttleRef.current = Math.min(throttleRef.current + 0.04 * dtScale, 1);
 
         // Gravity-affected flight: climbing is harder, diving is easier
         const verticalComponent = Math.sin(angle);
@@ -495,13 +500,14 @@ const Index = () => {
           const targetVx = Math.cos(angle) * power;
           const targetVy = Math.sin(angle) * power;
           const lerpRate = isBoosting ? 0.25 : (0.05 + throttleRef.current * 0.15);
-          vel.x += (targetVx - vel.x) * lerpRate;
-          vel.y += (targetVy - vel.y) * lerpRate;
+          const scaledLerp = 1 - Math.pow(1 - lerpRate, dtScale);
+          vel.x += (targetVx - vel.x) * scaledLerp;
+          vel.y += (targetVy - vel.y) * scaledLerp;
         }
 
         // Passive gravity even while thrusting
         if (!submerged) {
-          vel.y += THRUST_GRAVITY;
+          vel.y += THRUST_GRAVITY * dtScale;
         }
 
         // Buoyancy when submerged — push toward surface
@@ -509,17 +515,17 @@ const Index = () => {
           const surfaceY = getWaterSurfaceY(viewH);
           const depth = pos.y - surfaceY;
           const buoyancyForce = BUOYANCY * Math.min(depth / 40, 1);
-          vel.y -= buoyancyForce;
+          vel.y -= buoyancyForce * dtScale;
         }
 
         // Ship shake during boost
         if (isBoosting && !submerged) {
-          pos.x += (Math.random() - 0.5) * 1.2;
-          pos.y += (Math.random() - 0.5) * 1.2;
+          pos.x += (Math.random() - 0.5) * 1.2 * dtScale;
+          pos.y += (Math.random() - 0.5) * 1.2 * dtScale;
         }
 
-        pos.x += vel.x;
-        pos.y += vel.y;
+        pos.x += vel.x * dtScale;
+        pos.y += vel.y * dtScale;
 
         // Spawn jet trail when moving (boosted = more particles)
         const jetThrottle = isBoosting ? Math.min(throttleRef.current * 1.6, 1) : throttleRef.current;
@@ -531,26 +537,28 @@ const Index = () => {
         wasMovingRef.current = true;
       } else {
         // Not thrusting — natural gravity + air drag, more momentum retained
-        throttleRef.current = Math.max(throttleRef.current - 0.03, 0);
+        throttleRef.current = Math.max(throttleRef.current - 0.03 * dtScale, 0);
 
-        vel.x *= AIR_DRAG;
-        vel.y *= AIR_DRAG;
+        const dragScale = Math.pow(AIR_DRAG, dtScale);
+        vel.x *= dragScale;
+        vel.y *= dragScale;
 
         // Gravity in air, buoyancy in water
         if (!submerged) {
-          vel.y = Math.min(vel.y + GRAVITY, MAX_FALL_SPEED);
+          vel.y = Math.min(vel.y + GRAVITY * dtScale, MAX_FALL_SPEED);
         } else {
           const surfaceY = getWaterSurfaceY(viewH);
           const depth = pos.y - surfaceY;
           const buoyancyForce = BUOYANCY * Math.min(depth / 40, 1);
-          vel.y -= buoyancyForce;
+          vel.y -= buoyancyForce * dtScale;
           // Water drag (heavier than air)
-          vel.x *= 0.97;
-          vel.y *= 0.97;
+          const waterDrag = Math.pow(0.97, dtScale);
+          vel.x *= waterDrag;
+          vel.y *= waterDrag;
         }
 
-        pos.x += vel.x;
-        pos.y += vel.y;
+        pos.x += vel.x * dtScale;
+        pos.y += vel.y * dtScale;
 
         if (Math.abs(vel.x) < 0.01 && Math.abs(vel.y) < 0.01 && !submerged) {
           wasMovingRef.current = false;
@@ -577,7 +585,7 @@ const Index = () => {
 
       // Continuous fire (ammo gated) — mouse right-click or gamepad buttons
       if ((rightMouseRef.current || gp.fire) && ammoRef.current > 0) {
-        shootCooldownRef.current -= 16;
+        shootCooldownRef.current -= frameDelta;
         if (shootCooldownRef.current <= 0) {
           shootCooldownRef.current = SHOOT_INTERVAL;
           ammoRef.current -= 1;
@@ -594,8 +602,8 @@ const Index = () => {
 
       // Update bullets (world space, cull by distance from player)
       bulletsRef.current = bulletsRef.current.filter((b) => {
-        b.x += b.dx;
-        b.y += b.dy;
+        b.x += b.dx * dtScale;
+        b.y += b.dy * dtScale;
         return b.y > -10 && b.y < viewH + 10 && Math.abs(b.x - pos.x) < viewW * 1.5;
       });
 
@@ -607,7 +615,7 @@ const Index = () => {
         const waveDiff = getWaveDifficulty(wave.wave);
 
         // Update wave system
-        const waveResult = updateWave(wave, 1 / 60, scoreRef.current);
+        const waveResult = updateWave(wave, dt, scoreRef.current);
         if (waveResult.waveCompleted) {
           fleeAllEnemies();
           fleeSubmarines();
@@ -622,8 +630,8 @@ const Index = () => {
           resetPowerups();
         }
 
-        updateEnemies(1 / 60, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
-        const subDmg = updateSubmarinesWithDamage(1 / 60, viewH, boatX, boatW, pos.x, viewW / 2, waveDiff, wave.enemiesFleeing, gameStartedRef.current ? performance.now() / 1000 : 0);
+        updateEnemies(dt, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
+        const subDmg = updateSubmarinesWithDamage(dt, viewH, boatX, boatW, pos.x, viewW / 2, waveDiff, wave.enemiesFleeing, gameStartedRef.current ? performance.now() / 1000 : 0);
         if (subDmg > 0) {
           shake(0, 1);
           shipHPRef.current = Math.max(shipHPRef.current - subDmg, 0);
@@ -644,7 +652,7 @@ const Index = () => {
       // Enemy projectile collisions
       if (gameStartedRef.current) {
         if (invulnRef.current > 0) {
-          invulnRef.current -= 16;
+          invulnRef.current -= frameDelta;
         } else {
           const playerHits = checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
           const missileHits = checkMissileHitsPlayer(pos.x, pos.y, TRI_SIZE);
@@ -742,7 +750,7 @@ const Index = () => {
         }
 
         if (ammoBoxAlertRef.current > 0) {
-          ammoBoxAlertRef.current -= 16;
+          ammoBoxAlertRef.current -= frameDelta;
         }
 
         const box = ammoBoxRef.current;
@@ -787,8 +795,8 @@ const Index = () => {
       }
 
       // Update water particles and jet trail
-      updateParticles(1 / 60);
-      updateJetTrail(1 / 60);
+      updateParticles(dt);
+      updateJetTrail(dt);
 
       // === DRAWING ===
       // Clear
@@ -843,15 +851,20 @@ const Index = () => {
         // Powerups
         drawPowerups(ctx);
 
-        // Player bullets (beam-like)
+        // Player bullets (beam-like, no shadowBlur for performance)
         for (const b of bulletsRef.current) {
           const bAngle = Math.atan2(b.dy, b.dx);
           ctx.save();
           ctx.translate(b.x, b.y);
           ctx.rotate(bAngle);
-          // Outer glow
-          ctx.shadowColor = "rgba(0, 255, 220, 0.8)";
-          ctx.shadowBlur = 10;
+          // Soft glow layer (wider, transparent — cheap fake glow)
+          ctx.beginPath();
+          ctx.moveTo(14, 0);
+          ctx.lineTo(-9, -4);
+          ctx.lineTo(-9, 4);
+          ctx.closePath();
+          ctx.fillStyle = "rgba(0, 230, 200, 0.3)";
+          ctx.fill();
           // Beam shape
           ctx.beginPath();
           ctx.moveTo(10, 0);
@@ -868,7 +881,6 @@ const Index = () => {
           ctx.closePath();
           ctx.fillStyle = "#b2fff5";
           ctx.fill();
-          ctx.shadowColor = "transparent";
           ctx.restore();
         }
 
@@ -880,9 +892,6 @@ const Index = () => {
           const s = AMMO_BOX_SIZE;
           ctx.save();
           ctx.translate(box.x, bobY);
-          // Glow
-          ctx.shadowColor = "rgba(255, 220, 60, 0.6)";
-          ctx.shadowBlur = 16;
           // Crate body
           ctx.fillStyle = "#c8a020";
           ctx.fillRect(-s / 2, -s / 2, s, s);
@@ -908,8 +917,6 @@ const Index = () => {
           ctx.lineWidth = 1.5;
           ctx.strokeRect(-s / 2, -s / 2, s, s);
           // "Ammo" label
-          ctx.shadowColor = "transparent";
-          ctx.shadowBlur = 0;
           ctx.fillStyle = "#fff";
           ctx.font = "bold 8px monospace";
           ctx.textAlign = "center";
@@ -928,8 +935,6 @@ const Index = () => {
           ctx.save();
           ctx.globalAlpha = blinkAlpha;
           ctx.translate(drop.x, bobY);
-          ctx.shadowColor = "rgba(100, 220, 255, 0.5)";
-          ctx.shadowBlur = 14;
           ctx.fillStyle = "#2a6080";
           ctx.fillRect(-s / 2, -s / 2, s, s);
           ctx.fillStyle = "#40a0d0";
@@ -937,8 +942,7 @@ const Index = () => {
           ctx.strokeStyle = "#1a4060";
           ctx.lineWidth = 1.5;
           ctx.strokeRect(-s / 2, -s / 2, s, s);
-          ctx.shadowColor = "transparent";
-          ctx.shadowBlur = 0;
+          ctx.fillStyle = "#fff";
           ctx.fillStyle = "#fff";
           ctx.font = "bold 7px monospace";
           ctx.textAlign = "center";
@@ -963,9 +967,7 @@ const Index = () => {
             ctx.scale(1, scaleY);
           }
 
-          ctx.shadowColor = "rgba(0,0,0,0.3)";
-          ctx.shadowBlur = 12;
-          ctx.shadowOffsetY = 4;
+          // Drop shadow (cheap, no shadowBlur)
 
           // Mech arch/crescent shape — aquatic teal
           const r = TRI_SIZE * 0.9;
