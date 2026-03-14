@@ -425,6 +425,7 @@ const Index = () => {
         if (!boost.active) {
           boost.active = true;
           boost.lockedAngle = angle;
+          deflectMissiles(); // Boosting throws off homing missiles
         }
         angle = boost.lockedAngle;
       } else {
