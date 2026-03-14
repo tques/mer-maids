@@ -636,8 +636,11 @@ const Index = () => {
           }
         }
 
-        // Powerup rewards based on score
-        checkScoreRewards(scoreRef.current, boatX, boatW, viewH);
+        // Powerup rewards based on score (only after 30s into wave to avoid wave-start spawns)
+        const waveElapsed = waveRef.current.waveTimer;
+        if (waveElapsed > 30) {
+          checkScoreRewards(scoreRef.current, boatX, boatW, viewH);
+        }
         updatePowerups();
 
         // Powerup pickup
