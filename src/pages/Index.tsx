@@ -680,6 +680,33 @@ const Index = () => {
         }
       }
 
+      // === RARE AMMO DROPS (spawn near play area periodically) ===
+      if (gameStartedRef.current) {
+        ammoDropTimerRef.current -= dt;
+        if (ammoDropTimerRef.current <= 0 && !ammoDropBoxRef.current) {
+          ammoDropTimerRef.current = 40 + Math.random() * 40; // 40-80 seconds
+          const surfY = getWaterSurfaceY(viewH);
+          // Spawn randomly in the play area (not at edges)
+          const dropX = 200 + Math.random() * (WORLD_WIDTH - 400);
+          const dropY = 30 + Math.random() * (surfY - 60);
+          ammoDropBoxRef.current = { x: dropX, y: dropY, spawnTime: performance.now() };
+        }
+        const drop = ammoDropBoxRef.current;
+        if (drop) {
+          // Despawn after 20 seconds
+          if (performance.now() - drop.spawnTime > 20000) {
+            ammoDropBoxRef.current = null;
+          } else {
+            let ddx = Math.abs(pos.x - drop.x);
+            if (ddx > WORLD_WIDTH / 2) ddx = WORLD_WIDTH - ddx;
+            const ddy = Math.abs(pos.y - drop.y);
+            if (ddx < TRI_SIZE + AMMO_BOX_SIZE && ddy < TRI_SIZE + AMMO_BOX_SIZE) {
+              ammoRef.current = Math.min(ammoRef.current + 20, MAX_AMMO);
+              ammoDropBoxRef.current = null;
+            }
+          }
+        }
+
       // Update water particles and jet trail
       updateParticles(1 / 60);
       updateJetTrail(1 / 60);
