@@ -56,6 +56,7 @@ const INVULN_DURATION = 1500;
 const BULLET_SPEED = 8;
 const BULLET_RADIUS = 5;
 const ROLL_DISTANCE = 60;
+const ROLL_FUEL_COST = 5; // fuel consumed per roll
 const ROLL_DURATION = 300;
 const WORLD_WIDTH = 3000;
 const ZOOM = 1.4;
