@@ -222,8 +222,24 @@ const Index = () => {
     const onContextMenu = (e: Event) => e.preventDefault();
 
     const onKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      if (key === "escape" && gameStartedRef.current && !gameOverRef.current) {
+      const key = e.key;
+      // Toggle FPS counter with End key
+      if (key === "End") {
+        showFpsRef.current = !showFpsRef.current;
+        return;
+      }
+      // Toggle fullscreen with F11
+      if (key === "F11") {
+        e.preventDefault();
+        if (!document.fullscreenElement) {
+          containerRef.current?.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+        return;
+      }
+      const lkey = key.toLowerCase();
+      if (lkey === "escape" && gameStartedRef.current && !gameOverRef.current) {
         pausedRef.current = !pausedRef.current;
         setPaused(pausedRef.current);
         if (!pausedRef.current) {
