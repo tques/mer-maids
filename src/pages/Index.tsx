@@ -57,6 +57,7 @@ const ROLL_DISTANCE = 60;
 const ROLL_DURATION = 300;
 const WORLD_WIDTH = 3000;
 const ZOOM = 1.4;
+const SKY_EXTRA = 200; // extra vertical room above y=0 so player doesn't hit ceiling
 const MAX_AMMO = 60;
 const AMMO_LOW_THRESHOLD = 12;
 const AMMO_BOX_SIZE = 22;
@@ -150,7 +151,7 @@ const Index = () => {
     const camX = posRef.current.x - viewW / 2;
     return {
       x: mouse.x / ZOOM + camX,
-      y: mouse.y / ZOOM,
+      y: mouse.y / ZOOM - SKY_EXTRA,
     };
   }, []);
 
@@ -266,7 +267,7 @@ const Index = () => {
       // World-space mouse
       const camX = pos.x - viewW / 2;
       const wmx = mouseRef.current.x / ZOOM + camX;
-      const wmy = mouseRef.current.y / ZOOM;
+      const wmy = mouseRef.current.y / ZOOM - SKY_EXTRA;
 
       // Gamepad menu controls (edge-triggered)
       const startPressed = gp.start && !gpStartPrev.current;
@@ -484,10 +485,10 @@ const Index = () => {
       // Horizontal wrapping in world space
       pos.x = ((pos.x % WORLD_WIDTH) + WORLD_WIDTH) % WORLD_WIDTH;
 
-      // Vertical clamp
+      // Vertical clamp — allow flying into the extra sky area
       let hitY = 0;
-      if (pos.y < TRI_SIZE) {
-        pos.y = TRI_SIZE;
+      if (pos.y < -SKY_EXTRA + TRI_SIZE) {
+        pos.y = -SKY_EXTRA + TRI_SIZE;
         hitY = -1;
       }
       if (pos.y > viewH - TRI_SIZE) {
@@ -720,15 +721,22 @@ const Index = () => {
       ctx.save();
       ctx.scale(ZOOM, ZOOM);
 
+      // Apply vertical camera offset for extra sky room
+      const camY = -SKY_EXTRA;
+      ctx.save();
+      ctx.translate(0, -camY); // shift view down so negative-Y sky is visible
+
       // Draw sky gradient (view space, no camera)
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, viewH);
-      skyGrad.addColorStop(0, "#0a0a1a");
-      skyGrad.addColorStop(0.35, "#1a1a3e");
-      skyGrad.addColorStop(0.55, "#2d4a6f");
-      skyGrad.addColorStop(0.7, "#e8a838");
-      skyGrad.addColorStop(0.78, "#f7d794");
+      const totalViewH = viewH + SKY_EXTRA;
+      const skyGrad = ctx.createLinearGradient(0, camY, 0, viewH);
+      skyGrad.addColorStop(0, "#050510");
+      skyGrad.addColorStop(0.15, "#0a0a1a");
+      skyGrad.addColorStop(0.4, "#1a1a3e");
+      skyGrad.addColorStop(0.6, "#2d4a6f");
+      skyGrad.addColorStop(0.75, "#e8a838");
+      skyGrad.addColorStop(0.82, "#f7d794");
       ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, viewW, viewH);
+      ctx.fillRect(0, camY, viewW, totalViewH);
 
       // Apply camera translation (pixel-snapped to remove 1px seams at wrap boundaries)
       const drawCamX = Math.round(finalCamX * ZOOM) / ZOOM;
@@ -895,6 +903,7 @@ const Index = () => {
       }
 
       ctx.restore(); // camera translation
+      ctx.restore(); // sky offset
       ctx.restore(); // zoom
 
       // HUD (screen space, no transforms)
