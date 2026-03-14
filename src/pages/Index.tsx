@@ -236,7 +236,8 @@ const Index = () => {
         e.preventDefault();
         setShowHint(false);
         const roll = rollRef.current;
-        if (!roll.active) {
+        if (!roll.active && fuelRef.current >= ROLL_FUEL_COST) {
+          fuelRef.current -= ROLL_FUEL_COST;
           const pos = posRef.current;
           const wm = getWorldMouse();
           const angle = Math.atan2(wm.y - pos.y, wm.x - pos.x);
@@ -251,6 +252,7 @@ const Index = () => {
           roll.perpX = perpX;
           roll.perpY = perpY;
           roll.spinAngle = 0;
+          deflectMissiles(); // Rolling throws off homing missiles
         }
       }
     };
