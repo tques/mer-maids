@@ -198,7 +198,7 @@ const Index = () => {
     const onMouseDown = (e: MouseEvent) => {
       if (e.button === 0) {
         setShowHint(false);
-        keysRef.current.add("w");
+        keysRef.current.add("thrust");
       } else if (e.button === 2) {
         e.preventDefault();
         setShowHint(false);
@@ -208,7 +208,7 @@ const Index = () => {
     };
 
     const onMouseUp = (e: MouseEvent) => {
-      if (e.button === 0) keysRef.current.delete("w");
+      if (e.button === 0) keysRef.current.delete("thrust");
       if (e.button === 2) rightMouseRef.current = false;
     };
 
@@ -403,18 +403,19 @@ const Index = () => {
 
       // Move toward world-space mouse or gamepad stick
       if (gp.thrust || gp.fire) gamepadAimingRef.current = true;
-      const isMoving = keysRef.current.has("w") || gp.thrust;
+      const isThrusting = keysRef.current.has("thrust") || gp.thrust;
+      const isBoosting = keysRef.current.has("w");
+      const isMoving = isThrusting || isBoosting;
       const hasFuel = fuelRef.current > 0;
       const vel = velRef.current;
 
-      // Boost system: lock angle on thrust start, maintain while held
+      // Boost system: lock angle when W is pressed, keep locked while held
       const boost = boostRef.current;
-      if (isMoving && hasFuel) {
+      if (isBoosting && hasFuel) {
         if (!boost.active) {
           boost.active = true;
           boost.lockedAngle = angle;
         }
-        // Use locked angle while boosting
         angle = boost.lockedAngle;
       } else {
         boost.active = false;
@@ -422,7 +423,6 @@ const Index = () => {
 
       const BOOST_SPEED_MULT = 1.8;
       const BOOST_FUEL_MULT = 1.6;
-      const isBoosting = boost.active;
 
       if (isMoving && hasFuel) {
         // Burn fuel when flying (not submerged)
@@ -481,7 +481,6 @@ const Index = () => {
         const jetThrottle = isBoosting ? Math.min(throttleRef.current * 1.6, 1) : throttleRef.current;
         spawnJetParticles(pos.x, pos.y, angle, jetThrottle, submerged, fuelRef.current, MAX_FUEL);
         if (isBoosting && !submerged) {
-          // Extra burst of particles during boost
           spawnJetParticles(pos.x, pos.y, angle, 1, submerged, fuelRef.current, MAX_FUEL);
         }
 
@@ -884,7 +883,7 @@ const Index = () => {
         const isInvuln = invulnRef.current > 0;
         const showPlayer = !isInvuln || Math.floor(performance.now() / 80) % 2 === 0;
         if (showPlayer) {
-          const pitchOffset = getShipPitch(throttleRef.current, keysRef.current.has("w"), velRef.current.y, isSubmerged(pos.y, viewH));
+          const pitchOffset = getShipPitch(throttleRef.current, keysRef.current.has("thrust") || keysRef.current.has("w"), velRef.current.y, isSubmerged(pos.y, viewH));
           ctx.save();
           ctx.translate(pos.x, pos.y);
           ctx.rotate(angle + pitchOffset);
