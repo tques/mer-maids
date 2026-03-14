@@ -818,6 +818,35 @@ const Index = () => {
           ctx.restore();
         }
 
+        // Rare ammo drop
+        const drop = ammoDropBoxRef.current;
+        if (drop) {
+          const t = (performance.now() - drop.spawnTime) / 500;
+          const bobY = drop.y + Math.sin(t) * 5;
+          const s = AMMO_BOX_SIZE * 0.85;
+          const fadeAge = (performance.now() - drop.spawnTime) / 20000;
+          const blinkAlpha = fadeAge > 0.7 ? (Math.sin(performance.now() / 150) > 0 ? 1 : 0.3) : 1;
+          ctx.save();
+          ctx.globalAlpha = blinkAlpha;
+          ctx.translate(drop.x, bobY);
+          ctx.shadowColor = "rgba(100, 220, 255, 0.5)";
+          ctx.shadowBlur = 14;
+          ctx.fillStyle = "#2a6080";
+          ctx.fillRect(-s / 2, -s / 2, s, s);
+          ctx.fillStyle = "#40a0d0";
+          ctx.fillRect(-s / 2, -s / 2, s, s * 0.3);
+          ctx.strokeStyle = "#1a4060";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(-s / 2, -s / 2, s, s);
+          ctx.shadowColor = "transparent";
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = "#fff";
+          ctx.font = "bold 7px monospace";
+          ctx.textAlign = "center";
+          ctx.fillText("+20", 0, 3);
+          ctx.restore();
+        }
+
         // Player triangle
         const isInvuln = invulnRef.current > 0;
         const showPlayer = !isInvuln || Math.floor(performance.now() / 80) % 2 === 0;
