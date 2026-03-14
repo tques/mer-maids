@@ -970,9 +970,7 @@ const Index = () => {
             ctx.scale(1, scaleY);
           }
 
-          ctx.shadowColor = "rgba(0,0,0,0.3)";
-          ctx.shadowBlur = 12;
-          ctx.shadowOffsetY = 4;
+          // Drop shadow (cheap, no shadowBlur)
 
           // Mech arch/crescent shape — aquatic teal
           const r = TRI_SIZE * 0.9;
