@@ -630,8 +630,8 @@ const Index = () => {
           resetPowerups();
         }
 
-        updateEnemies(1 / 60, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
-        const subDmg = updateSubmarinesWithDamage(1 / 60, viewH, boatX, boatW, pos.x, viewW / 2, waveDiff, wave.enemiesFleeing, gameStartedRef.current ? performance.now() / 1000 : 0);
+        updateEnemies(dt, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
+        const subDmg = updateSubmarinesWithDamage(dt, viewH, boatX, boatW, pos.x, viewW / 2, waveDiff, wave.enemiesFleeing, gameStartedRef.current ? performance.now() / 1000 : 0);
         if (subDmg > 0) {
           shake(0, 1);
           shipHPRef.current = Math.max(shipHPRef.current - subDmg, 0);
