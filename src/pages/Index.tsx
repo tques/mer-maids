@@ -989,7 +989,7 @@ const Index = () => {
       const ammoFill = (ammo / MAX_AMMO) * ammoBarW;
       ctx.fillStyle = "#333";
       ctx.fillRect(hudX + 50, hudY + 34, ammoBarW, 10);
-      ctx.fillStyle = ammo <= AMMO_LOW_THRESHOLD ? "#f0c830" : "#D93636";
+      ctx.fillStyle = ammo <= AMMO_LOW_THRESHOLD ? "#f0c830" : "#00b894";
       ctx.fillRect(hudX + 50, hudY + 34, ammoFill, 10);
       ctx.fillStyle = ammoColor;
       ctx.font = "bold 11px monospace";
