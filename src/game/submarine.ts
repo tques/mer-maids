@@ -137,7 +137,6 @@ export function updateSubmarinesWithDamage(
   gameTime: number
 ): number {
   const waterY = getWaterSurfaceY(viewH);
-  const subY = waterY + SUB_DEPTH_OFFSET;
   const hw = boatWidth / 2;
   let damage = 0;
 
