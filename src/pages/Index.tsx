@@ -57,6 +57,7 @@ const ROLL_DISTANCE = 60;
 const ROLL_DURATION = 300;
 const WORLD_WIDTH = 3000;
 const ZOOM = 1.4;
+const SKY_EXTRA = 200; // extra vertical room above y=0 so player doesn't hit ceiling
 const MAX_AMMO = 60;
 const AMMO_LOW_THRESHOLD = 12;
 const AMMO_BOX_SIZE = 22;
