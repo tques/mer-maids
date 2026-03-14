@@ -791,9 +791,14 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.save();
     ctx.translate(cb.x, cb.y);
     ctx.rotate(bAngle);
-    // Outer glow (orange)
-    ctx.shadowColor = "rgba(255, 120, 40, 0.8)";
-    ctx.shadowBlur = 8;
+    // Soft glow layer (cheap fake glow, no shadowBlur)
+    ctx.beginPath();
+    ctx.moveTo(12, 0);
+    ctx.lineTo(-8, -4);
+    ctx.lineTo(-8, 4);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(255, 120, 40, 0.3)";
+    ctx.fill();
     // Beam triangle shape
     ctx.beginPath();
     ctx.moveTo(8, 0);
