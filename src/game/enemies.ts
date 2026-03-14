@@ -13,30 +13,6 @@ export interface Enemy {
   alive: boolean;
 }
 
-// --- Frog enemy ---
-export interface FrogEnemy {
-  x: number;
-  y: number;
-  speed: number;
-  dir: 1 | -1;
-  jumpPhase: number; // 0 = on ground, 1 = jumping, 2 = landing
-  jumpTimer: number;
-  targetX: number;
-  alive: boolean;
-}
-
-// Add new interface
-export interface FrogEnemy {
-  x: number;
-  y: number;
-  speed: number;
-  dir: 1 | -1;
-  jumpPhase: number;
-  jumpTimer: number;
-  targetX: number;
-  alive: boolean;
-}
-
 export interface Chaser {
   x: number;
   y: number;
@@ -81,7 +57,6 @@ let explosions: Explosion[] = [];
 let bomberSpawnTimer = 0;
 let chaserSpawnTimer = 3;
 let gameTime = 0;
-let frogs: FrogEnemy[] = [];
 
 export function resetEnemies() {
   enemies = [];
@@ -89,7 +64,6 @@ export function resetEnemies() {
   chaserBullets = [];
   bombs = [];
   explosions = [];
-  frogs = [];
   scorePopups = [];
   bomberSpawnTimer = 0;
   chaserSpawnTimer = 8;
@@ -105,21 +79,11 @@ const CHASER_SPEED = 2.2;
 const CHASER_BULLET_SPEED = 4;
 const CHASER_SHOOT_INTERVAL = 1.2;
 
-export function getEnemies() {
-  return enemies;
-}
-export function getChasers() {
-  return chasers;
-}
-export function getChaserBullets() {
-  return chaserBullets;
-}
-export function getBombs() {
-  return bombs;
-}
-export function getExplosions() {
-  return explosions;
-}
+export function getEnemies() { return enemies; }
+export function getChasers() { return chasers; }
+export function getChaserBullets() { return chaserBullets; }
+export function getBombs() { return bombs; }
+export function getExplosions() { return explosions; }
 
 export function checkChaserBulletHitsPlayer(px: number, py: number, radius: number): number {
   let hits = 0;
@@ -174,14 +138,11 @@ export interface ScorePopup {
 
 let scorePopups: ScorePopup[] = [];
 
-export function getScorePopups() {
-  return scorePopups;
-}
+export function getScorePopups() { return scorePopups; }
 
 export function spawnExplosion(x: number, y: number, size = 30, scoreValue?: number) {
   explosions.push({
-    x,
-    y,
+    x, y,
     life: 1,
     maxLife: 0.5,
     radius: 4,
@@ -208,20 +169,17 @@ export function fleeAllEnemies() {
 }
 
 export function areEnemiesGone(): boolean {
-  return enemies.filter((e) => e.alive).length === 0 && chasers.filter((c) => c.alive).length === 0;
+  return enemies.filter(e => e.alive).length === 0 &&
+    chasers.filter(c => c.alive).length === 0;
 }
 
 export function updateEnemies(
-  dt: number,
-  worldWidth: number,
-  viewH: number,
-  boatX: number,
-  boatWidth: number,
-  playerX: number,
-  playerY: number,
+  dt: number, worldWidth: number, viewH: number,
+  boatX: number, boatWidth: number,
+  playerX: number, playerY: number,
   viewHalfW: number,
   waveDifficulty: number = 1,
-  fleeing: boolean = false,
+  fleeing: boolean = false
 ) {
   const waterY = getWaterSurfaceY(viewH);
   gameTime += dt;
@@ -232,7 +190,7 @@ export function updateEnemies(
   // Don't spawn if fleeing
   if (!fleeing) {
     // --- Bomber spawning (pink) ---
-    const bomberInterval = Math.max(20 - difficulty * 7, 3);
+    const bomberInterval = Math.max((20 - difficulty * 7), 3);
     bomberSpawnTimer -= dt;
     if (bomberSpawnTimer <= 0 && gameTime > 10 / waveDifficulty) {
       bomberSpawnTimer = bomberInterval + Math.random() * 4;
@@ -251,47 +209,6 @@ export function updateEnemies(
         bombCooldown: 0.5 + Math.random(),
         alive: true,
       });
-    }
-  }
-
-  // Update frogs
-  for (const f of frogs) {
-    if (!f.alive) continue;
-
-    const playerDist = Math.hypot(playerX - f.x, playerY - f.y);
-    const MAX_DISTANCE = 400;
-
-    // Only move if close to player and not submerged
-    if (playerY > waterY || playerDist > MAX_DISTANCE) {
-      // Stay on water, hop slightly
-      f.jumpPhase = 0;
-      f.jumpTimer = 0;
-      f.x += f.dir * f.speed;
-      if (Math.abs(f.x - playerX) > viewHalfW * 4) f.alive = false;
-      continue;
-    }
-
-    // Move toward player with a smooth path
-    const targetAngle = Math.atan2(f.targetX - f.x, playerY - f.y);
-    const angleDiff = targetAngle - f.angle;
-    f.angle += angleDiff * 0.05;
-
-    // Simple hop movement — jump up/down to simulate hopping
-    f.jumpPhase += 0.03;
-    if (f.jumpPhase > 1) f.jumpPhase = 0;
-    const jumpHeight = 20 * Math.sin(f.jumpPhase * Math.PI);
-    f.y = waterY + jumpHeight;
-
-    // Move horizontally toward player
-    f.x += f.dir * f.speed;
-    if (Math.abs(f.x - playerX) > viewHalfW * 4) f.alive = false;
-
-    // If player lands in water near frog → crash
-    if (playerY > waterY && Math.abs(f.x - playerX) < 100 && Math.abs(f.y - playerY) < 50) {
-      // Player crashes into frog → game over or damage
-      // Just mark frog as dead for now
-      f.alive = false;
-      spawnExplosion(f.x, f.y, 30, 50); // small score
     }
   }
 
@@ -315,10 +232,8 @@ export function updateEnemies(
     if (Math.abs(e.x - e.targetX) < 120 && e.bombCooldown <= 0) {
       e.bombCooldown = BOMB_INTERVAL + Math.random() * 0.5;
       bombs.push({
-        x: e.x,
-        y: e.y + ENEMY_SIZE,
-        vy: 0,
-        rotation: 0,
+        x: e.x, y: e.y + ENEMY_SIZE,
+        vy: 0, rotation: 0,
         rotSpeed: (Math.random() - 0.5) * 8,
         alive: true,
         hangTime: 0.5 + Math.random() * 0.3,
@@ -328,10 +243,10 @@ export function updateEnemies(
   }
 
   // --- Chaser spawning (blue) ---
-  const maxChasers = fleeing ? 0 : gameTime < 8 / waveDifficulty ? 0 : Math.min(1 + Math.floor(difficulty * 3), 8);
-  const chaserInterval = Math.max(12 - difficulty * 4, 2);
+  const maxChasers = fleeing ? 0 : (gameTime < 8 / waveDifficulty ? 0 : Math.min(1 + Math.floor(difficulty * 3), 8));
+  const chaserInterval = Math.max((12 - difficulty * 4), 2);
   chaserSpawnTimer -= dt;
-  const aliveChasers = chasers.filter((c) => c.alive).length;
+  const aliveChasers = chasers.filter(c => c.alive).length;
   if (chaserSpawnTimer <= 0 && aliveChasers < maxChasers) {
     chaserSpawnTimer = chaserInterval + Math.random() * 3;
     // Spawn well outside the player's view
@@ -345,32 +260,6 @@ export function updateEnemies(
       speed: CHASER_SPEED,
       angle: 0,
       shootCooldown: 2 + Math.random(),
-      alive: true,
-    });
-  }
-
-  // --- Frog spawning (add after chaser spawning) ---
-  const FROG_INTERVAL = 1.5; // spawn rate ~same as sub
-  const FROG_SPAWN_CHANCE = 0.6; // 60% chance to spawn a frog per wave
-
-  // Inside updateEnemies(), after chaser spawning:
-  const frogSpawnTimer = Math.max(12 - difficulty * 4, 2);
-  if (Math.random() < FROG_SPAWN_CHANCE && chaserSpawnTimer <= 0 && gameTime > 10 / waveDifficulty) {
-    chaserSpawnTimer = frogSpawnTimer + Math.random() * 3;
-    const fromLeft = Math.random() > 0.5;
-    const spawnX = fromLeft
-      ? playerX - viewHalfW - 200 - Math.random() * 300
-      : playerX + viewHalfW + 200 + Math.random() * 300;
-    const spawnY = waterY - 20; // spawns on water surface
-
-    frogs.push({
-      x: spawnX,
-      y: spawnY,
-      speed: 1.8,
-      dir: fromLeft ? -1 : 1,
-      jumpPhase: 0,
-      jumpTimer: 0,
-      targetX: playerX,
       alive: true,
     });
   }
@@ -485,22 +374,19 @@ export function updateEnemies(
   }
 
   // Cleanup
-  enemies = enemies.filter((e) => e.alive);
-  chasers = chasers.filter((c) => c.alive);
-  chaserBullets = chaserBullets.filter((cb) => cb.alive);
-  bombs = bombs.filter((b) => b.alive);
-  explosions = explosions.filter((ex) => ex.life > 0);
-  scorePopups = scorePopups.filter((sp) => sp.life > 0);
+  enemies = enemies.filter(e => e.alive);
+  chasers = chasers.filter(c => c.alive);
+  chaserBullets = chaserBullets.filter(cb => cb.alive);
+  bombs = bombs.filter(b => b.alive);
+  explosions = explosions.filter(ex => ex.life > 0);
+  scorePopups = scorePopups.filter(sp => sp.life > 0);
 }
 
 export const SCORE_BOMBER = 150;
 export const SCORE_CHASER = 100;
 export const SCORE_BOMB = 25;
 
-export function checkBulletCollisions(bullets: { x: number; y: number; dx: number; dy: number; id: number }[]): {
-  remaining: typeof bullets;
-  score: number;
-} {
+export function checkBulletCollisions(bullets: { x: number; y: number; dx: number; dy: number; id: number }[]): { remaining: typeof bullets; score: number } {
   const remainingBullets: typeof bullets = [];
   let score = 0;
 
@@ -580,30 +466,6 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.lineTo(-CHASER_SIZE * 0.7, CHASER_SIZE * 0.6);
     ctx.closePath();
     ctx.fillStyle = "#0984e3";
-    ctx.fill();
-    ctx.restore();
-  }
-
-  // Inside drawEnemies()
-  for (const f of frogs) {
-    if (!f.alive) continue;
-    ctx.save();
-    ctx.translate(f.x, f.y);
-    ctx.rotate(f.angle);
-    ctx.beginPath();
-    ctx.moveTo(8, 0);
-    ctx.lineTo(-6, -6);
-    ctx.lineTo(-6, 6);
-    ctx.closePath();
-    ctx.fillStyle = "#4CAF50";
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(6, -4, 3, 0, Math.PI * 2);
-    ctx.fillStyle = "#fff";
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(-6, -4, 3, 0, Math.PI * 2);
-    ctx.fillStyle = "#fff";
     ctx.fill();
     ctx.restore();
   }
