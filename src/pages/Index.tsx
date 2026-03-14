@@ -814,12 +814,33 @@ const Index = () => {
         // Powerups
         drawPowerups(ctx);
 
-        // Player bullets
-        ctx.fillStyle = "#D93636";
+        // Player bullets (beam-like)
         for (const b of bulletsRef.current) {
+          const bAngle = Math.atan2(b.dy, b.dx);
+          ctx.save();
+          ctx.translate(b.x, b.y);
+          ctx.rotate(bAngle);
+          // Outer glow
+          ctx.shadowColor = "rgba(0, 255, 220, 0.8)";
+          ctx.shadowBlur = 10;
+          // Beam shape
           ctx.beginPath();
-          ctx.arc(b.x, b.y, BULLET_RADIUS, 0, Math.PI * 2);
+          ctx.moveTo(10, 0);
+          ctx.lineTo(-7, -2.5);
+          ctx.lineTo(-7, 2.5);
+          ctx.closePath();
+          ctx.fillStyle = "#00e5cc";
           ctx.fill();
+          // Core
+          ctx.beginPath();
+          ctx.moveTo(7, 0);
+          ctx.lineTo(-4, -1.2);
+          ctx.lineTo(-4, 1.2);
+          ctx.closePath();
+          ctx.fillStyle = "#b2fff5";
+          ctx.fill();
+          ctx.shadowColor = "transparent";
+          ctx.restore();
         }
 
         // Ammo box
