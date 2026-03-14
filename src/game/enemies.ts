@@ -94,6 +94,7 @@ const CHASER_SHOOT_INTERVAL = 1.2;
 export function getEnemies() { return enemies; }
 export function getChasers() { return chasers; }
 export function getChaserBullets() { return chaserBullets; }
+export function getHomingMissiles() { return homingMissiles; }
 export function getBombs() { return bombs; }
 export function getExplosions() { return explosions; }
 
