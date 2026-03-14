@@ -615,7 +615,7 @@ const Index = () => {
         const waveDiff = getWaveDifficulty(wave.wave);
 
         // Update wave system
-        const waveResult = updateWave(wave, 1 / 60, scoreRef.current);
+        const waveResult = updateWave(wave, dt, scoreRef.current);
         if (waveResult.waveCompleted) {
           fleeAllEnemies();
           fleeSubmarines();
