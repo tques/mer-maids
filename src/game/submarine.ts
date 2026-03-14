@@ -43,7 +43,6 @@ export function updateSubmarines(
   gameTime: number
 ) {
   const waterY = getWaterSurfaceY(viewH);
-  const subY = waterY + SUB_DEPTH_OFFSET;
   const hw = boatWidth / 2;
 
   // Spawning
