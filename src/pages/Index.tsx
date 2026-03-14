@@ -12,6 +12,8 @@ import {
   updateEnemies,
   checkBulletCollisions,
   checkChaserBulletHitsPlayer,
+  checkMissileHitsPlayer,
+  deflectMissiles,
   checkBombHitsShip,
   drawEnemies,
   spawnExplosion,
