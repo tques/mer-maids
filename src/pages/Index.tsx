@@ -892,9 +892,6 @@ const Index = () => {
           const s = AMMO_BOX_SIZE;
           ctx.save();
           ctx.translate(box.x, bobY);
-          // Glow
-          ctx.shadowColor = "rgba(255, 220, 60, 0.6)";
-          ctx.shadowBlur = 16;
           // Crate body
           ctx.fillStyle = "#c8a020";
           ctx.fillRect(-s / 2, -s / 2, s, s);
