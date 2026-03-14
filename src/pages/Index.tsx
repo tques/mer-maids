@@ -585,7 +585,7 @@ const Index = () => {
 
       // Continuous fire (ammo gated) — mouse right-click or gamepad buttons
       if ((rightMouseRef.current || gp.fire) && ammoRef.current > 0) {
-        shootCooldownRef.current -= 16;
+        shootCooldownRef.current -= frameDelta;
         if (shootCooldownRef.current <= 0) {
           shootCooldownRef.current = SHOOT_INTERVAL;
           ammoRef.current -= 1;
