@@ -406,10 +406,29 @@ const Index = () => {
       const isMoving = keysRef.current.has("w") || gp.thrust;
       const hasFuel = fuelRef.current > 0;
       const vel = velRef.current;
+
+      // Boost system: lock angle on thrust start, maintain while held
+      const boost = boostRef.current;
+      if (isMoving && hasFuel) {
+        if (!boost.active) {
+          boost.active = true;
+          boost.lockedAngle = angle;
+        }
+        // Use locked angle while boosting
+        angle = boost.lockedAngle;
+      } else {
+        boost.active = false;
+      }
+
+      const BOOST_SPEED_MULT = 1.8;
+      const BOOST_FUEL_MULT = 1.6;
+      const isBoosting = boost.active;
+
       if (isMoving && hasFuel) {
         // Burn fuel when flying (not submerged)
         if (!submerged) {
-          fuelRef.current = Math.max(fuelRef.current - FUEL_BURN_RATE * dt, 0);
+          const fuelMult = isBoosting ? BOOST_FUEL_MULT : 1;
+          fuelRef.current = Math.max(fuelRef.current - FUEL_BURN_RATE * fuelMult * dt, 0);
         }
 
         throttleRef.current = Math.min(throttleRef.current + 0.04, 1);
@@ -425,13 +444,15 @@ const Index = () => {
           }
         }
 
-        const power = SPEED * speedMult * throttleRef.current * gravityMod;
+        const boostMult = isBoosting ? BOOST_SPEED_MULT : 1;
+        const power = SPEED * speedMult * throttleRef.current * gravityMod * boostMult;
         const dist = Math.hypot(wmx - pos.x, wmy - pos.y);
         if (dist > 5) {
           const targetVx = Math.cos(angle) * power;
           const targetVy = Math.sin(angle) * power;
-          vel.x += (targetVx - vel.x) * (0.05 + throttleRef.current * 0.15);
-          vel.y += (targetVy - vel.y) * (0.05 + throttleRef.current * 0.15);
+          const lerpRate = isBoosting ? 0.25 : (0.05 + throttleRef.current * 0.15);
+          vel.x += (targetVx - vel.x) * lerpRate;
+          vel.y += (targetVy - vel.y) * lerpRate;
         }
 
         // Passive gravity even while thrusting
@@ -447,11 +468,22 @@ const Index = () => {
           vel.y -= buoyancyForce;
         }
 
+        // Ship shake during boost
+        if (isBoosting && !submerged) {
+          pos.x += (Math.random() - 0.5) * 1.2;
+          pos.y += (Math.random() - 0.5) * 1.2;
+        }
+
         pos.x += vel.x;
         pos.y += vel.y;
 
-        // Spawn jet trail when moving
-        spawnJetParticles(pos.x, pos.y, angle, throttleRef.current, submerged, fuelRef.current, MAX_FUEL);
+        // Spawn jet trail when moving (boosted = more particles)
+        const jetThrottle = isBoosting ? Math.min(throttleRef.current * 1.6, 1) : throttleRef.current;
+        spawnJetParticles(pos.x, pos.y, angle, jetThrottle, submerged, fuelRef.current, MAX_FUEL);
+        if (isBoosting && !submerged) {
+          // Extra burst of particles during boost
+          spawnJetParticles(pos.x, pos.y, angle, 1, submerged, fuelRef.current, MAX_FUEL);
+        }
 
         wasMovingRef.current = true;
       } else {
