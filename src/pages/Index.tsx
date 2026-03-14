@@ -40,15 +40,15 @@ import {
 import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail, getShipPitch } from "../game/jettrail";
 import { pollGamepad } from "../game/gamepad";
 
-const SPEED = 5.5;              // was 4 — base thrust power increased 37%
+const SPEED = 7; // was 5.5 — base thrust power increased
 const TRI_SIZE = 20;
 const GRAVITY = 0.09;
-const THRUST_GRAVITY = 0.014;   // was 0.018 — less drag while thrusting
-const CLIMB_PENALTY = 0.18;     // was 0.20 — climbing slightly easier
+const THRUST_GRAVITY = 0.014; // was 0.018 — less drag while thrusting
+const CLIMB_PENALTY = 0.18; // was 0.20 — climbing slightly easier
 const DIVE_BOOST = 0.15;
 const MAX_FALL_SPEED = 7;
 const AIR_DRAG = 0.995;
-const BUOYANCY = 0.07;         // upward force when submerged (reduced for easier diving)
+const BUOYANCY = 0.07; // upward force when submerged (reduced for easier diving)
 const PLAYER_MAX_HP = 3;
 const SHIP_MAX_HP = 10;
 const PLAYER_LIVES = 3;
@@ -113,7 +113,7 @@ const Index = () => {
   const gpFaceAPrev = useRef(false);
   const gpDpadUpPrev = useRef(false);
   const gpDpadDownPrev = useRef(false);
-  
+
   const wasMovingRef = useRef(false);
   const throttleRef = useRef(1);
   const [showHint, setShowHint] = useState(true);
@@ -398,8 +398,14 @@ const Index = () => {
         const perpX = -Math.sin(angle) * -1;
         const perpY = Math.cos(angle) * -1;
         const r = rollRef.current;
-        r.active = true; r.dir = -1; r.startTime = performance.now();
-        r.startX = pos.x; r.startY = pos.y; r.perpX = perpX; r.perpY = perpY; r.spinAngle = 0;
+        r.active = true;
+        r.dir = -1;
+        r.startTime = performance.now();
+        r.startX = pos.x;
+        r.startY = pos.y;
+        r.perpX = perpX;
+        r.perpY = perpY;
+        r.spinAngle = 0;
         deflectMissiles();
       }
       if (gp.dpadRight && !prevDpad.right && !rollRef.current.active && fuelRef.current >= ROLL_FUEL_COST) {
@@ -407,8 +413,14 @@ const Index = () => {
         const perpX = -Math.sin(angle) * 1;
         const perpY = Math.cos(angle) * 1;
         const r = rollRef.current;
-        r.active = true; r.dir = 1; r.startTime = performance.now();
-        r.startX = pos.x; r.startY = pos.y; r.perpX = perpX; r.perpY = perpY; r.spinAngle = 0;
+        r.active = true;
+        r.dir = 1;
+        r.startTime = performance.now();
+        r.startX = pos.x;
+        r.startY = pos.y;
+        r.perpX = perpX;
+        r.perpY = perpY;
+        r.spinAngle = 0;
         deflectMissiles();
       }
       gpDpadPrev.current = { left: gp.dpadLeft, right: gp.dpadRight };
@@ -499,7 +511,7 @@ const Index = () => {
         if (dist > 5) {
           const targetVx = Math.cos(angle) * power;
           const targetVy = Math.sin(angle) * power;
-          const lerpRate = isBoosting ? 0.25 : (0.05 + throttleRef.current * 0.15);
+          const lerpRate = isBoosting ? 0.25 : 0.05 + throttleRef.current * 0.15;
           const scaledLerp = 1 - Math.pow(1 - lerpRate, dtScale);
           vel.x += (targetVx - vel.x) * scaledLerp;
           vel.y += (targetVy - vel.y) * scaledLerp;
@@ -631,7 +643,17 @@ const Index = () => {
         }
 
         updateEnemies(dt, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
-        const subDmg = updateSubmarinesWithDamage(dt, viewH, boatX, boatW, pos.x, viewW / 2, waveDiff, wave.enemiesFleeing, gameStartedRef.current ? performance.now() / 1000 : 0);
+        const subDmg = updateSubmarinesWithDamage(
+          dt,
+          viewH,
+          boatX,
+          boatW,
+          pos.x,
+          viewW / 2,
+          waveDiff,
+          wave.enemiesFleeing,
+          gameStartedRef.current ? performance.now() / 1000 : 0,
+        );
         if (subDmg > 0) {
           shake(0, 1);
           shipHPRef.current = Math.max(shipHPRef.current - subDmg, 0);
@@ -688,7 +710,7 @@ const Index = () => {
           }
         }
 
-      // Boat collision — bounce player toward nearest water & punish resting
+        // Boat collision — bounce player toward nearest water & punish resting
         if (boatRef.current) {
           const pushOut = collideWithBoat(pos.x, pos.y, TRI_SIZE, boatRef.current, viewH);
           if (pushOut) {
@@ -698,7 +720,7 @@ const Index = () => {
             const boat = boatRef.current;
             const hw = boat.width / 2;
             const toLeft = pos.x - (boat.x - hw);
-            const toRight = (boat.x + hw) - pos.x;
+            const toRight = boat.x + hw - pos.x;
             const bounceDir = toLeft < toRight ? -1 : 1;
             // Strong horizontal bounce toward nearest water edge
             velRef.current.x = bounceDir * 3.5;
@@ -954,7 +976,12 @@ const Index = () => {
         const isInvuln = invulnRef.current > 0;
         const showPlayer = !isInvuln || Math.floor(performance.now() / 80) % 2 === 0;
         if (showPlayer) {
-          const pitchOffset = getShipPitch(throttleRef.current, keysRef.current.has("thrust") || keysRef.current.has("w"), velRef.current.y, isSubmerged(pos.y, viewH));
+          const pitchOffset = getShipPitch(
+            throttleRef.current,
+            keysRef.current.has("thrust") || keysRef.current.has("w"),
+            velRef.current.y,
+            isSubmerged(pos.y, viewH),
+          );
           ctx.save();
           ctx.translate(pos.x, pos.y);
           ctx.rotate(angle + pitchOffset);
@@ -1263,40 +1290,74 @@ const Index = () => {
           <div className="max-w-lg text-center mb-8" style={{ fontFamily: "var(--font-mono)" }}>
             {/* Objective */}
             <div className="mb-6 px-4 py-3 rounded" style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
-              <div className="text-xs tracking-widest uppercase mb-2" style={{ color: "#f7d794" }}>OBJECTIVE</div>
+              <div className="text-xs tracking-widest uppercase mb-2" style={{ color: "#f7d794" }}>
+                OBJECTIVE
+              </div>
               <p className="text-sm leading-relaxed" style={{ color: "#ccc" }}>
-                You are a M.E.R. Maid — a water-based mech defending a floating city.
-                Enemy bombers and fighters attack in waves. Shoot them down before they breach the city's barrier.
-                If the barrier falls or you lose all lives, it's game over.
+                You are a M.E.R. Maid — a water-based mech defending a floating city. Enemy bombers and fighters attack
+                in waves. Shoot them down before they breach the city's barrier. If the barrier falls or you lose all
+                lives, it's game over.
               </p>
             </div>
 
             {/* Mechanics */}
             <div className="mb-6 px-4 py-3 rounded" style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
-              <div className="text-xs tracking-widest uppercase mb-2" style={{ color: "#74b9ff" }}>KEY MECHANICS</div>
+              <div className="text-xs tracking-widest uppercase mb-2" style={{ color: "#74b9ff" }}>
+                KEY MECHANICS
+              </div>
               <div className="text-sm leading-relaxed space-y-1" style={{ color: "#ccc" }}>
-                <p><span style={{ color: "#74b9ff" }}>FUEL</span> — Flying burns fuel. <span style={{ color: "#74b9ff" }}>Dive underwater</span> to refuel.</p>
-                <p><span style={{ color: "#f0c830" }}>AMMO</span> — Limited ammo. Collect <span style={{ color: "#f0c830" }}>ammo crates</span> that drop during combat.</p>
-                <p><span style={{ color: "#5a9" }}>BARREL ROLL</span> — Dodge enemy fire with a quick lateral roll.</p>
+                <p>
+                  <span style={{ color: "#74b9ff" }}>FUEL</span> — Flying burns fuel.{" "}
+                  <span style={{ color: "#74b9ff" }}>Dive underwater</span> to refuel.
+                </p>
+                <p>
+                  <span style={{ color: "#f0c830" }}>AMMO</span> — Limited ammo. Collect{" "}
+                  <span style={{ color: "#f0c830" }}>ammo crates</span> that drop during combat.
+                </p>
+                <p>
+                  <span style={{ color: "#5a9" }}>BARREL ROLL</span> — Dodge enemy fire with a quick lateral roll.
+                </p>
               </div>
             </div>
 
             {/* Controls in two columns */}
             <div className="flex gap-4 text-left text-xs" style={{ color: "#999" }}>
               <div className="flex-1 px-3 py-2 rounded" style={{ backgroundColor: "rgba(255,255,255,0.03)" }}>
-                <div className="tracking-widest uppercase mb-2" style={{ color: "#D93636", fontSize: "10px" }}>MOUSE / KEYBOARD</div>
-                <p><span style={{ color: "#ccc" }}>Left Click</span> — Thrust</p>
-                <p><span style={{ color: "#ccc" }}>Right Click</span> — Fire</p>
-                <p><span style={{ color: "#ccc" }}>A / D</span> — Barrel Roll</p>
-                <p><span style={{ color: "#ccc" }}>ESC</span> — Pause</p>
+                <div className="tracking-widest uppercase mb-2" style={{ color: "#D93636", fontSize: "10px" }}>
+                  MOUSE / KEYBOARD
+                </div>
+                <p>
+                  <span style={{ color: "#ccc" }}>Left Click</span> — Thrust
+                </p>
+                <p>
+                  <span style={{ color: "#ccc" }}>Right Click</span> — Fire
+                </p>
+                <p>
+                  <span style={{ color: "#ccc" }}>A / D</span> — Barrel Roll
+                </p>
+                <p>
+                  <span style={{ color: "#ccc" }}>ESC</span> — Pause
+                </p>
               </div>
               <div className="flex-1 px-3 py-2 rounded" style={{ backgroundColor: "rgba(255,255,255,0.03)" }}>
-                <div className="tracking-widest uppercase mb-2" style={{ color: "#D93636", fontSize: "10px" }}>GAMEPAD</div>
-                <p><span style={{ color: "#ccc" }}>Stick</span> — Aim</p>
-                <p><span style={{ color: "#ccc" }}>Y / LB / LT</span> — Thrust</p>
-                <p><span style={{ color: "#ccc" }}>A / B / X / RB / RT</span> — Fire</p>
-                <p><span style={{ color: "#ccc" }}>D-Pad ◄►</span> — Barrel Roll</p>
-                <p><span style={{ color: "#ccc" }}>Start</span> — Pause</p>
+                <div className="tracking-widest uppercase mb-2" style={{ color: "#D93636", fontSize: "10px" }}>
+                  GAMEPAD
+                </div>
+                <p>
+                  <span style={{ color: "#ccc" }}>Stick</span> — Aim
+                </p>
+                <p>
+                  <span style={{ color: "#ccc" }}>Y / LB / LT</span> — Thrust
+                </p>
+                <p>
+                  <span style={{ color: "#ccc" }}>A / B / X / RB / RT</span> — Fire
+                </p>
+                <p>
+                  <span style={{ color: "#ccc" }}>D-Pad ◄►</span> — Barrel Roll
+                </p>
+                <p>
+                  <span style={{ color: "#ccc" }}>Start</span> — Pause
+                </p>
               </div>
             </div>
           </div>
