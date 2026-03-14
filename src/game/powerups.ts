@@ -73,6 +73,13 @@ export function checkPowerupPickup(px: number, py: number, radius: number): Powe
 }
 
 export function updatePowerups() {
+  const now = performance.now();
+  // Despawn expired powerups
+  for (const p of powerups) {
+    if (p.alive && now - p.spawnTime > POWERUP_LIFETIME) {
+      p.alive = false;
+    }
+  }
   powerups = powerups.filter(p => p.alive);
 }
 
