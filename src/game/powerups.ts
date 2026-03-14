@@ -17,20 +17,25 @@ export interface Powerup {
 let powerups: Powerup[] = [];
 let nextHealthReward = 1500;
 let nextRepairReward = 1200;
+let lastHealthSpawnScore = -1;
+let lastRepairSpawnScore = -1;
 
 export function resetPowerups() {
   powerups = [];
   nextHealthReward = 1500;
   nextRepairReward = 1200;
+  lastHealthSpawnScore = -1;
+  lastRepairSpawnScore = -1;
 }
 
 export function getPowerups() { return powerups; }
 
 export function checkScoreRewards(score: number, boatX: number, boatWidth: number, viewH: number) {
   const surfaceY = getWaterSurfaceY(viewH);
-  const baseY = surfaceY + 60; // spawn further below the ship
+  const baseY = surfaceY + 60;
 
-  if (score >= nextHealthReward) {
+  if (score >= nextHealthReward && lastHealthSpawnScore < nextHealthReward) {
+    lastHealthSpawnScore = nextHealthReward;
     const spawnX = boatX + (Math.random() - 0.5) * boatWidth * 0.6;
     powerups.push({
       x: spawnX,
@@ -42,7 +47,8 @@ export function checkScoreRewards(score: number, boatX: number, boatWidth: numbe
     nextHealthReward += 1000 + Math.floor(nextHealthReward * 0.4);
   }
 
-  if (score >= nextRepairReward) {
+  if (score >= nextRepairReward && lastRepairSpawnScore < nextRepairReward) {
+    lastRepairSpawnScore = nextRepairReward;
     const spawnX = boatX + (Math.random() - 0.5) * boatWidth * 0.6;
     powerups.push({
       x: spawnX,
