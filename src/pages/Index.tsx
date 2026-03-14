@@ -296,6 +296,10 @@ const Index = () => {
         fpsFramesRef.current = 0;
         fpsLastTimeRef.current = now;
       }
+      // Delta-time scaling: dtScale=1.0 at 60fps, ~1.2 at 50fps, etc.
+      const frameDelta = Math.min(now - lastFrameTimeRef.current, 50); // cap at 50ms to avoid spiral
+      lastFrameTimeRef.current = now;
+      const dtScale = frameDelta / (1000 / 60); // 1.0 at 60fps
       const { width: cw, height: ch } = canvas;
       const viewW = cw / ZOOM;
       const viewH = ch / ZOOM;
