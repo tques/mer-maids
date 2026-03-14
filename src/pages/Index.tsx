@@ -359,19 +359,23 @@ const Index = () => {
 
       // Gamepad d-pad → barrel rolls (edge-triggered)
       const prevDpad = gpDpadPrev.current;
-      if (gp.dpadLeft && !prevDpad.left && !rollRef.current.active) {
+      if (gp.dpadLeft && !prevDpad.left && !rollRef.current.active && fuelRef.current >= ROLL_FUEL_COST) {
+        fuelRef.current -= ROLL_FUEL_COST;
         const perpX = -Math.sin(angle) * -1;
         const perpY = Math.cos(angle) * -1;
         const r = rollRef.current;
         r.active = true; r.dir = -1; r.startTime = performance.now();
         r.startX = pos.x; r.startY = pos.y; r.perpX = perpX; r.perpY = perpY; r.spinAngle = 0;
+        deflectMissiles();
       }
-      if (gp.dpadRight && !prevDpad.right && !rollRef.current.active) {
+      if (gp.dpadRight && !prevDpad.right && !rollRef.current.active && fuelRef.current >= ROLL_FUEL_COST) {
+        fuelRef.current -= ROLL_FUEL_COST;
         const perpX = -Math.sin(angle) * 1;
         const perpY = Math.cos(angle) * 1;
         const r = rollRef.current;
         r.active = true; r.dir = 1; r.startTime = performance.now();
         r.startX = pos.x; r.startY = pos.y; r.perpX = perpX; r.perpY = perpY; r.spinAngle = 0;
+        deflectMissiles();
       }
       gpDpadPrev.current = { left: gp.dpadLeft, right: gp.dpadRight };
 
