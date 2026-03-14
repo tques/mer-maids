@@ -917,8 +917,6 @@ const Index = () => {
           ctx.lineWidth = 1.5;
           ctx.strokeRect(-s / 2, -s / 2, s, s);
           // "Ammo" label
-          ctx.shadowColor = "transparent";
-          ctx.shadowBlur = 0;
           ctx.fillStyle = "#fff";
           ctx.font = "bold 8px monospace";
           ctx.textAlign = "center";
