@@ -224,6 +224,11 @@ const Index = () => {
         }
         return;
       }
+      if (key === "w") {
+        e.preventDefault();
+        setShowHint(false);
+        keysRef.current.add("w");
+      }
       if (key === "a" || key === "d") {
         e.preventDefault();
         setShowHint(false);
