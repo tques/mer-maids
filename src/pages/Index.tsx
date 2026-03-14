@@ -149,9 +149,10 @@ const Index = () => {
     if (!canvas) return { x: mouse.x, y: mouse.y };
     const viewW = canvas.width / ZOOM;
     const camX = posRef.current.x - viewW / 2;
+    const camY = -SKY_EXTRA;
     return {
       x: mouse.x / ZOOM + camX,
-      y: mouse.y / ZOOM,
+      y: mouse.y / ZOOM + camY,
     };
   }, []);
 
