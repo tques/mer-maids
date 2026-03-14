@@ -144,6 +144,10 @@ const Index = () => {
   const lastGamepadAngleRef = useRef(0); // remember last stick angle when stick returns to center
   const loopRef = useRef<(() => void) | null>(null);
   const boostRef = useRef<{ active: boolean; lockedAngle: number }>({ active: false, lockedAngle: 0 });
+  const showFpsRef = useRef(false);
+  const fpsFramesRef = useRef(0);
+  const fpsLastTimeRef = useRef(performance.now());
+  const fpsDisplayRef = useRef(0);
 
   // Helper: convert screen mouse to world coords
   const getWorldMouse = useCallback(() => {
@@ -218,8 +222,24 @@ const Index = () => {
     const onContextMenu = (e: Event) => e.preventDefault();
 
     const onKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      if (key === "escape" && gameStartedRef.current && !gameOverRef.current) {
+      const key = e.key;
+      // Toggle FPS counter with End key
+      if (key === "End") {
+        showFpsRef.current = !showFpsRef.current;
+        return;
+      }
+      // Toggle fullscreen with F11
+      if (key === "F11") {
+        e.preventDefault();
+        if (!document.fullscreenElement) {
+          containerRef.current?.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+        return;
+      }
+      const lkey = key.toLowerCase();
+      if (lkey === "escape" && gameStartedRef.current && !gameOverRef.current) {
         pausedRef.current = !pausedRef.current;
         setPaused(pausedRef.current);
         if (!pausedRef.current) {
@@ -266,6 +286,15 @@ const Index = () => {
     const loop = () => {
       if (gameOverRef.current) return;
       if (pausedRef.current) return;
+
+      // FPS tracking
+      fpsFramesRef.current++;
+      const now = performance.now();
+      if (now - fpsLastTimeRef.current >= 1000) {
+        fpsDisplayRef.current = fpsFramesRef.current;
+        fpsFramesRef.current = 0;
+        fpsLastTimeRef.current = now;
+      }
       const { width: cw, height: ch } = canvas;
       const viewW = cw / ZOOM;
       const viewH = ch / ZOOM;
@@ -1068,6 +1097,16 @@ const Index = () => {
 
       // Wave HUD
       drawWaveHUD(ctx, waveRef.current, cw);
+
+      // FPS counter (toggle with End key)
+      if (showFpsRef.current) {
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        ctx.fillRect(cw - 80, ch - 30, 76, 24);
+        ctx.fillStyle = "#0f0";
+        ctx.font = "bold 14px monospace";
+        ctx.textAlign = "right";
+        ctx.fillText(`FPS: ${fpsDisplayRef.current}`, cw - 8, ch - 12);
+      }
 
       ctx.restore();
 
