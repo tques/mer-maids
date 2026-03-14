@@ -140,6 +140,7 @@ const Index = () => {
   const gamepadAimingRef = useRef(false); // true when gamepad stick was last used for aiming
   const lastGamepadAngleRef = useRef(0); // remember last stick angle when stick returns to center
   const loopRef = useRef<(() => void) | null>(null);
+  const boostRef = useRef<{ active: boolean; lockedAngle: number }>({ active: false, lockedAngle: 0 });
 
   // Helper: convert screen mouse to world coords
   const getWorldMouse = useCallback(() => {
