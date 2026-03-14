@@ -62,6 +62,7 @@ export interface Explosion {
 let enemies: Enemy[] = [];
 let chasers: Chaser[] = [];
 let chaserBullets: ChaserBullet[] = [];
+let homingMissiles: HomingMissile[] = [];
 let bombs: Bomb[] = [];
 let explosions: Explosion[] = [];
 let bomberSpawnTimer = 0;
