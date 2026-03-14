@@ -357,7 +357,7 @@ export function updateEnemies(
       enemies.push({
         x: spawnX,
         y: -30 - Math.random() * 60, // Spawn above screen
-        speed: 1.2 + Math.random() * 0.8,
+        speed: 2.4 + Math.random() * 0.8,
         dir: dir as 1 | -1,
         angle: 0,
         targetX: boatX + (Math.random() - 0.5) * viewHalfW, // Target near the city
