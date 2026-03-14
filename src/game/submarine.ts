@@ -177,7 +177,7 @@ export function updateSubmarinesWithDamage(
       continue;
     }
 
-    sub.y = subY;
+    // sub keeps its spawn depth
 
     if (!sub.attacking) {
       sub.x += sub.dir * sub.speed;
