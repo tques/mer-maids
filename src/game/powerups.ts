@@ -4,6 +4,8 @@ import { getWaterSurfaceY } from "./water";
 
 export type PowerupType = "health" | "repair";
 
+const POWERUP_LIFETIME = 15000; // 15 seconds before despawn
+
 export interface Powerup {
   x: number;
   y: number;
@@ -15,20 +17,25 @@ export interface Powerup {
 let powerups: Powerup[] = [];
 let nextHealthReward = 1500;
 let nextRepairReward = 1200;
+let lastHealthSpawnScore = -1;
+let lastRepairSpawnScore = -1;
 
 export function resetPowerups() {
   powerups = [];
   nextHealthReward = 1500;
   nextRepairReward = 1200;
+  lastHealthSpawnScore = -1;
+  lastRepairSpawnScore = -1;
 }
 
 export function getPowerups() { return powerups; }
 
 export function checkScoreRewards(score: number, boatX: number, boatWidth: number, viewH: number) {
   const surfaceY = getWaterSurfaceY(viewH);
-  const baseY = surfaceY + 60; // spawn further below the ship
+  const baseY = surfaceY + 60;
 
-  if (score >= nextHealthReward) {
+  if (score >= nextHealthReward && lastHealthSpawnScore < nextHealthReward) {
+    lastHealthSpawnScore = nextHealthReward;
     const spawnX = boatX + (Math.random() - 0.5) * boatWidth * 0.6;
     powerups.push({
       x: spawnX,
@@ -40,7 +47,8 @@ export function checkScoreRewards(score: number, boatX: number, boatWidth: numbe
     nextHealthReward += 1000 + Math.floor(nextHealthReward * 0.4);
   }
 
-  if (score >= nextRepairReward) {
+  if (score >= nextRepairReward && lastRepairSpawnScore < nextRepairReward) {
+    lastRepairSpawnScore = nextRepairReward;
     const spawnX = boatX + (Math.random() - 0.5) * boatWidth * 0.6;
     powerups.push({
       x: spawnX,
@@ -65,6 +73,13 @@ export function checkPowerupPickup(px: number, py: number, radius: number): Powe
 }
 
 export function updatePowerups() {
+  const now = performance.now();
+  // Despawn expired powerups
+  for (const p of powerups) {
+    if (p.alive && now - p.spawnTime > POWERUP_LIFETIME) {
+      p.alive = false;
+    }
+  }
   powerups = powerups.filter(p => p.alive);
 }
 
@@ -72,7 +87,18 @@ export function drawPowerups(ctx: CanvasRenderingContext2D) {
   const now = performance.now();
   for (const p of powerups) {
     if (!p.alive) continue;
-    const bob = Math.sin((now - p.spawnTime) / 500) * 4;
+    const age = now - p.spawnTime;
+    const timeLeft = POWERUP_LIFETIME - age;
+
+    // Blink when about to despawn (last 4 seconds)
+    if (timeLeft < 4000) {
+      const blinkRate = timeLeft < 2000 ? 100 : 250;
+      if (Math.floor(now / blinkRate) % 2 === 0) {
+        continue; // skip drawing this frame (blink off)
+      }
+    }
+
+    const bob = Math.sin(age / 500) * 4;
     const py = p.y + bob;
 
     ctx.save();
