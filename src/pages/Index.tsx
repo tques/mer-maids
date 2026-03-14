@@ -750,7 +750,7 @@ const Index = () => {
         }
 
         if (ammoBoxAlertRef.current > 0) {
-          ammoBoxAlertRef.current -= 16;
+          ammoBoxAlertRef.current -= frameDelta;
         }
 
         const box = ammoBoxRef.current;
