@@ -444,7 +444,7 @@ const Index = () => {
       lastPosRef.current = { x: pos.x, y: pos.y };
 
       // Fuel system: refill when submerged, burn when flying
-      const dt = 1 / 60;
+      const dt = dtScale / 60;
       if (submerged) {
         fuelRef.current = Math.min(fuelRef.current + FUEL_REFILL_RATE * dt, MAX_FUEL);
       }
@@ -480,7 +480,7 @@ const Index = () => {
           fuelRef.current = Math.max(fuelRef.current - FUEL_BURN_RATE * fuelMult * dt, 0);
         }
 
-        throttleRef.current = Math.min(throttleRef.current + 0.04, 1);
+        throttleRef.current = Math.min(throttleRef.current + 0.04 * dtScale, 1);
 
         // Gravity-affected flight: climbing is harder, diving is easier
         const verticalComponent = Math.sin(angle);
@@ -500,13 +500,14 @@ const Index = () => {
           const targetVx = Math.cos(angle) * power;
           const targetVy = Math.sin(angle) * power;
           const lerpRate = isBoosting ? 0.25 : (0.05 + throttleRef.current * 0.15);
-          vel.x += (targetVx - vel.x) * lerpRate;
-          vel.y += (targetVy - vel.y) * lerpRate;
+          const scaledLerp = 1 - Math.pow(1 - lerpRate, dtScale);
+          vel.x += (targetVx - vel.x) * scaledLerp;
+          vel.y += (targetVy - vel.y) * scaledLerp;
         }
 
         // Passive gravity even while thrusting
         if (!submerged) {
-          vel.y += THRUST_GRAVITY;
+          vel.y += THRUST_GRAVITY * dtScale;
         }
 
         // Buoyancy when submerged — push toward surface
@@ -514,17 +515,17 @@ const Index = () => {
           const surfaceY = getWaterSurfaceY(viewH);
           const depth = pos.y - surfaceY;
           const buoyancyForce = BUOYANCY * Math.min(depth / 40, 1);
-          vel.y -= buoyancyForce;
+          vel.y -= buoyancyForce * dtScale;
         }
 
         // Ship shake during boost
         if (isBoosting && !submerged) {
-          pos.x += (Math.random() - 0.5) * 1.2;
-          pos.y += (Math.random() - 0.5) * 1.2;
+          pos.x += (Math.random() - 0.5) * 1.2 * dtScale;
+          pos.y += (Math.random() - 0.5) * 1.2 * dtScale;
         }
 
-        pos.x += vel.x;
-        pos.y += vel.y;
+        pos.x += vel.x * dtScale;
+        pos.y += vel.y * dtScale;
 
         // Spawn jet trail when moving (boosted = more particles)
         const jetThrottle = isBoosting ? Math.min(throttleRef.current * 1.6, 1) : throttleRef.current;
@@ -536,26 +537,28 @@ const Index = () => {
         wasMovingRef.current = true;
       } else {
         // Not thrusting — natural gravity + air drag, more momentum retained
-        throttleRef.current = Math.max(throttleRef.current - 0.03, 0);
+        throttleRef.current = Math.max(throttleRef.current - 0.03 * dtScale, 0);
 
-        vel.x *= AIR_DRAG;
-        vel.y *= AIR_DRAG;
+        const dragScale = Math.pow(AIR_DRAG, dtScale);
+        vel.x *= dragScale;
+        vel.y *= dragScale;
 
         // Gravity in air, buoyancy in water
         if (!submerged) {
-          vel.y = Math.min(vel.y + GRAVITY, MAX_FALL_SPEED);
+          vel.y = Math.min(vel.y + GRAVITY * dtScale, MAX_FALL_SPEED);
         } else {
           const surfaceY = getWaterSurfaceY(viewH);
           const depth = pos.y - surfaceY;
           const buoyancyForce = BUOYANCY * Math.min(depth / 40, 1);
-          vel.y -= buoyancyForce;
+          vel.y -= buoyancyForce * dtScale;
           // Water drag (heavier than air)
-          vel.x *= 0.97;
-          vel.y *= 0.97;
+          const waterDrag = Math.pow(0.97, dtScale);
+          vel.x *= waterDrag;
+          vel.y *= waterDrag;
         }
 
-        pos.x += vel.x;
-        pos.y += vel.y;
+        pos.x += vel.x * dtScale;
+        pos.y += vel.y * dtScale;
 
         if (Math.abs(vel.x) < 0.01 && Math.abs(vel.y) < 0.01 && !submerged) {
           wasMovingRef.current = false;
