@@ -267,8 +267,9 @@ const Index = () => {
 
       // World-space mouse
       const camX = pos.x - viewW / 2;
+      const camY = -SKY_EXTRA;
       const wmx = mouseRef.current.x / ZOOM + camX;
-      const wmy = mouseRef.current.y / ZOOM;
+      const wmy = mouseRef.current.y / ZOOM + camY;
 
       // Gamepad menu controls (edge-triggered)
       const startPressed = gp.start && !gpStartPrev.current;
