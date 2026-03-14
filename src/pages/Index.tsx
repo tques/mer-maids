@@ -286,6 +286,15 @@ const Index = () => {
     const loop = () => {
       if (gameOverRef.current) return;
       if (pausedRef.current) return;
+
+      // FPS tracking
+      fpsFramesRef.current++;
+      const now = performance.now();
+      if (now - fpsLastTimeRef.current >= 1000) {
+        fpsDisplayRef.current = fpsFramesRef.current;
+        fpsFramesRef.current = 0;
+        fpsLastTimeRef.current = now;
+      }
       const { width: cw, height: ch } = canvas;
       const viewW = cw / ZOOM;
       const viewH = ch / ZOOM;
