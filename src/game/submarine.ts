@@ -241,102 +241,120 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
     const hw = SUB_WIDTH / 2;
     const hh = SUB_HEIGHT / 2;
 
-    // Shadow glow
-    ctx.shadowColor = sub.attacking ? "rgba(231, 76, 60, 0.5)" : "rgba(255, 180, 40, 0.3)";
-    ctx.shadowBlur = 8;
+    // Menacing red glow
+    ctx.shadowColor = sub.attacking ? "rgba(255, 30, 10, 0.7)" : "rgba(200, 50, 30, 0.4)";
+    ctx.shadowBlur = 12;
 
-    // Main hull — yellow/red
+    // Main hull — dark gunmetal
     ctx.beginPath();
     ctx.ellipse(0, 0, hw, hh, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#f9ca24";
+    ctx.fillStyle = "#1a1a2e";
     ctx.fill();
-    ctx.strokeStyle = "#e58e26";
+    ctx.strokeStyle = "#4a0e0e";
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Hull stripe — darker orange band
+    // Danger stripe — crimson band across center
     ctx.beginPath();
-    ctx.ellipse(0, 0, hw * 0.9, hh * 0.5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#e17055";
+    ctx.ellipse(0, 0, hw * 0.92, hh * 0.55, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#6b0000";
     ctx.fill();
 
-    // Highlight stripe — top
+    // Inner hull dark
     ctx.beginPath();
-    ctx.ellipse(0, -2, hw * 0.8, hh * 0.25, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255, 234, 167, 0.5)";
+    ctx.ellipse(0, 0, hw * 0.75, hh * 0.35, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#1a1a2e";
     ctx.fill();
 
-    // Conning tower — angular
+    // Conning tower — angular, weaponized
     ctx.beginPath();
-    ctx.moveTo(-5, -hh);
-    ctx.lineTo(-4, -hh - 7);
-    ctx.lineTo(4, -hh - 7);
-    ctx.lineTo(5, -hh);
+    ctx.moveTo(-7, -hh);
+    ctx.lineTo(-5, -hh - 9);
+    ctx.lineTo(5, -hh - 9);
+    ctx.lineTo(7, -hh);
     ctx.closePath();
-    ctx.fillStyle = "#d63031";
+    ctx.fillStyle = "#2d0a0a";
     ctx.fill();
-    ctx.strokeStyle = "#b71540";
+    ctx.strokeStyle = "#8b0000";
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Periscope
+    // Antenna / sensor mast
     ctx.beginPath();
-    ctx.moveTo(1, -hh - 7);
-    ctx.lineTo(1, -hh - 12);
-    ctx.lineTo(4, -hh - 12);
-    ctx.strokeStyle = "#636e72";
-    ctx.lineWidth = 1;
+    ctx.moveTo(0, -hh - 9);
+    ctx.lineTo(0, -hh - 15);
+    ctx.strokeStyle = "#cc0000";
+    ctx.lineWidth = 1.2;
     ctx.stroke();
+    // Blinking sensor tip
+    const sensorBlink = Math.sin(performance.now() * 0.008 + sub.x) > 0;
+    if (sensorBlink) {
+      ctx.beginPath();
+      ctx.arc(0, -hh - 15, 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = "#ff0000";
+      ctx.fill();
+    }
 
-    // Nose cap
-    const noseX = sub.dir * hw * 0.85;
+    // Nose — armored ram
+    const noseX = sub.dir * hw;
     ctx.beginPath();
-    ctx.arc(noseX, 0, hh * 0.6, 0, Math.PI * 2);
-    ctx.fillStyle = "#d63031";
+    ctx.moveTo(noseX, -hh * 0.6);
+    ctx.lineTo(noseX + sub.dir * 8, 0);
+    ctx.lineTo(noseX, hh * 0.6);
+    ctx.closePath();
+    ctx.fillStyle = "#4a0e0e";
     ctx.fill();
 
-    // Porthole
-    const frontX = sub.dir * hw * 0.4;
+    // Hostile eye — glowing red porthole
+    const eyeX = sub.dir * hw * 0.35;
     ctx.beginPath();
-    ctx.arc(frontX, 0, 3, 0, Math.PI * 2);
-    ctx.fillStyle = sub.attacking ? "#ff4444" : "#ffeaa7";
+    ctx.arc(eyeX, 0, 3.5, 0, Math.PI * 2);
+    const eyePulse = 0.6 + Math.sin(performance.now() * 0.006) * 0.4;
+    ctx.fillStyle = sub.attacking ? "#ff0000" : `rgba(255, 40, 20, ${eyePulse})`;
     ctx.fill();
-    ctx.strokeStyle = "#b71540";
-    ctx.lineWidth = 0.8;
-    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(eyeX, 0, 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffcc00";
+    ctx.fill();
 
-    // Tail fin
+    // Tail fin — jagged
     const tailX = -sub.dir * hw * 0.85;
     ctx.beginPath();
-    ctx.moveTo(tailX, -hh * 0.3);
-    ctx.lineTo(tailX - sub.dir * 6, -hh - 3);
-    ctx.lineTo(tailX - sub.dir * 3, 0);
-    ctx.lineTo(tailX - sub.dir * 6, hh + 3);
-    ctx.lineTo(tailX, hh * 0.3);
+    ctx.moveTo(tailX, -hh * 0.4);
+    ctx.lineTo(tailX - sub.dir * 8, -hh - 5);
+    ctx.lineTo(tailX - sub.dir * 4, -hh * 0.1);
+    ctx.lineTo(tailX - sub.dir * 8, hh + 5);
+    ctx.lineTo(tailX, hh * 0.4);
     ctx.closePath();
-    ctx.fillStyle = "#e17055";
+    ctx.fillStyle = "#6b0000";
     ctx.fill();
+
+    // Torpedo tube marks
+    const tubeX = sub.dir * hw * 0.6;
+    ctx.fillStyle = "#333";
+    ctx.fillRect(tubeX - 1, -hh * 0.5, 2, 3);
+    ctx.fillRect(tubeX - 1, hh * 0.5 - 3, 2, 3);
 
     ctx.shadowColor = "transparent";
 
     // Attack warning flash
     if (sub.attacking) {
-      const flash = Math.sin(sub.flashTimer * 8) > 0;
+      const flash = Math.sin(sub.flashTimer * 10) > 0;
       if (flash) {
         ctx.beginPath();
-        ctx.ellipse(0, 0, hw + 5, hh + 5, 0, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(255, 60, 40, 0.7)";
-        ctx.lineWidth = 2;
+        ctx.ellipse(0, 0, hw + 6, hh + 6, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255, 0, 0, 0.7)";
+        ctx.lineWidth = 2.5;
         ctx.stroke();
       }
 
-      // Rising bubbles
+      // Menacing rising bubbles — reddish
       for (let i = 0; i < 4; i++) {
-        const bx = (i - 1.5) * 8 + Math.sin(sub.flashTimer * 3 + i) * 5;
-        const by = -hh - 10 - ((sub.flashTimer * 30 + i * 12) % 45);
+        const bx = (i - 1.5) * 8 + Math.sin(sub.flashTimer * 4 + i) * 4;
+        const by = -hh - 12 - ((sub.flashTimer * 35 + i * 12) % 50);
         ctx.beginPath();
-        ctx.arc(bx, by, 2 + Math.random(), 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255, 200, 100, 0.5)";
+        ctx.arc(bx, by, 1.5 + Math.random() * 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 80, 50, ${0.3 + Math.random() * 0.3})`;
         ctx.fill();
       }
     }
