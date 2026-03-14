@@ -198,7 +198,7 @@ const Index = () => {
     const onMouseDown = (e: MouseEvent) => {
       if (e.button === 0) {
         setShowHint(false);
-        keysRef.current.add("w");
+        keysRef.current.add("thrust");
       } else if (e.button === 2) {
         e.preventDefault();
         setShowHint(false);
@@ -208,7 +208,7 @@ const Index = () => {
     };
 
     const onMouseUp = (e: MouseEvent) => {
-      if (e.button === 0) keysRef.current.delete("w");
+      if (e.button === 0) keysRef.current.delete("thrust");
       if (e.button === 2) rightMouseRef.current = false;
     };
 
