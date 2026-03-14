@@ -28,7 +28,8 @@ const SUB_WIDTH = 50;
 const SUB_HEIGHT = 16;
 const SUB_SPEED = 0.6;
 const SUB_ATTACK_TIME = 2.0; // seconds to charge before attacking
-const SUB_DEPTH_OFFSET = 60; // how far below water surface
+const SUB_DEPTH_MIN = 50; // minimum depth below water surface
+const SUB_DEPTH_MAX = 140; // maximum depth (deep subs encourage diving)
 
 export function updateSubmarines(
   dt: number,
