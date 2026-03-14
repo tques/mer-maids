@@ -1098,6 +1098,16 @@ const Index = () => {
       // Wave HUD
       drawWaveHUD(ctx, waveRef.current, cw);
 
+      // FPS counter (toggle with End key)
+      if (showFpsRef.current) {
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        ctx.fillRect(cw - 80, ch - 30, 76, 24);
+        ctx.fillStyle = "#0f0";
+        ctx.font = "bold 14px monospace";
+        ctx.textAlign = "right";
+        ctx.fillText(`FPS: ${fpsDisplayRef.current}`, cw - 8, ch - 12);
+      }
+
       ctx.restore();
 
       // Wave transition overlay (drawn after HUD restore, in screen space)
