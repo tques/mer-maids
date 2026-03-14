@@ -706,6 +706,7 @@ const Index = () => {
             }
           }
         }
+      }
 
       // Update water particles and jet trail
       updateParticles(1 / 60);
