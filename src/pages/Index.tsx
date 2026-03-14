@@ -487,10 +487,10 @@ const Index = () => {
       // Horizontal wrapping in world space
       pos.x = ((pos.x % WORLD_WIDTH) + WORLD_WIDTH) % WORLD_WIDTH;
 
-      // Vertical clamp
+      // Vertical clamp — allow flying into the extra sky area
       let hitY = 0;
-      if (pos.y < TRI_SIZE) {
-        pos.y = TRI_SIZE;
+      if (pos.y < -SKY_EXTRA + TRI_SIZE) {
+        pos.y = -SKY_EXTRA + TRI_SIZE;
         hitY = -1;
       }
       if (pos.y > viewH - TRI_SIZE) {
