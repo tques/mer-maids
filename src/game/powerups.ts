@@ -87,7 +87,18 @@ export function drawPowerups(ctx: CanvasRenderingContext2D) {
   const now = performance.now();
   for (const p of powerups) {
     if (!p.alive) continue;
-    const bob = Math.sin((now - p.spawnTime) / 500) * 4;
+    const age = now - p.spawnTime;
+    const timeLeft = POWERUP_LIFETIME - age;
+
+    // Blink when about to despawn (last 4 seconds)
+    if (timeLeft < 4000) {
+      const blinkRate = timeLeft < 2000 ? 100 : 250;
+      if (Math.floor(now / blinkRate) % 2 === 0) {
+        continue; // skip drawing this frame (blink off)
+      }
+    }
+
+    const bob = Math.sin(age / 500) * 4;
     const py = p.y + bob;
 
     ctx.save();
