@@ -78,7 +78,9 @@ export function updateSubmarines(
     if (!sub.alive) continue;
 
     if (fleeing) {
-      sub.x += sub.dir * 3;
+      // Flee away from city (reverse direction)
+      sub.attacking = false;
+      sub.x -= sub.dir * 2.5;
       if (Math.abs(sub.x - playerX) > viewHalfW * 4) sub.alive = false;
       continue;
     }
