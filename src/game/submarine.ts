@@ -84,7 +84,7 @@ export function updateSubmarines(
       continue;
     }
 
-    sub.y = subY; // stay at depth
+    // sub keeps its spawn depth
 
     if (!sub.attacking) {
       // Move toward city
