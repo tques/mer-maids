@@ -618,11 +618,13 @@ const Index = () => {
           invulnRef.current -= 16;
         } else {
           const playerHits = checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
-          if (playerHits > 0) {
-            spawnExplosion(pos.x, pos.y, 20);
-            shake(0, 1);
+          const missileHits = checkMissileHitsPlayer(pos.x, pos.y, TRI_SIZE);
+          const totalHits = playerHits + missileHits * 2; // missiles deal 2 damage
+          if (totalHits > 0) {
+            spawnExplosion(pos.x, pos.y, missileHits > 0 ? 35 : 20);
+            shake(missileHits > 0 ? 1 : 0, 1);
             invulnRef.current = INVULN_DURATION;
-            playerHPRef.current -= playerHits;
+            playerHPRef.current -= totalHits;
             if (playerHPRef.current <= 0) {
               playerLivesRef.current -= 1;
               if (playerLivesRef.current <= 0) {
