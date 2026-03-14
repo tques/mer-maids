@@ -1,13 +1,37 @@
-// Abstract floating city with dome barrier — sits on the water
+/**
+ * boat.ts — Floating City (the thing you're defending!)
+ * 
+ * The "boat" is actually a floating city platform with:
+ * - A dark metallic base that sits on the wave surface
+ * - Abstract city buildings with window lights
+ * - A dome energy barrier that protects the city
+ * - Visual damage states: cracks, smoke, flickering lights
+ * 
+ * The city is the primary defense objective. If its HP reaches 0, the game ends.
+ * The dome barrier absorbs bomb hits; when barrier HP drops to ≤3, it breaks
+ * and bombs hit the city directly.
+ */
 
 import { getWaveY, getWaterSurfaceY } from "./water";
 
+// ==================== INTERFACE ====================
+
+/** The city platform entity */
 export interface Boat {
-  x: number;
-  width: number;
-  hullDepth: number;
+  x: number;       // World X position (center of the city)
+  width: number;   // Total width of the platform in pixels
+  hullDepth: number; // How deep the platform extends below the surface
 }
 
+// ==================== INITIALIZATION ====================
+
+/**
+ * Creates the city at the center of the world.
+ * Called once on game start and on window resize.
+ * 
+ * @param worldWidth - Total world width (city spawns at center)
+ * @returns A new Boat/city object
+ */
 export function createBoat(worldWidth: number): Boat {
   return {
     x: worldWidth / 2,
@@ -16,32 +40,64 @@ export function createBoat(worldWidth: number): Boat {
   };
 }
 
-/** Returns the top-Y of the city platform at the center for collision purposes */
+// ==================== POSITION HELPERS ====================
+
+/**
+ * Returns the top-Y of the city platform at its center.
+ * The city bobs up and down with the waves.
+ * Used for collision detection and enemy targeting.
+ * 
+ * @param boat - The city object
+ * @param viewH - Logical view height
+ * @returns Y coordinate of the platform top
+ */
 export function getBoatTopY(boat: Boat, viewH: number): number {
   const surfaceY = getWaterSurfaceY(viewH);
   const waveY = getWaveY(boat.x, surfaceY);
-  return waveY - 10;
+  return waveY - 10;  // Platform sits 10px above the wave line
 }
 
+// ==================== RENDERING ====================
+
+/**
+ * Draws the complete floating city with all visual details.
+ * This is a complex function with multiple visual layers:
+ * 
+ * 1. Underwater shadow/reflection
+ * 2. Platform base (dark rounded rectangle)
+ * 3. Platform surface highlight
+ * 4. Horizontal barrier lines on the hull
+ * 5. City buildings with illuminated windows
+ * 6. Damage effects (flickering lights, scars, smoke)
+ * 7. Dome barrier (when active) with hexagonal pattern and cracks
+ * 8. Broken dome remnants (when barrier is down)
+ * 9. Waterline highlight
+ * 
+ * @param ctx - Canvas rendering context
+ * @param boat - The city object
+ * @param viewH - Logical view height
+ * @param hpRatio - City HP as 0-1 ratio (affects visual damage)
+ * @param barrierUp - Whether the dome barrier is still active
+ */
 export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: number, hpRatio: number = 1, barrierUp: boolean = true) {
   const surfaceY = getWaterSurfaceY(viewH);
   const waveY = getWaveY(boat.x, surfaceY);
   const topY = waveY - 10;
 
-  const hw = boat.width / 2;
+  const hw = boat.width / 2;   // Half width for centering
   const hd = boat.hullDepth;
 
   ctx.save();
 
-  // Underwater shadow / reflection
+  // --- Underwater shadow (subtle ellipse below the platform) ---
   ctx.beginPath();
   ctx.ellipse(boat.x, topY + hd + 8, hw * 0.7, 16, 0, 0, Math.PI * 2);
   ctx.fillStyle = "rgba(10, 20, 40, 0.3)";
   ctx.fill();
 
-  // Floating platform base — rounded rectangle
+  // --- Platform base — dark rounded rectangle ---
   ctx.beginPath();
-  const baseR = 20;
+  const baseR = 20;  // Corner radius
   ctx.moveTo(boat.x - hw + baseR, topY + hd);
   ctx.lineTo(boat.x + hw - baseR, topY + hd);
   ctx.quadraticCurveTo(boat.x + hw, topY + hd, boat.x + hw, topY + hd - baseR);
@@ -52,10 +108,10 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
   ctx.lineTo(boat.x - hw, topY + hd - baseR);
   ctx.quadraticCurveTo(boat.x - hw, topY + hd, boat.x - hw + baseR, topY + hd);
   ctx.closePath();
-  ctx.fillStyle = "#1a1f2e";
+  ctx.fillStyle = "#1a1f2e";  // Dark navy
   ctx.fill();
 
-  // Platform surface — top deck
+  // --- Platform surface — lighter top edge ---
   ctx.beginPath();
   ctx.moveTo(boat.x - hw + baseR, topY);
   ctx.lineTo(boat.x + hw - baseR, topY);
@@ -66,25 +122,26 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
   ctx.fillStyle = "#252b3a";
   ctx.fill();
 
-  // Barrier lines on platform
+  // --- Horizontal lines on the hull (decorative) ---
   ctx.strokeStyle = "#3a4560";
   ctx.lineWidth = 1;
   for (let i = 1; i <= 3; i++) {
     const ly = topY + (hd * i) / 4;
-    const shrink = i * 6;
+    const shrink = i * 6;  // Lines get shorter toward the bottom
     ctx.beginPath();
     ctx.moveTo(boat.x - hw + 10 + shrink, ly);
     ctx.lineTo(boat.x + hw - 10 - shrink, ly);
     ctx.stroke();
   }
 
-  // --- City buildings (abstract rectangles/towers) ---
+  // --- City buildings (abstract rectangles/towers on top of the platform) ---
+  // Each building is defined by: ox (offset from center), w (width), h (height)
   const buildings = [
     { ox: -180, w: 28, h: 40 },
     { ox: -130, w: 22, h: 55 },
     { ox: -90, w: 30, h: 35 },
     { ox: -40, w: 20, h: 65 },
-    { ox: 0, w: 35, h: 80 },    // central tallest
+    { ox: 0, w: 35, h: 80 },    // Central tallest tower
     { ox: 50, w: 24, h: 50 },
     { ox: 100, w: 28, h: 45 },
     { ox: 140, w: 20, h: 38 },
@@ -93,22 +150,28 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
     { ox: 230, w: 18, h: 22 },
   ];
 
-  // Damage state affects building lights and dome
-  const damaged = hpRatio < 1;
-  const critical = hpRatio <= 0.3;
-  const exposed = !barrierUp;
+  // --- Damage state calculations ---
+  const damaged = hpRatio < 1;        // Any damage taken
+  const critical = hpRatio <= 0.3;    // Very low HP
+  const exposed = !barrierUp;         // Barrier is down
   const now = performance.now();
   const flickerRate = critical ? 80 : (exposed ? 120 : 200);
   const flickering = (damaged || exposed) && Math.sin(now / flickerRate) > 0;
 
+  // --- Draw each building ---
   for (const b of buildings) {
     const bx = boat.x + b.ox;
     const by = topY - b.h;
+
+    // Building body color changes with damage state
     ctx.fillStyle = exposed ? (critical ? "#0e0808" : "#121418") : (damaged ? (critical ? "#151020" : "#1a2030") : "#1e2538");
     ctx.fillRect(bx - b.w / 2, by, b.w, b.h);
+    
+    // Left edge highlight
     ctx.fillStyle = exposed ? "#1a1a20" : (damaged ? "#1e2540" : "#2a3350");
     ctx.fillRect(bx - b.w / 2, by, 3, b.h);
 
+    // Damage scars (horizontal lines on buildings when barrier is down)
     if (exposed) {
       ctx.fillStyle = "rgba(60, 30, 10, 0.3)";
       const scarCount = Math.ceil((1 - hpRatio) * 3);
@@ -118,23 +181,25 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
       }
     }
 
+    // Window lights — randomized grid of tiny colored squares
     const lightChance = exposed ? 0.9 : (critical ? 0.85 : (damaged ? 0.55 : 0.3));
     const lightColor = exposed
-      ? (flickering ? "#cc4400" : "#220800")
+      ? (flickering ? "#cc4400" : "#220800")   // Emergency orange when exposed
       : (critical
-        ? (flickering ? "#aa3030" : "#331818")
-        : (damaged ? "#4a6a8a" : "#6a8aaa"));
+        ? (flickering ? "#aa3030" : "#331818") // Red warning when critical
+        : (damaged ? "#4a6a8a" : "#6a8aaa"));  // Normal blue-white
+
     ctx.fillStyle = lightColor;
     for (let wy = by + 6; wy < topY - 4; wy += 8) {
       for (let wx = bx - b.w / 2 + 6; wx < bx + b.w / 2 - 3; wx += 6) {
-        if (Math.random() > lightChance) {
+        if (Math.random() > lightChance) {  // Random windows are lit
           ctx.fillRect(wx, wy, 2, 2);
         }
       }
     }
   }
 
-  // Smoke/fire when barrier is down
+  // --- Smoke/fire particles when barrier is down ---
   if (exposed) {
     ctx.globalAlpha = 0.3 + Math.sin(now / 200) * 0.1;
     for (let i = 0; i < 5; i++) {
@@ -149,16 +214,18 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
     ctx.globalAlpha = 1;
   }
 
+  // ==================== DOME BARRIER ====================
   if (barrierUp) {
-    // --- Dome barrier ---
-    const domeRadius = hw * 0.85;
-    const domeCenterY = topY;
+    const domeRadius = hw * 0.85;  // Slightly smaller than platform width
+    const domeCenterY = topY;      // Dome base at platform top
 
+    // Dome color shifts from blue (healthy) to red (damaged)
     const domeR = Math.round(40 + (1 - hpRatio) * 180);
     const domeG = Math.round(120 + hpRatio * 80 - (1 - hpRatio) * 80);
     const domeB = Math.round(200 * hpRatio + 40);
     const domeAlphaBase = 0.12 + (1 - hpRatio) * 0.15;
 
+    // Radial gradient — transparent center, visible edges
     const domeGrad = ctx.createRadialGradient(
       boat.x, domeCenterY, domeRadius * 0.3,
       boat.x, domeCenterY, domeRadius
@@ -167,12 +234,14 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
     domeGrad.addColorStop(0.7, `rgba(${domeR}, ${domeG}, ${domeB}, ${domeAlphaBase * 0.5})`);
     domeGrad.addColorStop(1, `rgba(${domeR}, ${domeG}, ${domeB}, ${domeAlphaBase})`);
 
+    // Draw dome as upper half of circle
     ctx.beginPath();
-    ctx.arc(boat.x, domeCenterY, domeRadius, Math.PI, 0);
+    ctx.arc(boat.x, domeCenterY, domeRadius, Math.PI, 0);  // Upper semicircle
     ctx.closePath();
     ctx.fillStyle = domeGrad;
     ctx.fill();
 
+    // Dome outline — gets brighter when damaged
     const outlineAlpha = critical ? (flickering ? 0.6 : 0.15) : (0.25 + (1 - hpRatio) * 0.2);
     ctx.beginPath();
     ctx.arc(boat.x, domeCenterY, domeRadius, Math.PI, 0);
@@ -180,6 +249,7 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
     ctx.lineWidth = damaged ? 3 : 2;
     ctx.stroke();
 
+    // Inner ring highlight
     if (!critical || flickering) {
       ctx.beginPath();
       ctx.arc(boat.x, domeCenterY, domeRadius * 0.92, Math.PI * 0.95, Math.PI * 0.05);
@@ -188,13 +258,16 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
       ctx.stroke();
     }
 
+    // --- Cracks in the dome (appear when damaged) ---
     if (damaged) {
-      const crackCount = Math.ceil((1 - hpRatio) * 8);
+      const crackCount = Math.ceil((1 - hpRatio) * 8);  // More cracks = more damage
       ctx.strokeStyle = critical
-        ? `rgba(255, 80, 40, ${0.3 + Math.sin(now / 150) * 0.15})`
-        : `rgba(200, 220, 255, ${0.15 + (1 - hpRatio) * 0.15})`;
+        ? `rgba(255, 80, 40, ${0.3 + Math.sin(now / 150) * 0.15})`  // Pulsing red cracks
+        : `rgba(200, 220, 255, ${0.15 + (1 - hpRatio) * 0.15})`;    // White stress fractures
       ctx.lineWidth = critical ? 2 : 1;
+      
       for (let i = 0; i < crackCount; i++) {
+        // Each crack is a curved line on the dome surface
         const baseAngle = Math.PI + (i * 0.9 + 0.4);
         const r1 = domeRadius * (0.5 + (i % 3) * 0.15);
         const r2 = domeRadius * (0.7 + (i % 2) * 0.2);
@@ -205,7 +278,7 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
         const midR = (r1 + r2) / 2;
         const cmx = boat.x + Math.cos(baseAngle + 0.15) * midR;
         const cmy = domeCenterY + Math.sin(baseAngle - 0.05) * midR;
-        if (cy1 < domeCenterY && cy2 < domeCenterY) {
+        if (cy1 < domeCenterY && cy2 < domeCenterY) {  // Only draw above the base
           ctx.beginPath();
           ctx.moveTo(cx1, cy1);
           ctx.quadraticCurveTo(cmx, cmy, cx2, cy2);
@@ -214,6 +287,7 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
       }
     }
 
+    // --- Hexagonal grid pattern on the dome ---
     const hexAlpha = Math.max(0.02, 0.08 * hpRatio);
     ctx.strokeStyle = `rgba(${domeR}, ${Math.min(domeG + 40, 255)}, ${Math.min(domeB + 40, 255)}, ${hexAlpha})`;
     ctx.lineWidth = 0.5;
@@ -221,7 +295,7 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
       for (let r = domeRadius * 0.3; r < domeRadius * 0.95; r += 35) {
         const hx = boat.x + Math.cos(a) * r;
         const hy = domeCenterY + Math.sin(a) * r;
-        if (hy < domeCenterY) {
+        if (hy < domeCenterY) {  // Only above base
           ctx.beginPath();
           ctx.arc(hx, hy, 8, 0, Math.PI * 2);
           ctx.stroke();
@@ -229,18 +303,20 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
       }
     }
   } else {
-    // Barrier DOWN — broken dome remnants
+    // ==================== BROKEN DOME (barrier down) ====================
     const domeRadius = hw * 0.85;
     const domeCenterY = topY;
 
+    // Dashed outline where the dome used to be
     ctx.beginPath();
     ctx.arc(boat.x, domeCenterY, domeRadius, Math.PI, 0);
     ctx.setLineDash([8, 12]);
     ctx.strokeStyle = "rgba(255, 80, 40, 0.15)";
     ctx.lineWidth = 1;
     ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.setLineDash([]);  // Reset dash pattern
 
+    // Floating energy fragments along the base
     for (let i = 0; i < 6; i++) {
       const fx = boat.x - hw * 0.7 + (i * hw * 0.28);
       const fy = topY - 2 + Math.sin(i * 2.1) * 3;
@@ -251,7 +327,7 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
     }
   }
 
-  // Waterline highlight
+  // --- Waterline highlight (where platform meets water) ---
   ctx.beginPath();
   ctx.moveTo(boat.x - hw + 10, topY + hd);
   ctx.lineTo(boat.x + hw - 10, topY + hd);
@@ -259,11 +335,25 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
   ctx.lineWidth = 2;
   ctx.stroke();
 
-
   ctx.restore();
 }
 
-/** Check if a point collides with the city platform and return push-out vector */
+// ==================== COLLISION ====================
+
+/**
+ * Checks if a point (the player) collides with the city platform.
+ * Returns a push-out position to prevent the player from overlapping.
+ * 
+ * The player is bounced toward the nearest water edge and takes damage,
+ * preventing them from resting on the city.
+ * 
+ * @param px - Player X position
+ * @param py - Player Y position
+ * @param radius - Player collision radius
+ * @param boat - The city object
+ * @param viewH - Logical view height
+ * @returns Push-out position {x, y} or null if no collision
+ */
 export function collideWithBoat(
   px: number, py: number, radius: number,
   boat: Boat, viewH: number
@@ -272,22 +362,23 @@ export function collideWithBoat(
   const hw = boat.width / 2;
   const hd = boat.hullDepth;
 
-  // Bounding box check
+  // Quick bounding box rejection
   if (px < boat.x - hw - radius || px > boat.x + hw + radius) return null;
   if (py < topY - radius - 40 || py > topY + hd + radius) return null;
 
-  // Check if inside the platform rectangle (simplified)
+  // Check if inside the platform rectangle (with some padding)
   const inX = px > boat.x - hw + 10 && px < boat.x + hw - 10;
   const inY = py > topY - radius && py < topY + hd + radius;
 
   if (inX && inY) {
+    // Push out from whichever edge is closer (top or bottom)
     const distTop = py - (topY - radius);
     const distBot = (topY + hd + radius) - py;
 
     if (distTop < distBot) {
-      return { x: px, y: topY - radius - 1 };
+      return { x: px, y: topY - radius - 1 };  // Push above
     } else {
-      return { x: px, y: topY + hd + radius + 1 };
+      return { x: px, y: topY + hd + radius + 1 };  // Push below
     }
   }
 
