@@ -4,6 +4,8 @@ import { getWaterSurfaceY } from "./water";
 
 export type PowerupType = "health" | "repair";
 
+const POWERUP_LIFETIME = 15000; // 15 seconds before despawn
+
 export interface Powerup {
   x: number;
   y: number;
