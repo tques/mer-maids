@@ -723,15 +723,22 @@ const Index = () => {
       ctx.save();
       ctx.scale(ZOOM, ZOOM);
 
+      // Apply vertical camera offset for extra sky room
+      const camY = -SKY_EXTRA;
+      ctx.save();
+      ctx.translate(0, -camY); // shift view down so negative-Y sky is visible
+
       // Draw sky gradient (view space, no camera)
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, viewH);
-      skyGrad.addColorStop(0, "#0a0a1a");
-      skyGrad.addColorStop(0.35, "#1a1a3e");
-      skyGrad.addColorStop(0.55, "#2d4a6f");
-      skyGrad.addColorStop(0.7, "#e8a838");
-      skyGrad.addColorStop(0.78, "#f7d794");
+      const totalViewH = viewH + SKY_EXTRA;
+      const skyGrad = ctx.createLinearGradient(0, camY, 0, viewH);
+      skyGrad.addColorStop(0, "#050510");
+      skyGrad.addColorStop(0.15, "#0a0a1a");
+      skyGrad.addColorStop(0.4, "#1a1a3e");
+      skyGrad.addColorStop(0.6, "#2d4a6f");
+      skyGrad.addColorStop(0.75, "#e8a838");
+      skyGrad.addColorStop(0.82, "#f7d794");
       ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, viewW, viewH);
+      ctx.fillRect(0, camY, viewW, totalViewH);
 
       // Apply camera translation (pixel-snapped to remove 1px seams at wrap boundaries)
       const drawCamX = Math.round(finalCamX * ZOOM) / ZOOM;
