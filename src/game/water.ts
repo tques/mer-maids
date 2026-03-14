@@ -1,58 +1,134 @@
-// Water system: rendering, splash particles, and physics
+/**
+ * water.ts — Water Rendering & Physics System
+ * 
+ * Handles everything related to the ocean:
+ * - Wave surface calculation (layered sine waves for natural look)
+ * - Underwater detection for physics switching
+ * - Splash particle effects (entry/exit water)
+ * - Ripple ring effects
+ * - Full ocean rendering with gradient, caustics, foam, and highlights
+ * 
+ * The water surface divides the screen into air (above) and ocean (below).
+ * The player's physics change when crossing this boundary.
+ */
 
+// ==================== CONSTANTS ====================
+
+/** What fraction of the screen height is water (0.25 = bottom 25%) */
 export const WATER_RATIO = 0.25;
+
+/** Speed multiplier when the player is underwater (0.65 = 35% slower) */
 export const WATER_SPEED_FACTOR = 0.65;
+
+/** Maximum height of wave oscillation in pixels */
 export const WAVE_AMPLITUDE = 6;
-// Wave frequencies are computed dynamically to tile over WORLD_WIDTH
+
+/** How fast waves animate (radians per frame, multiplied by dt) */
 export const WAVE_SPEED = 0.002;
 
+// ==================== INTERFACES ====================
+
+/**
+ * A single splash droplet particle.
+ * Created when the player enters or exits the water.
+ */
 export interface Splash {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  maxLife: number;
-  radius: number;
-  color: string;
+  x: number;       // World X position
+  y: number;       // World Y position
+  vx: number;      // Horizontal velocity
+  vy: number;      // Vertical velocity (affected by gravity)
+  life: number;    // Remaining life (1.0 → 0.0)
+  maxLife: number;  // Total lifetime in seconds
+  radius: number;  // Visual size
+  color: string;   // CSS color string
 }
 
+/**
+ * An expanding ring on the water surface.
+ * Created alongside splashes for visual impact.
+ */
 export interface Ripple {
-  x: number;
-  y: number;
-  radius: number;
-  maxRadius: number;
-  life: number;
+  x: number;       // Center X position
+  y: number;       // Center Y position (at water surface)
+  radius: number;  // Current radius (grows over time)
+  maxRadius: number; // Maximum radius before fading
+  life: number;    // Remaining life (1.0 → 0.0)
 }
 
-let splashes: Splash[] = [];
-let ripples: Ripple[] = [];
-let waveTime = 0;
+// ==================== MODULE STATE ====================
+// These are module-level variables (not React state) for performance.
+// They persist across frames and are updated every tick.
 
+let splashes: Splash[] = [];  // Active splash particles
+let ripples: Ripple[] = [];   // Active ripple rings
+let waveTime = 0;             // Accumulated wave animation time
+
+// ==================== UTILITY FUNCTIONS ====================
+
+/**
+ * Returns the Y coordinate of the water surface line.
+ * Everything below this Y value is "underwater."
+ * 
+ * @param canvasHeight - The logical view height (canvas.height / ZOOM)
+ * @returns Y position of the water surface in world coordinates
+ */
 export function getWaterSurfaceY(canvasHeight: number): number {
   return canvasHeight * (1 - WATER_RATIO);
 }
 
+/**
+ * Calculates the wave height at a specific X position.
+ * Uses 3 layered sine waves at different frequencies for a natural look.
+ * The frequencies are chosen as exact multiples of 2π/worldWidth so that
+ * waves tile seamlessly when the world wraps.
+ * 
+ * @param x - World X position to sample
+ * @param baseY - Base water surface Y (from getWaterSurfaceY)
+ * @param worldWidth - Total world width for seamless tiling (default 3000)
+ * @returns The actual Y position of the wave at this X
+ */
 export function getWaveY(x: number, baseY: number, worldWidth: number = 3000): number {
-  // Use frequencies that are exact multiples of 2π/worldWidth so waves tile seamlessly
+  // Calculate frequencies that tile exactly over the world width
   const base = (2 * Math.PI) / worldWidth;
-  const f1 = base * 12;   // ~12 full cycles across the world
-  const f2 = base * 20;   // ~20 full cycles
-  const f3 = base * 7;    // ~7 full cycles
+  const f1 = base * 12;   // ~12 full wave cycles across the world
+  const f2 = base * 20;   // ~20 full cycles (higher frequency detail)
+  const f3 = base * 7;    // ~7 full cycles (slow, large swells)
+  
   return baseY
-    + Math.sin(x * f1 + waveTime) * WAVE_AMPLITUDE
-    + Math.sin(x * f2 + waveTime * 1.3) * WAVE_AMPLITUDE * 0.5
-    + Math.sin(x * f3 + waveTime * 0.7) * WAVE_AMPLITUDE * 0.3;
+    + Math.sin(x * f1 + waveTime) * WAVE_AMPLITUDE              // Primary wave
+    + Math.sin(x * f2 + waveTime * 1.3) * WAVE_AMPLITUDE * 0.5  // Secondary ripple
+    + Math.sin(x * f3 + waveTime * 0.7) * WAVE_AMPLITUDE * 0.3; // Tertiary swell
 }
 
+/**
+ * Checks if a Y position is below the water surface.
+ * Used to switch between air physics and water physics.
+ * 
+ * @param py - The Y position to check
+ * @param canvasHeight - Logical view height
+ * @returns true if the position is underwater
+ */
 export function isSubmerged(py: number, canvasHeight: number): boolean {
   const surfaceY = getWaterSurfaceY(canvasHeight);
   return py > surfaceY;
 }
 
+// ==================== PARTICLE SPAWNING ====================
+
+/**
+ * Creates a burst of splash particles and ripple rings.
+ * Called when the player crosses the water surface.
+ * 
+ * @param x - X position of the splash
+ * @param y - Y position (should be at water surface)
+ * @param vy - Vertical velocity at moment of crossing (affects intensity)
+ * @param entering - true if going INTO water, false if coming OUT
+ */
 export function spawnSplash(x: number, y: number, vy: number, entering: boolean) {
-  const count = entering ? 22 : 30;
-  const baseSpeed = entering ? 4 : 7;
+  const count = entering ? 22 : 30;       // More particles when exiting (dramatic)
+  const baseSpeed = entering ? 4 : 7;     // Faster particles when exiting
+  
+  // Color palette for water droplets
   const colors = [
     "rgba(140, 210, 255, 0.9)",
     "rgba(180, 230, 255, 0.85)",
@@ -60,50 +136,74 @@ export function spawnSplash(x: number, y: number, vy: number, entering: boolean)
     "rgba(220, 240, 255, 0.95)",
     "rgba(60, 150, 220, 0.8)",
   ];
+  
+  // Spawn individual droplet particles
   for (let i = 0; i < count; i++) {
     const ang = entering
-      ? -Math.PI * Math.random()
-      : -Math.PI * (0.1 + Math.random() * 0.8);
+      ? -Math.PI * Math.random()                        // Spray upward (entering)
+      : -Math.PI * (0.1 + Math.random() * 0.8);        // Focused upward spray (exiting)
     const speed = baseSpeed * (0.5 + Math.random());
     splashes.push({
-      x: x + (Math.random() - 0.5) * 20,
+      x: x + (Math.random() - 0.5) * 20,               // Slight horizontal spread
       y,
       vx: Math.cos(ang) * speed + (Math.random() - 0.5) * 3,
-      vy: Math.sin(ang) * speed * (entering ? 1 : 1.8),
+      vy: Math.sin(ang) * speed * (entering ? 1 : 1.8), // Exiting = taller splash
       life: 1,
       maxLife: 0.5 + Math.random() * 0.4,
       radius: 2.5 + Math.random() * 4,
       color: colors[Math.floor(Math.random() * colors.length)],
     });
   }
+  
+  // Spawn 3 concentric ripple rings
   ripples.push({ x, y, radius: 4, maxRadius: 50 + Math.abs(vy) * 10, life: 1 });
   ripples.push({ x: x - 15, y, radius: 2, maxRadius: 30 + Math.abs(vy) * 5, life: 0.8 });
   ripples.push({ x: x + 15, y, radius: 2, maxRadius: 30 + Math.abs(vy) * 5, life: 0.8 });
 }
 
+// ==================== PHYSICS UPDATE ====================
+
+/**
+ * Updates all water particles and advances wave animation.
+ * Called once per frame from the main game loop.
+ * 
+ * @param dt - Delta time in seconds (typically 1/60)
+ */
 export function updateParticles(dt: number) {
+  // Advance wave animation time
   waveTime += WAVE_SPEED * dt * 60;
 
+  // Update splash particles — apply gravity, drag, and decay
   splashes = splashes.filter((s) => {
     s.x += s.vx;
     s.y += s.vy;
-    s.vy += 0.12;
-    s.vx *= 0.99;
-    s.life -= dt / s.maxLife;
-    return s.life > 0;
+    s.vy += 0.12;      // Gravity pulls droplets down
+    s.vx *= 0.99;      // Slight air resistance
+    s.life -= dt / s.maxLife;  // Fade out over lifetime
+    return s.life > 0;  // Remove dead particles
   });
 
+  // Update ripple rings — expand and fade
   ripples = ripples.filter((r) => {
     r.life -= dt * 2.0;
-    r.radius += (r.maxRadius - r.radius) * 0.06;
+    r.radius += (r.maxRadius - r.radius) * 0.06;  // Ease toward max radius
     return r.life > 0;
   });
 }
 
+// ==================== RENDERING ====================
+
 /**
- * Draw water. When called with a camera-translated context, cw should be the
- * width of the drawable segment and ch the logical view height.
- * Accepts optional visibleX range to limit expensive wave rendering.
+ * Draws the complete ocean: gradient, caustics, wave highlights, foam, ripples, and splashes.
+ * This is one of the most visually complex functions in the game.
+ * 
+ * Called within a camera-translated context, so coordinates are in world space.
+ * 
+ * @param ctx - The canvas 2D rendering context
+ * @param cw - Width of the drawable area (world width for this copy)
+ * @param ch - Logical view height
+ * @param visibleStartX - Left edge of visible area (for culling optimization)
+ * @param visibleEndX - Right edge of visible area (for culling optimization)
  */
 export function drawWater(
   ctx: CanvasRenderingContext2D,
@@ -118,22 +218,23 @@ export function drawWater(
   const x0 = visibleStartX != null ? Math.max(-5, Math.floor(visibleStartX) - 10) : -5;
   const x1 = visibleEndX != null ? Math.min(cw + 5, Math.ceil(visibleEndX) + 10) : cw + 5;
 
-  // Clip to exact world tile to prevent overlap with adjacent copies
+  // Clip to world bounds to prevent bleeding at wrap boundaries
   ctx.save();
   ctx.beginPath();
   ctx.rect(0, 0, cw, ch);
   ctx.clip();
 
-  // Wave surface path (extends slightly past edges for seamless fill)
+  // === OCEAN BODY ===
+  // Draw the wave surface path and fill with a deep gradient
   ctx.beginPath();
-  ctx.moveTo(x0, ch);
-  for (let x = x0; x <= x1; x += 3) {
+  ctx.moveTo(x0, ch);  // Start at bottom-left
+  for (let x = x0; x <= x1; x += 3) {  // Step every 3px for performance
     ctx.lineTo(x, getWaveY(x, baseY, cw));
   }
-  ctx.lineTo(x1, ch);
+  ctx.lineTo(x1, ch);  // Close at bottom-right
   ctx.closePath();
 
-  // Deep ocean gradient
+  // Deep ocean gradient — light blue at surface, dark navy at bottom
   const grad = ctx.createLinearGradient(0, baseY - 10, 0, ch);
   grad.addColorStop(0, "rgba(30, 110, 190, 0.50)");
   grad.addColorStop(0.1, "rgba(20, 90, 170, 0.58)");
@@ -143,10 +244,11 @@ export function drawWater(
   ctx.fillStyle = grad;
   ctx.fill();
 
-  // Subsurface caustic light patches
+  // === CAUSTIC LIGHT PATCHES ===
+  // Animated light spots below the surface (like sunlight refracted through waves)
   ctx.save();
   ctx.clip();
-  ctx.globalAlpha = 0.07;
+  ctx.globalAlpha = 0.07;  // Very subtle
   const causticSpacing = 250;
   const causticCount = Math.ceil((x1 - x0) / causticSpacing) + 2;
   const causticStart = Math.floor(x0 / causticSpacing) * causticSpacing;
@@ -163,7 +265,10 @@ export function drawWater(
   }
   ctx.restore();
 
-  // Primary surface highlight
+  // === WAVE SURFACE HIGHLIGHTS ===
+  // Three layers of wave-following lines at different depths for a 3D feel
+
+  // Primary highlight (brightest, at surface)
   ctx.beginPath();
   for (let x = x0; x <= x1; x += 3) {
     const wy = getWaveY(x, baseY, cw);
@@ -174,7 +279,7 @@ export function drawWater(
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // Secondary deeper highlight
+  // Secondary highlight (dimmer, slightly below surface)
   ctx.beginPath();
   for (let x = x0; x <= x1; x += 4) {
     const wy = getWaveY(x, baseY, cw) + 5;
@@ -185,7 +290,7 @@ export function drawWater(
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
-  // Tertiary deep shimmer
+  // Tertiary highlight (very faint, deeper)
   ctx.beginPath();
   for (let x = x0; x <= x1; x += 5) {
     const wy = getWaveY(x, baseY, cw) + 12;
@@ -196,11 +301,12 @@ export function drawWater(
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // Foam / white caps at wave peaks
+  // === FOAM / WHITE CAPS ===
+  // Small bright dots at wave peaks where the slope is steep
   for (let x = x0; x <= x1; x += 6) {
     const wy = getWaveY(x, baseY, cw);
-    const slope = getWaveY(x + 3, baseY, cw) - wy;
-    if (slope < -0.6) {
+    const slope = getWaveY(x + 3, baseY, cw) - wy;  // Approximate slope
+    if (slope < -0.6) {  // Only on steep downward slopes (wave crests)
       ctx.globalAlpha = Math.min(Math.abs(slope) * 0.35, 0.4);
       ctx.beginPath();
       ctx.arc(x, wy - 1, 2 + Math.abs(slope) * 1.5, 0, Math.PI * 2);
@@ -210,18 +316,21 @@ export function drawWater(
   }
   ctx.globalAlpha = 1;
 
-  ctx.restore();
+  ctx.restore();  // Restore from clip
 
-  // Draw ripples
+  // === RIPPLE RINGS ===
+  // Expanding elliptical rings on the water surface
   for (const r of ripples) {
-    if (r.x < x0 - r.maxRadius || r.x > x1 + r.maxRadius) continue;
+    if (r.x < x0 - r.maxRadius || r.x > x1 + r.maxRadius) continue;  // Cull off-screen
     ctx.save();
     ctx.globalAlpha = r.life * 0.5;
+    // Outer ring (elliptical for perspective)
     ctx.beginPath();
     ctx.ellipse(r.x, r.y, r.radius, r.radius * 0.25, 0, 0, Math.PI * 2);
     ctx.strokeStyle = "rgba(180, 230, 255, 0.8)";
     ctx.lineWidth = 2;
     ctx.stroke();
+    // Inner ring
     ctx.beginPath();
     ctx.ellipse(r.x, r.y, r.radius * 0.6, r.radius * 0.15, 0, 0, Math.PI * 2);
     ctx.strokeStyle = "rgba(220, 240, 255, 0.5)";
@@ -230,15 +339,17 @@ export function drawWater(
     ctx.restore();
   }
 
-  // Draw splash particles
+  // === SPLASH PARTICLES ===
+  // Individual water droplets from splashes
   for (const s of splashes) {
-    if (s.x < x0 - 10 || s.x > x1 + 10) continue;
+    if (s.x < x0 - 10 || s.x > x1 + 10) continue;  // Cull off-screen
     ctx.save();
     ctx.globalAlpha = s.life * 0.85;
     ctx.beginPath();
     ctx.arc(s.x, s.y, s.radius * (0.3 + s.life * 0.7), 0, Math.PI * 2);
     ctx.fillStyle = s.color;
     ctx.fill();
+    // Specular highlight on larger droplets
     if (s.radius > 3) {
       ctx.beginPath();
       ctx.arc(s.x - s.radius * 0.2, s.y - s.radius * 0.2, s.radius * 0.25 * s.life, 0, Math.PI * 2);

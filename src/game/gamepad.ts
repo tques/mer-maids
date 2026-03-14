@@ -1,38 +1,67 @@
-// Gamepad input handler — maps joystick, d-pad, and buttons to game controls
+/**
+ * gamepad.ts — Gamepad/Controller Input System
+ * 
+ * Polls the browser's Gamepad API each frame and maps physical
+ * controller inputs to game actions.
+ * 
+ * Supports standard gamepads (Xbox, PlayStation, etc.):
+ * - Left stick: Aim direction (or movement)
+ * - Right stick: Alternative aim direction (togglable in pause menu)
+ * - D-pad left/right: Barrel roll
+ * - D-pad up/down: Menu navigation
+ * - A/B/X/RB/RT: Fire weapon
+ * - Y/LB/LT: Thrust
+ * - Start: Pause/resume
+ * - A (face button): Menu select
+ * 
+ * Uses the browser's standard Gamepad API:
+ * https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API
+ * 
+ * The gamepad is polled (not event-driven), so pollGamepad() must be
+ * called every frame from the game loop.
+ */
 
+// ==================== INTERFACE ====================
+
+/** Processed gamepad state — all inputs mapped to game actions */
 export interface GamepadState {
-  // Left stick direction (normalized)
-  stickX: number;
-  stickY: number;
-  stickActive: boolean;
+  // Left stick direction (normalized, with deadzone applied)
+  stickX: number;        // -1.0 to 1.0
+  stickY: number;        // -1.0 to 1.0
+  stickActive: boolean;  // true if stick is outside deadzone
 
-  // Right stick direction (normalized)
+  // Right stick direction (normalized, with deadzone applied)
   rightStickX: number;
   rightStickY: number;
   rightStickActive: boolean;
 
-  // D-pad
+  // D-pad buttons (digital, on/off)
   dpadLeft: boolean;
   dpadRight: boolean;
   dpadUp: boolean;
   dpadDown: boolean;
 
-  // Fire button
-  fire: boolean;
+  // Action buttons (mapped to game actions)
+  fire: boolean;    // A, B, X, RB, or RT pressed
+  thrust: boolean;  // Y, LB, or LT pressed
+  start: boolean;   // Start/Options button
+  faceA: boolean;   // A button specifically (for menu selection)
 
-  // Thrust (LT, LB, or Y/Triangle)
-  thrust: boolean;
-
-  // Menu buttons
-  start: boolean;
-  faceA: boolean;
-
-  // Connected
+  // Connection status
   connected: boolean;
 }
 
+// ==================== CONSTANTS ====================
+
+/** 
+ * Analog stick deadzone — inputs below this magnitude are ignored.
+ * Prevents drift from slightly off-center resting sticks.
+ */
 const DEADZONE = 0.15;
 
+// ==================== MODULE STATE ====================
+
+/** Cached last gamepad state (returned when no gamepad is connected) */
 let lastState: GamepadState = {
   stickX: 0,
   stickY: 0,
@@ -51,10 +80,22 @@ let lastState: GamepadState = {
   connected: false,
 };
 
+// ==================== POLLING ====================
+
+/**
+ * Poll the gamepad and return the current state.
+ * Must be called every frame — the Gamepad API doesn't use events,
+ * it provides a snapshot of the current state.
+ * 
+ * If multiple gamepads are connected, uses the first one found.
+ * 
+ * @returns The current gamepad state with all inputs mapped
+ */
 export function pollGamepad(): GamepadState {
   const gamepads = navigator.getGamepads();
   let gp: Gamepad | null = null;
 
+  // Find the first connected gamepad
   for (const pad of gamepads) {
     if (pad && pad.connected) {
       gp = pad;
@@ -62,6 +103,7 @@ export function pollGamepad(): GamepadState {
     }
   }
 
+  // No gamepad connected — return default (all released) state
   if (!gp) {
     lastState = {
       ...lastState,
@@ -80,9 +122,9 @@ export function pollGamepad(): GamepadState {
     return lastState;
   }
 
-  // Left stick (axes 0 & 1)
-  let sx = gp.axes[0] ?? 0;
-  let sy = gp.axes[1] ?? 0;
+  // ---- LEFT STICK (axes 0 & 1) ----
+  let sx = gp.axes[0] ?? 0;  // Horizontal: -1 left, +1 right
+  let sy = gp.axes[1] ?? 0;  // Vertical: -1 up, +1 down
   const mag = Math.hypot(sx, sy);
   const stickActive = mag > DEADZONE;
   if (!stickActive) {
@@ -90,7 +132,7 @@ export function pollGamepad(): GamepadState {
     sy = 0;
   }
 
-  // Right stick (axes 2 & 3)
+  // ---- RIGHT STICK (axes 2 & 3) ----
   let rsx = gp.axes[2] ?? 0;
   let rsy = gp.axes[3] ?? 0;
   const rmag = Math.hypot(rsx, rsy);
@@ -100,34 +142,34 @@ export function pollGamepad(): GamepadState {
     rsy = 0;
   }
 
-  // D-pad: standard mapping buttons 12-15
+  // ---- D-PAD (buttons 12-15 in standard mapping) ----
   const dpadUp = gp.buttons[12]?.pressed ?? false;
   const dpadDown = gp.buttons[13]?.pressed ?? false;
   const dpadLeft = gp.buttons[14]?.pressed ?? false;
   const dpadRight = gp.buttons[15]?.pressed ?? false;
 
-  // Fire: face buttons (A=0, B=1, X=2), R1 (5), RT (7 analog)
+  // ---- FIRE: multiple buttons for accessibility ----
+  // A(0), B(1), X(2) face buttons, RB(5), RT(7) shoulder/trigger
   const fire =
     (gp.buttons[0]?.pressed ?? false) ||
     (gp.buttons[1]?.pressed ?? false) ||
     (gp.buttons[2]?.pressed ?? false) ||
-    (gp.buttons[5]?.pressed ?? false) ||
-    (gp.buttons[7]?.pressed ?? false) ||
-    (gp.buttons[7]?.value ?? 0) > 0.15;
+    (gp.buttons[5]?.pressed ?? false) ||  // Right bumper
+    (gp.buttons[7]?.pressed ?? false) ||  // Right trigger (digital)
+    (gp.buttons[7]?.value ?? 0) > 0.15;  // Right trigger (analog)
 
-  // Thrust: Y/Triangle (3), LB (4), LT (6 analog)
+  // ---- THRUST: Y/Triangle(3), LB(4), LT(6) ----
   const thrust =
     (gp.buttons[3]?.pressed ?? false) ||
-    (gp.buttons[4]?.pressed ?? false) ||
-    (gp.buttons[6]?.pressed ?? false) ||
-    (gp.buttons[6]?.value ?? 0) > 0.15;
+    (gp.buttons[4]?.pressed ?? false) ||  // Left bumper
+    (gp.buttons[6]?.pressed ?? false) ||  // Left trigger (digital)
+    (gp.buttons[6]?.value ?? 0) > 0.15;  // Left trigger (analog)
 
-  // Start/Options button (9)
-  const start = gp.buttons[9]?.pressed ?? false;
+  // ---- MENU BUTTONS ----
+  const start = gp.buttons[9]?.pressed ?? false;  // Start/Options
+  const faceA = gp.buttons[0]?.pressed ?? false;   // A button (menu select)
 
-  // Face A (0) — separate from fire for menu use
-  const faceA = gp.buttons[0]?.pressed ?? false;
-
+  // Cache and return
   lastState = {
     stickX: sx,
     stickY: sy,
@@ -149,6 +191,10 @@ export function pollGamepad(): GamepadState {
   return lastState;
 }
 
+/**
+ * Get the last polled gamepad state without re-polling.
+ * Useful for reading state from multiple places in the same frame.
+ */
 export function getGamepadState(): GamepadState {
   return lastState;
 }
