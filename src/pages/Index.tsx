@@ -148,6 +148,7 @@ const Index = () => {
   const fpsFramesRef = useRef(0);
   const fpsLastTimeRef = useRef(performance.now());
   const fpsDisplayRef = useRef(0);
+  const lastFrameTimeRef = useRef(performance.now());
 
   // Helper: convert screen mouse to world coords
   const getWorldMouse = useCallback(() => {
