@@ -903,6 +903,7 @@ const Index = () => {
       }
 
       ctx.restore(); // camera translation
+      ctx.restore(); // sky offset
       ctx.restore(); // zoom
 
       // HUD (screen space, no transforms)
