@@ -70,7 +70,7 @@ const DEPOT_WIDTH = 120;
 const DEPOT_HULL_DEPTH = 20;
 
 /** Cannon launch upward velocity (px per second) */
-const CANNON_LAUNCH_VY = -520;
+const CANNON_LAUNCH_VY = -480;
 
 /** Gravity applied during launch phase (px/s²) */
 const CANNON_GRAVITY = 200;
@@ -91,13 +91,13 @@ export type PowerupType = "health" | "repair";
  * Spawns at the city waterline and sinks to a target depth.
  */
 export interface Powerup {
-  x: number;          // World X position
-  y: number;          // Current Y position (changes while sinking)
-  targetY: number;    // Final resting depth (stops sinking here)
-  type: PowerupType;  // "health" or "repair"
-  spawnTime: number;  // performance.now() timestamp of spawn
-  alive: boolean;     // false = collected or despawned
-  sinking: boolean;   // true while still falling to target depth
+  x: number; // World X position
+  y: number; // Current Y position (changes while sinking)
+  targetY: number; // Final resting depth (stops sinking here)
+  type: PowerupType; // "health" or "repair"
+  spawnTime: number; // performance.now() timestamp of spawn
+  alive: boolean; // false = collected or despawned
+  sinking: boolean; // true while still falling to target depth
 }
 
 /** Ammo crate flight phase */
@@ -108,14 +108,14 @@ type AmmoCratePhase = "launching" | "parachuting" | "landed";
  * Goes through phases: launching (ballistic arc) → parachuting (slow descent) → landed (bobbing).
  */
 export interface AmmoBox {
-  x: number;           // World X position
-  y: number;           // World Y position (updated each frame)
-  vx: number;          // Horizontal velocity (px/s)
-  vy: number;          // Vertical velocity (px/s, negative = upward)
+  x: number; // World X position
+  y: number; // World Y position (updated each frame)
+  vx: number; // Horizontal velocity (px/s)
+  vy: number; // Vertical velocity (px/s, negative = upward)
   phase: AmmoCratePhase;
-  targetY: number;     // Final resting Y when parachuting
-  spawnTime: number;   // performance.now() timestamp of spawn
-  depotIndex: number;  // Which depot (0 or 1) launched this crate
+  targetY: number; // Final resting Y when parachuting
+  spawnTime: number; // performance.now() timestamp of spawn
+  depotIndex: number; // Which depot (0 or 1) launched this crate
 }
 
 /**
@@ -123,7 +123,7 @@ export interface AmmoBox {
  * Small city-like structure with a cannon.
  */
 interface AmmoDepot {
-  x: number;           // World X center
+  x: number; // World X center
   cannonFireTime: number; // When the cannon last fired (for recoil animation)
 }
 
@@ -131,12 +131,12 @@ interface AmmoDepot {
 
 // --- Underwater pickups (health/repair) ---
 let powerups: Powerup[] = [];
-let nextHealthReward = 1500;   // Score threshold for next health kit
-let nextRepairReward = 1200;   // Score threshold for next repair kit
+let nextHealthReward = 1500; // Score threshold for next health kit
+let nextRepairReward = 1200; // Score threshold for next repair kit
 
 // --- Ammo crate (emergency, launched from depot cannon) ---
 let ammoCrate: AmmoBox | null = null;
-let ammoCrateAlert = 0;        // HUD flash timer (ms remaining)
+let ammoCrateAlert = 0; // HUD flash timer (ms remaining)
 
 // --- Rare ammo drop (periodic bonus) ---
 let ammoDrop: { x: number; y: number; spawnTime: number } | null = null;
@@ -169,19 +169,29 @@ export function resetPickups(worldWidth?: number) {
 // ==================== ACCESSORS ====================
 
 /** Get active underwater pickups (health/repair) */
-export function getPowerups() { return powerups; }
+export function getPowerups() {
+  return powerups;
+}
 
 /** Get the current emergency ammo crate (or null) */
-export function getAmmoCrate() { return ammoCrate; }
+export function getAmmoCrate() {
+  return ammoCrate;
+}
 
 /** Get the ammo crate alert timer (ms remaining, for HUD flash) */
-export function getAmmoCrateAlert() { return ammoCrateAlert; }
+export function getAmmoCrateAlert() {
+  return ammoCrateAlert;
+}
 
 /** Get the current rare ammo drop (or null) */
-export function getAmmoDrop() { return ammoDrop; }
+export function getAmmoDrop() {
+  return ammoDrop;
+}
 
 /** Get the ammo depot platform (or null) */
-export function getDepot() { return depot; }
+export function getDepot() {
+  return depot;
+}
 
 // ==================== UNDERWATER PICKUP SPAWNING ====================
 
@@ -190,7 +200,7 @@ export function getDepot() { return depot; }
  * Enforces the "max 1 of each type" rule.
  */
 function hasActiveType(type: PowerupType): boolean {
-  return powerups.some(p => p.alive && p.type === type);
+  return powerups.some((p) => p.alive && p.type === type);
 }
 
 /**
@@ -442,7 +452,7 @@ export function updatePowerups() {
       p.alive = false;
     }
   }
-  powerups = powerups.filter(p => p.alive);
+  powerups = powerups.filter((p) => p.alive);
 }
 
 // ==================== RENDERING: AMMO DEPOT ====================
@@ -675,9 +685,7 @@ export function drawPickups(ctx: CanvasRenderingContext2D) {
     ctx.translate(p.x, py);
 
     // ---- Glow effect (color matches type) ----
-    ctx.shadowColor = p.type === "health"
-      ? "rgba(217, 54, 54, 0.7)"
-      : "rgba(90, 170, 153, 0.7)";
+    ctx.shadowColor = p.type === "health" ? "rgba(217, 54, 54, 0.7)" : "rgba(90, 170, 153, 0.7)";
     ctx.shadowBlur = 18;
 
     // ---- Cross shape ----
@@ -705,7 +713,7 @@ export function drawPickups(ctx: CanvasRenderingContext2D) {
       ctx.shadowBlur = 0;
       for (let i = 0; i < 3; i++) {
         const bx = Math.sin(age / 300 + i * 2) * 6;
-        const by = -12 - i * 8 - (age / 80 % 20);
+        const by = -12 - i * 8 - ((age / 80) % 20);
         ctx.beginPath();
         ctx.arc(bx, by, 1.5 + i * 0.5, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(180, 220, 255, ${0.4 - i * 0.1})`;
@@ -749,7 +757,6 @@ export function drawPickups(ctx: CanvasRenderingContext2D) {
 
       // Draw the crate body
       drawAmmoCrateBox(ctx, s);
-
     } else if (ammoCrate.phase === "parachuting") {
       // ---- Parachuting phase: crate with deployed parachute ----
       const swayX = Math.sin(age / 600) * 8;
@@ -795,7 +802,6 @@ export function drawPickups(ctx: CanvasRenderingContext2D) {
 
       // Draw the crate body
       drawAmmoCrateBox(ctx, s);
-
     } else {
       // ---- Landed phase: gentle bobbing ----
       const t = age / 400;
@@ -820,9 +826,7 @@ export function drawPickups(ctx: CanvasRenderingContext2D) {
     const bobY = ammoDrop.y + Math.sin(t) * 5;
     const s = AMMO_BOX_SIZE * 0.85;
     const fadeAge = (now - ammoDrop.spawnTime) / AMMO_DROP_LIFETIME;
-    const blinkAlpha = fadeAge > 0.7
-      ? (Math.sin(now / 150) > 0 ? 1 : 0.3)
-      : 1;
+    const blinkAlpha = fadeAge > 0.7 ? (Math.sin(now / 150) > 0 ? 1 : 0.3) : 1;
     ctx.save();
     ctx.globalAlpha = blinkAlpha;
     ctx.translate(ammoDrop.x, bobY);
@@ -856,7 +860,8 @@ function drawAmmoCrateBox(ctx: CanvasRenderingContext2D, s: number) {
   ctx.fillRect(-s / 2, -s / 2, s, s * 0.35);
   // Bullet icons (3 small vertical rounds)
   ctx.fillStyle = "#805a00";
-  const bw = 3, bh = 10;
+  const bw = 3,
+    bh = 10;
   ctx.fillRect(-bw * 2, -bh / 2 + 2, bw, bh);
   ctx.fillRect(-bw / 2, -bh / 2 + 2, bw, bh);
   ctx.fillRect(bw, -bh / 2 + 2, bw, bh);
