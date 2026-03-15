@@ -773,29 +773,36 @@ const Index = () => {
           }
         }
 
-        // Depot collision — bounce player off depot surface & damage
+        // Depot collision — bounce player; damage only from surface
         {
           const depotPush = collideWithDepot(pos.x, pos.y, TRI_SIZE, viewH);
           if (depotPush) {
             pos.x = depotPush.x;
             pos.y = depotPush.y;
-            velRef.current.x = (pos.x < WORLD_WIDTH / 2 ? -1 : 1) * 3.5;
-            velRef.current.y = -2.5;
-            if (invulnRef.current <= 0) {
-              playerHPRef.current -= 1;
-              invulnRef.current = INVULN_DURATION;
-              spawnExplosion(pos.x, pos.y, 15);
-              shake(pos.x < WORLD_WIDTH / 2 ? -1 : 1, -1);
-              if (playerHPRef.current <= 0) {
-                playerLivesRef.current -= 1;
-                if (playerLivesRef.current <= 0) {
-                  gameOverRef.current = true;
-                  setGameOver(true);
-                  setGameOverReason("Crashed into depot!");
-                } else {
-                  playerHPRef.current = PLAYER_MAX_HP;
+            if (depotPush.damaging) {
+              // Surface hit — bounce + damage
+              velRef.current.x = (pos.x < WORLD_WIDTH / 2 ? -1 : 1) * 3.5;
+              velRef.current.y = -2.5;
+              if (invulnRef.current <= 0) {
+                playerHPRef.current -= 1;
+                invulnRef.current = INVULN_DURATION;
+                spawnExplosion(pos.x, pos.y, 15);
+                shake(pos.x < WORLD_WIDTH / 2 ? -1 : 1, -1);
+                if (playerHPRef.current <= 0) {
+                  playerLivesRef.current -= 1;
+                  if (playerLivesRef.current <= 0) {
+                    gameOverRef.current = true;
+                    setGameOver(true);
+                    setGameOverReason("Crashed into depot!");
+                  } else {
+                    playerHPRef.current = PLAYER_MAX_HP;
+                  }
                 }
               }
+            } else {
+              // Underside hit — gentle bounce only
+              velRef.current.x *= 0.5;
+              velRef.current.y = 2;
             }
           }
         }
