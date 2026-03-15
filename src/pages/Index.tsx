@@ -559,8 +559,10 @@ const Index = () => {
           const hasBlades = playerHPRef.current >= PLAYER_MAX_HP;
           if (hasBlades) {
             const ramScore = checkRamCollisions(pos.x, pos.y, TRI_SIZE);
-            if (ramScore > 0) {
-              scoreRef.current += ramScore;
+            const gunboatRamScore = checkRamGunboat(pos.x, pos.y, TRI_SIZE, viewH);
+            const totalRamScore = ramScore + gunboatRamScore;
+            if (totalRamScore > 0) {
+              scoreRef.current += totalRamScore;
               shake(Math.cos(angle), Math.sin(angle));
             }
           }
