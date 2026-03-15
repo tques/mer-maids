@@ -152,23 +152,17 @@ let depot: AmmoDepot | null = null;
  * Also initializes depot positions based on world width.
  */
 export function resetPickups(worldWidth?: number) {
-  // Underwater pickups
   powerups = [];
   nextHealthReward = 1500;
   nextRepairReward = 1200;
-
-  // Ammo crates
   ammoCrate = null;
   ammoCrateAlert = 0;
   ammoDrop = null;
   ammoDropTimer = 30 + Math.random() * 30;
 
-  // Initialize depots (only when world width is provided)
+  // Single depot at right world edge
   if (worldWidth) {
-    depots = [
-      { x: 80, cannonFireTime: 0 },
-      { x: worldWidth - 80, cannonFireTime: 0 },
-    ];
+    depot = { x: worldWidth - 80, cannonFireTime: 0 };
   }
 }
 
