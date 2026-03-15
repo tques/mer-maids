@@ -649,7 +649,7 @@ const Index = () => {
         if (waveResult.startNextWave) {
           resetEnemies();
           resetSubmarines();
-          resetPowerups();
+          resetPickups();
         }
 
         updateEnemies(dt, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
