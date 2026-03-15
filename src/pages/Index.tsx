@@ -829,6 +829,9 @@ const Index = () => {
           drawBoat(ctx, boatRef.current, viewH, shipHPRef.current / SHIP_MAX_HP, barrierUp);
         }
 
+        // Ammo depots (small city platforms at world edges)
+        drawAmmoDepots(ctx, viewH);
+
         // Powerups
         drawPickups(ctx);
 
