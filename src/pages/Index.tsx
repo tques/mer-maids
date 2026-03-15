@@ -86,11 +86,6 @@ interface Bullet {
   id: number;
 }
 
-interface AmmoBox {
-  x: number;
-  y: number;
-  spawnTime: number;
-}
 
 const Index = () => {
   const containerRef = useRef<HTMLDivElement>(null);
