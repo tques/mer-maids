@@ -70,7 +70,7 @@ const DEPOT_WIDTH = 120;
 const DEPOT_HULL_DEPTH = 20;
 
 /** Cannon launch upward velocity (px per second) */
-const CANNON_LAUNCH_VY = -280;
+const CANNON_LAUNCH_VY = -520;
 
 /** Gravity applied during launch phase (px/s²) */
 const CANNON_GRAVITY = 200;
