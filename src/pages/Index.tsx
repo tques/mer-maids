@@ -700,12 +700,16 @@ const Index = () => {
             setGameOverReason("City destroyed!");
           }
         }
+        updateGunboats(dt, WORLD_WIDTH, viewH, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
         const result = checkBulletCollisions(bulletsRef.current);
         bulletsRef.current = result.remaining;
         scoreRef.current += result.score;
         const subResult = checkBulletHitsSubmarine(bulletsRef.current);
         bulletsRef.current = subResult.remaining;
         scoreRef.current += subResult.score;
+        const gunboatResult = checkBulletHitsGunboat(bulletsRef.current, viewH);
+        bulletsRef.current = gunboatResult.remaining;
+        scoreRef.current += gunboatResult.score;
       }
 
       // Enemy projectile collisions
