@@ -734,37 +734,41 @@ const Index = () => {
           }
         }
 
-        // Boat collision — bounce player toward nearest water & punish resting
+        // Boat collision — bounce player; damage only from surface
         if (boatRef.current) {
           const pushOut = collideWithBoat(pos.x, pos.y, TRI_SIZE, boatRef.current, viewH);
           if (pushOut) {
             pos.x = pushOut.x;
             pos.y = pushOut.y;
-            // Determine which side of the city is nearest water
             const boat = boatRef.current;
             const hw = boat.width / 2;
             const toLeft = pos.x - (boat.x - hw);
             const toRight = boat.x + hw - pos.x;
             const bounceDir = toLeft < toRight ? -1 : 1;
-            // Strong horizontal bounce toward nearest water edge
-            velRef.current.x = bounceDir * 3.5;
-            velRef.current.y = -2.5; // pop upward
-            // Damage player slightly for resting on city (1 HP every contact)
-            if (invulnRef.current <= 0) {
-              playerHPRef.current -= 1;
-              invulnRef.current = INVULN_DURATION;
-              spawnExplosion(pos.x, pos.y, 15);
-              shake(bounceDir, -1);
-              if (playerHPRef.current <= 0) {
-                playerLivesRef.current -= 1;
-                if (playerLivesRef.current <= 0) {
-                  gameOverRef.current = true;
-                  setGameOver(true);
-                  setGameOverReason("All ships lost!");
-                } else {
-                  playerHPRef.current = PLAYER_MAX_HP;
+            if (pushOut.damaging) {
+              // Surface hit — bounce + damage
+              velRef.current.x = bounceDir * 3.5;
+              velRef.current.y = -2.5;
+              if (invulnRef.current <= 0) {
+                playerHPRef.current -= 1;
+                invulnRef.current = INVULN_DURATION;
+                spawnExplosion(pos.x, pos.y, 15);
+                shake(bounceDir, -1);
+                if (playerHPRef.current <= 0) {
+                  playerLivesRef.current -= 1;
+                  if (playerLivesRef.current <= 0) {
+                    gameOverRef.current = true;
+                    setGameOver(true);
+                    setGameOverReason("All ships lost!");
+                  } else {
+                    playerHPRef.current = PLAYER_MAX_HP;
+                  }
                 }
               }
+            } else {
+              // Underside hit — gentle bounce only
+              velRef.current.x *= 0.5;
+              velRef.current.y = 2;
             }
           }
         }
