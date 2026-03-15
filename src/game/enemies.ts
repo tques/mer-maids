@@ -146,9 +146,6 @@ export function getHomingMissiles() {
 export function getBombs() {
   return bombs;
 }
-export function getExplosions() {
-  return explosions;
-}
 
 // ==================== COLLISION CHECKS ====================
 
