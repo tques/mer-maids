@@ -700,7 +700,7 @@ const Index = () => {
             setGameOverReason("City destroyed!");
           }
         }
-        updateGunboats(dt, WORLD_WIDTH, viewH, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
+        updateGunboats(dt, WORLD_WIDTH, viewH, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing, boatX, boatW);
         const result = checkBulletCollisions(bulletsRef.current);
         bulletsRef.current = result.remaining;
         scoreRef.current += result.score;
