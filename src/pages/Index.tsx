@@ -735,10 +735,11 @@ const Index = () => {
           const playerHits = checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
           const missileHits = checkMissileHitsPlayer(pos.x, pos.y, TRI_SIZE);
           const gunboatHits = checkGunboatBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
-          const totalHits = playerHits + gunboatHits + missileHits * 2; // missiles deal 2 damage
+          const mineHits = checkMineHitsPlayer(pos.x, pos.y, TRI_SIZE);
+          const totalHits = playerHits + gunboatHits + mineHits + missileHits * 2; // missiles deal 2 damage
           if (totalHits > 0) {
-            spawnExplosion(pos.x, pos.y, missileHits > 0 ? 35 : 20);
-            shake(missileHits > 0 ? 1 : 0, 1);
+            spawnExplosion(pos.x, pos.y, missileHits > 0 || mineHits > 0 ? 35 : 20);
+            shake(missileHits > 0 || mineHits > 0 ? 1 : 0, 1);
             invulnRef.current = INVULN_DURATION;
             playerHPRef.current -= totalHits;
             if (playerHPRef.current <= 0) {
