@@ -309,7 +309,7 @@ export function updateAmmoCrate(
 
   // ---- Spawn: launch from depot when ammo is low ----
   if (ammo <= AMMO_LOW_THRESHOLD && !ammoCrate) {
-    launchCrateFromDepot(playerX, viewH, worldWidth);
+    launchCrateFromDepot(viewH, worldWidth);
   }
 
   // ---- Tick down HUD alert timer ----
