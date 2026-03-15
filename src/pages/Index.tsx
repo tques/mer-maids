@@ -1093,6 +1093,7 @@ const Index = () => {
         resetPickups(WORLD_WIDTH);
         resetJetTrail();
         fuelRef.current = MAX_FUEL;
+        if (musicRef.current) { musicRef.current.currentTime = 0; musicRef.current.play().catch(() => {}); }
       }
 
       // Game over: A to restart
