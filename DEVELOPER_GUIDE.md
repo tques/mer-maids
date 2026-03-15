@@ -36,9 +36,10 @@ src/
 ├── game/
 │   ├── water.ts           # Water rendering, wave math, splash/ripple particles
 │   ├── boat.ts            # Floating city — platform, buildings, dome barrier
-│   ├── enemies.ts         # Air enemies — bombers, chasers, missiles, bombs, explosions
+│   ├── effects.ts          # Shared visual effects — explosions, score popups
+│   ├── enemies.ts         # Air enemies — bombers, chasers, missiles, bombs
 │   ├── submarine.ts       # Underwater enemies — submarines that attack the city
-│   ├── powerups.ts        # Health kits and barrier repair drops
+│   ├── pickups.ts         # All collectibles — health kits, repair kits, ammo crates
 │   ├── waves.ts           # Wave progression system — difficulty scaling
 │   ├── jettrail.ts        # Water-jet propulsion particle effects
 │   └── gamepad.ts         # Gamepad/controller input polling
