@@ -544,6 +544,16 @@ const Index = () => {
         if (isBoosting && !submerged) {
           pos.x += (Math.random() - 0.5) * 2.4 * dtScale;
           pos.y += (Math.random() - 0.5) * 2.4 * dtScale;
+
+          // Ram collision — only when blades are active (full HP)
+          const hasBlades = playerHPRef.current >= PLAYER_MAX_HP;
+          if (hasBlades) {
+            const ramScore = checkRamCollisions(pos.x, pos.y, TRI_SIZE);
+            if (ramScore > 0) {
+              scoreRef.current += ramScore;
+              shake(Math.cos(angle), Math.sin(angle));
+            }
+          }
         }
 
         pos.x += vel.x * dtScale;
