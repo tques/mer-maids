@@ -55,6 +55,15 @@ import {
 } from "../game/waves";
 import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail, getShipPitch } from "../game/jettrail";
 import { pollGamepad } from "../game/gamepad";
+import {
+  resetGunboats,
+  updateGunboats,
+  checkBulletHitsGunboat,
+  checkGunboatBulletHitsPlayer,
+  checkRamGunboat,
+  drawGunboats,
+  fleeGunboats,
+} from "../game/gunboat";
 
 const SPEED = 7; // was 5.5 — base thrust power increased
 const TRI_SIZE = 20;
@@ -550,8 +559,10 @@ const Index = () => {
           const hasBlades = playerHPRef.current >= PLAYER_MAX_HP;
           if (hasBlades) {
             const ramScore = checkRamCollisions(pos.x, pos.y, TRI_SIZE);
-            if (ramScore > 0) {
-              scoreRef.current += ramScore;
+            const gunboatRamScore = checkRamGunboat(pos.x, pos.y, TRI_SIZE, viewH);
+            const totalRamScore = ramScore + gunboatRamScore;
+            if (totalRamScore > 0) {
+              scoreRef.current += totalRamScore;
               shake(Math.cos(angle), Math.sin(angle));
             }
           }
@@ -655,6 +666,7 @@ const Index = () => {
         if (waveResult.waveCompleted) {
           fleeAllEnemies();
           fleeSubmarines();
+          fleeGunboats();
         }
         if (waveResult.newLife) {
           playerLivesRef.current = Math.min(playerLivesRef.current + 1, PLAYER_LIVES + 5);
@@ -663,6 +675,7 @@ const Index = () => {
         if (waveResult.startNextWave) {
           resetEnemies();
           resetSubmarines();
+          resetGunboats();
           resetPickups(WORLD_WIDTH);
         }
 
@@ -687,12 +700,16 @@ const Index = () => {
             setGameOverReason("City destroyed!");
           }
         }
+        updateGunboats(dt, WORLD_WIDTH, viewH, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
         const result = checkBulletCollisions(bulletsRef.current);
         bulletsRef.current = result.remaining;
         scoreRef.current += result.score;
         const subResult = checkBulletHitsSubmarine(bulletsRef.current);
         bulletsRef.current = subResult.remaining;
         scoreRef.current += subResult.score;
+        const gunboatResult = checkBulletHitsGunboat(bulletsRef.current, viewH);
+        bulletsRef.current = gunboatResult.remaining;
+        scoreRef.current += gunboatResult.score;
       }
 
       // Enemy projectile collisions
@@ -702,7 +719,8 @@ const Index = () => {
         } else {
           const playerHits = checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
           const missileHits = checkMissileHitsPlayer(pos.x, pos.y, TRI_SIZE);
-          const totalHits = playerHits + missileHits * 2; // missiles deal 2 damage
+          const gunboatHits = checkGunboatBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
+          const totalHits = playerHits + gunboatHits + missileHits * 2; // missiles deal 2 damage
           if (totalHits > 0) {
             spawnExplosion(pos.x, pos.y, missileHits > 0 ? 35 : 20);
             shake(missileHits > 0 ? 1 : 0, 1);
@@ -875,6 +893,9 @@ const Index = () => {
 
         // Enemies, bombs, explosions
         drawEnemies(ctx);
+
+        // Gunboats (on water surface)
+        drawGunboats(ctx, viewH);
 
         // Boat
         if (boatRef.current) {
