@@ -45,9 +45,12 @@ const MINE_SIZE = 18;           // Similar to player ship (~TRI_SIZE)
 const MINE_SINK_SPEED = 0.8;    // Initial sinking speed
 const MINE_BUOYANCY = 0.04;     // Upward force in water
 const SCORE_MINE = 50;
+const SCORE_MINELAYER = 250;    // Shooting down the plane
+const PLANE_SIZE = 14;          // Collision radius
 const FIRST_SPAWN_DELAY = 45;   // Seconds before first minelayer
 const SPAWN_INTERVAL_MIN = 50;
 const SPAWN_INTERVAL_MAX = 80;
+const KILL_SPAWN_PENALTY = 30;  // Extra seconds added to spawn timer on kill
 
 // ==================== RESET & ACCESSORS ====================
 
@@ -139,7 +142,7 @@ export function updateMinelayer(
   planes = planes.filter(p => p.alive);
 }
 
-// ==================== COLLISION: PLAYER BULLETS vs MINES ====================
+// ==================== COLLISION: PLAYER BULLETS vs MINES & PLANES ====================
 
 export function checkBulletHitsMine(
   bullets: { x: number; y: number; dx: number; dy: number; id: number }[]
@@ -149,16 +152,35 @@ export function checkBulletHitsMine(
 
   for (const b of bullets) {
     let hit = false;
-    for (const m of mines) {
-      if (!m.alive) continue;
-      if (Math.hypot(b.x - m.x, b.y - m.y) < MINE_SIZE * 0.6 + 5) {
-        m.alive = false;
-        spawnExplosion(m.x, m.y, 40, SCORE_MINE);
-        score += SCORE_MINE;
+
+    // Check vs minelayer planes
+    for (const p of planes) {
+      if (!p.alive) continue;
+      if (Math.hypot(b.x - p.x, b.y - p.y) < PLANE_SIZE + 5) {
+        p.alive = false;
+        spawnExplosion(p.x, p.y, 40, SCORE_MINELAYER);
+        score += SCORE_MINELAYER;
+        // Penalize next spawn timer so they come back slower
+        spawnTimer += KILL_SPAWN_PENALTY;
         hit = true;
         break;
       }
     }
+
+    // Check vs mines
+    if (!hit) {
+      for (const m of mines) {
+        if (!m.alive) continue;
+        if (Math.hypot(b.x - m.x, b.y - m.y) < MINE_SIZE * 0.6 + 5) {
+          m.alive = false;
+          spawnExplosion(m.x, m.y, 40, SCORE_MINE);
+          score += SCORE_MINE;
+          hit = true;
+          break;
+        }
+      }
+    }
+
     if (!hit) remaining.push(b);
   }
 
@@ -180,18 +202,33 @@ export function checkMineHitsPlayer(px: number, py: number, radius: number): num
   return hits;
 }
 
-// ==================== COLLISION: RAM MINES ====================
+// ==================== COLLISION: RAM MINES & PLANES ====================
 
 export function checkRamMine(px: number, py: number, radius: number): number {
   let score = 0;
+  const ramRadius = radius * 1.3;
+
+  // Ram planes
+  for (const p of planes) {
+    if (!p.alive) continue;
+    if (Math.hypot(p.x - px, p.y - py) < ramRadius + PLANE_SIZE) {
+      p.alive = false;
+      spawnExplosion(p.x, p.y, 40, SCORE_MINELAYER);
+      score += SCORE_MINELAYER;
+      spawnTimer += KILL_SPAWN_PENALTY;
+    }
+  }
+
+  // Ram mines
   for (const m of mines) {
     if (!m.alive) continue;
-    if (Math.hypot(m.x - px, m.y - py) < radius * 1.3 + MINE_SIZE * 0.6) {
+    if (Math.hypot(m.x - px, m.y - py) < ramRadius + MINE_SIZE * 0.6) {
       m.alive = false;
       spawnExplosion(m.x, m.y, 40, SCORE_MINE);
       score += SCORE_MINE;
     }
   }
+
   return score;
 }
 
