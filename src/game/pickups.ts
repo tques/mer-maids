@@ -26,10 +26,10 @@
  *    - Despawns after 20 seconds if not collected
  *    - Blinks when about to despawn
  *
- * 5. **Ammo Depots** (small city-like platforms at world edges)
- *    - Two static platforms at x=80 and x=worldWidth-80
- *    - City-style graphics (buildings, windows, hull) but NO barrier
- *    - Each has a cannon that launches ammo crates
+ * 5. **Ammo Depot** (single platform at right world edge)
+ *    - Static platform at x=worldWidth-80
+ *    - Warehouse buildings, stacked crates, cannon on platform (NO barrier)
+ *    - Cannon launches ammo crates with high ballistic arc
  *    - Cannon animates (recoil + smoke) when firing
  *
  * Rules:
@@ -70,7 +70,7 @@ const DEPOT_WIDTH = 120;
 const DEPOT_HULL_DEPTH = 20;
 
 /** Cannon launch upward velocity (px per second) */
-const CANNON_LAUNCH_VY = -280;
+const CANNON_LAUNCH_VY = -520;
 
 /** Gravity applied during launch phase (px/s²) */
 const CANNON_GRAVITY = 200;
@@ -142,8 +142,8 @@ let ammoCrateAlert = 0;        // HUD flash timer (ms remaining)
 let ammoDrop: { x: number; y: number; spawnTime: number } | null = null;
 let ammoDropTimer = 30 + Math.random() * 30; // Countdown to first drop (seconds)
 
-// --- Ammo depots (two platforms at world edges) ---
-let depots: AmmoDepot[] = [];
+// --- Ammo depot (single platform at world edge) ---
+let depot: AmmoDepot | null = null;
 
 // ==================== RESET ====================
 
@@ -152,23 +152,17 @@ let depots: AmmoDepot[] = [];
  * Also initializes depot positions based on world width.
  */
 export function resetPickups(worldWidth?: number) {
-  // Underwater pickups
   powerups = [];
   nextHealthReward = 1500;
   nextRepairReward = 1200;
-
-  // Ammo crates
   ammoCrate = null;
   ammoCrateAlert = 0;
   ammoDrop = null;
   ammoDropTimer = 30 + Math.random() * 30;
 
-  // Initialize depots (only when world width is provided)
+  // Single depot at right world edge
   if (worldWidth) {
-    depots = [
-      { x: 80, cannonFireTime: 0 },
-      { x: worldWidth - 80, cannonFireTime: 0 },
-    ];
+    depot = { x: worldWidth - 80, cannonFireTime: 0 };
   }
 }
 
@@ -186,8 +180,8 @@ export function getAmmoCrateAlert() { return ammoCrateAlert; }
 /** Get the current rare ammo drop (or null) */
 export function getAmmoDrop() { return ammoDrop; }
 
-/** Get the ammo depot platforms */
-export function getDepots() { return depots; }
+/** Get the ammo depot platform (or null) */
+export function getDepot() { return depot; }
 
 // ==================== UNDERWATER PICKUP SPAWNING ====================
 
@@ -266,39 +260,30 @@ export function checkPowerupPickup(px: number, py: number, radius: number): Powe
 // ==================== AMMO CRATE: DEPOT CANNON LAUNCH ====================
 
 /**
- * Choose which depot to launch from (picks the one closer to the player,
- * or random if equidistant). Fires the crate from the depot's cannon.
+ * Launch a crate from the single depot cannon.
  */
-function launchCrateFromDepot(playerX: number, viewH: number, worldWidth: number) {
-  if (depots.length < 2) return;
-
-  // Pick depot farther from player so crate flies toward the action
-  const d0 = Math.abs(playerX - depots[0].x);
-  const d1 = Math.abs(playerX - depots[1].x);
-  const depotIdx = d0 > d1 ? 0 : 1;
-  const depot = depots[depotIdx];
+function launchCrateFromDepot(viewH: number, worldWidth: number) {
+  if (!depot) return;
 
   const surfY = getWaterSurfaceY(viewH);
   const waveY = getWaveY(depot.x, surfY);
-  const cannonY = waveY - 10 - 30; // Top of depot buildings minus cannon height
+  const cannonY = waveY - 10 - 18; // Cannon sits on platform
 
-  // Launch direction: toward center of world
+  // Launch toward center of world
   const launchDir = depot.x < worldWidth / 2 ? 1 : -1;
-
   const targetY = surfY - PARACHUTE_TARGET_ABOVE_SURFACE;
 
   ammoCrate = {
     x: depot.x,
     y: cannonY,
-    vx: launchDir * (60 + Math.random() * 40), // Slight horizontal drift
+    vx: launchDir * (60 + Math.random() * 40),
     vy: CANNON_LAUNCH_VY,
     phase: "launching",
     targetY,
     spawnTime: performance.now(),
-    depotIndex: depotIdx,
+    depotIndex: 0,
   };
 
-  // Record fire time for cannon recoil animation
   depot.cannonFireTime = performance.now();
   ammoCrateAlert = 3000;
 }
@@ -324,7 +309,7 @@ export function updateAmmoCrate(
 
   // ---- Spawn: launch from depot when ammo is low ----
   if (ammo <= AMMO_LOW_THRESHOLD && !ammoCrate) {
-    launchCrateFromDepot(playerX, viewH, worldWidth);
+    launchCrateFromDepot(viewH, worldWidth);
   }
 
   // ---- Tick down HUD alert timer ----
@@ -460,159 +445,196 @@ export function updatePowerups() {
   powerups = powerups.filter(p => p.alive);
 }
 
-// ==================== RENDERING: AMMO DEPOTS ====================
+// ==================== RENDERING: AMMO DEPOT ====================
 
 /**
- * Draw both ammo depot platforms.
- * Each depot is a small city-like platform at a world edge with:
- * - Dark hull sitting on the water surface
- * - Small buildings with lit windows
- * - A cannon turret on top
- * - Recoil + smoke animation when firing
- *
- * @param ctx - Canvas context (in world-space, camera-translated)
- * @param viewH - Logical view height (for water surface calculation)
+ * Draw the single ammo depot platform.
+ * Features: hull, warehouse buildings, stacked crates, cannon on platform.
  */
 export function drawAmmoDepots(ctx: CanvasRenderingContext2D, viewH: number) {
+  if (!depot) return;
   const now = performance.now();
   const surfaceY = getWaterSurfaceY(viewH);
 
-  for (const depot of depots) {
-    const waveY = getWaveY(depot.x, surfaceY);
-    const topY = waveY - 10; // Platform sits above wave
-    const hw = DEPOT_WIDTH / 2;
-    const hd = DEPOT_HULL_DEPTH;
+  const waveY = getWaveY(depot.x, surfaceY);
+  const topY = waveY - 10; // Platform sits above wave
+  const hw = DEPOT_WIDTH / 2;
+  const hd = DEPOT_HULL_DEPTH;
 
-    ctx.save();
+  ctx.save();
 
-    // ---- Underwater shadow ----
+  // ---- Underwater shadow ----
+  ctx.beginPath();
+  ctx.ellipse(depot.x, topY + hd + 5, hw * 0.6, 8, 0, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(10, 20, 40, 0.25)";
+  ctx.fill();
+
+  // ---- Platform hull ----
+  const baseR = 8;
+  ctx.beginPath();
+  ctx.moveTo(depot.x - hw + baseR, topY + hd);
+  ctx.lineTo(depot.x + hw - baseR, topY + hd);
+  ctx.quadraticCurveTo(depot.x + hw, topY + hd, depot.x + hw, topY + hd - baseR);
+  ctx.lineTo(depot.x + hw, topY + 3);
+  ctx.quadraticCurveTo(depot.x + hw, topY, depot.x + hw - baseR, topY);
+  ctx.lineTo(depot.x - hw + baseR, topY);
+  ctx.quadraticCurveTo(depot.x - hw, topY, depot.x - hw, topY + 3);
+  ctx.lineTo(depot.x - hw, topY + hd - baseR);
+  ctx.quadraticCurveTo(depot.x - hw, topY + hd, depot.x - hw + baseR, topY + hd);
+  ctx.closePath();
+  ctx.fillStyle = "#1a1f2e";
+  ctx.fill();
+
+  // ---- Platform surface ----
+  ctx.beginPath();
+  ctx.moveTo(depot.x - hw + baseR, topY);
+  ctx.lineTo(depot.x + hw - baseR, topY);
+  ctx.quadraticCurveTo(depot.x + hw, topY, depot.x + hw - 3, topY + 3);
+  ctx.lineTo(depot.x - hw + 3, topY + 3);
+  ctx.quadraticCurveTo(depot.x - hw, topY, depot.x - hw + baseR, topY);
+  ctx.closePath();
+  ctx.fillStyle = "#252b3a";
+  ctx.fill();
+
+  // ---- Hull lines ----
+  ctx.strokeStyle = "#3a4560";
+  ctx.lineWidth = 0.5;
+  for (let i = 1; i <= 2; i++) {
+    const ly = topY + (hd * i) / 3;
     ctx.beginPath();
-    ctx.ellipse(depot.x, topY + hd + 5, hw * 0.6, 8, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(10, 20, 40, 0.25)";
-    ctx.fill();
+    ctx.moveTo(depot.x - hw + 6, ly);
+    ctx.lineTo(depot.x + hw - 6, ly);
+    ctx.stroke();
+  }
 
-    // ---- Platform hull (dark rounded rectangle) ----
-    const baseR = 8;
-    ctx.beginPath();
-    ctx.moveTo(depot.x - hw + baseR, topY + hd);
-    ctx.lineTo(depot.x + hw - baseR, topY + hd);
-    ctx.quadraticCurveTo(depot.x + hw, topY + hd, depot.x + hw, topY + hd - baseR);
-    ctx.lineTo(depot.x + hw, topY + 3);
-    ctx.quadraticCurveTo(depot.x + hw, topY, depot.x + hw - baseR, topY);
-    ctx.lineTo(depot.x - hw + baseR, topY);
-    ctx.quadraticCurveTo(depot.x - hw, topY, depot.x - hw, topY + 3);
-    ctx.lineTo(depot.x - hw, topY + hd - baseR);
-    ctx.quadraticCurveTo(depot.x - hw, topY + hd, depot.x - hw + baseR, topY + hd);
-    ctx.closePath();
-    ctx.fillStyle = "#1a1f2e";
-    ctx.fill();
+  // ---- Warehouse buildings (flat-roofed, corrugated look) ----
+  const warehouses = [
+    { ox: -35, w: 22, h: 16 },
+    { ox: 30, w: 26, h: 14 },
+  ];
+  for (const wh of warehouses) {
+    const wx = depot.x + wh.ox;
+    const wy = topY - wh.h;
 
-    // ---- Platform surface highlight ----
-    ctx.beginPath();
-    ctx.moveTo(depot.x - hw + baseR, topY);
-    ctx.lineTo(depot.x + hw - baseR, topY);
-    ctx.quadraticCurveTo(depot.x + hw, topY, depot.x + hw - 3, topY + 3);
-    ctx.lineTo(depot.x - hw + 3, topY + 3);
-    ctx.quadraticCurveTo(depot.x - hw, topY, depot.x - hw + baseR, topY);
-    ctx.closePath();
-    ctx.fillStyle = "#252b3a";
-    ctx.fill();
+    // Corrugated wall
+    ctx.fillStyle = "#2a3040";
+    ctx.fillRect(wx - wh.w / 2, wy, wh.w, wh.h);
 
-    // ---- Hull lines ----
+    // Vertical ridges (corrugation)
     ctx.strokeStyle = "#3a4560";
     ctx.lineWidth = 0.5;
-    for (let i = 1; i <= 2; i++) {
-      const ly = topY + (hd * i) / 3;
+    for (let rx = wx - wh.w / 2 + 4; rx < wx + wh.w / 2; rx += 4) {
       ctx.beginPath();
-      ctx.moveTo(depot.x - hw + 6, ly);
-      ctx.lineTo(depot.x + hw - 6, ly);
+      ctx.moveTo(rx, wy);
+      ctx.lineTo(rx, topY);
       ctx.stroke();
     }
 
-    // ---- Small buildings (city-style, no barrier) ----
-    const buildings = [
-      { ox: -35, w: 14, h: 18 },
-      { ox: -15, w: 10, h: 28 },
-      { ox: 5, w: 16, h: 22 },
-      { ox: 28, w: 12, h: 15 },
-      { ox: 42, w: 10, h: 12 },
-    ];
+    // Flat roof cap
+    ctx.fillStyle = "#3a4560";
+    ctx.fillRect(wx - wh.w / 2 - 1, wy, wh.w + 2, 3);
 
-    for (const b of buildings) {
-      const bx = depot.x + b.ox;
-      const by = topY - b.h;
-
-      // Building body
-      ctx.fillStyle = "#1e2538";
-      ctx.fillRect(bx - b.w / 2, by, b.w, b.h);
-
-      // Left edge highlight
-      ctx.fillStyle = "#2a3350";
-      ctx.fillRect(bx - b.w / 2, by, 2, b.h);
-
-      // Window lights (tiny lit squares)
-      ctx.fillStyle = "#6a8aaa";
-      for (let wy = by + 4; wy < topY - 3; wy += 6) {
-        for (let wx = bx - b.w / 2 + 4; wx < bx + b.w / 2 - 2; wx += 5) {
-          if (Math.random() > 0.35) {
-            ctx.fillRect(wx, wy, 2, 2);
-          }
-        }
-      }
-    }
-
-    // ---- Cannon turret ----
-    const cannonAge = now - depot.cannonFireTime;
-    const recoil = cannonAge < 300 ? Math.max(0, 1 - cannonAge / 300) * 6 : 0;
-    const cannonBaseX = depot.x;
-    const cannonBaseY = topY - 30; // On top of buildings
-
-    // Cannon base (small platform)
-    ctx.fillStyle = "#3a4050";
-    ctx.fillRect(cannonBaseX - 8, cannonBaseY + 4, 16, 6);
-
-    // Cannon barrel (points upward, with recoil)
-    ctx.fillStyle = "#555d70";
-    ctx.save();
-    ctx.translate(cannonBaseX, cannonBaseY + 4 + recoil);
-    ctx.fillRect(-3, -14, 6, 14);
-    // Barrel tip
-    ctx.fillStyle = "#6a7080";
-    ctx.fillRect(-4, -16, 8, 3);
-    ctx.restore();
-
-    // ---- Cannon smoke (puff after firing) ----
-    if (cannonAge < 800) {
-      const smokeAlpha = Math.max(0, 1 - cannonAge / 800) * 0.5;
-      ctx.globalAlpha = smokeAlpha;
-      for (let i = 0; i < 4; i++) {
-        const sx = cannonBaseX + Math.sin(cannonAge / 100 + i * 1.5) * (8 + cannonAge / 60);
-        const sy = cannonBaseY - 16 - cannonAge / 30 - i * 5;
-        const sr = 3 + cannonAge / 200 + i * 1.5;
-        ctx.beginPath();
-        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
-        ctx.fillStyle = "#aab0c0";
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-    }
-
-    // ---- "AMMO" label on the depot ----
-    ctx.fillStyle = "#8090a0";
-    ctx.font = "bold 6px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText("AMMO", depot.x, topY + hd - 4);
-
-    // ---- Waterline highlight ----
-    ctx.beginPath();
-    ctx.moveTo(depot.x - hw + 5, topY + hd);
-    ctx.lineTo(depot.x + hw - 5, topY + hd);
-    ctx.strokeStyle = "rgba(100, 160, 200, 0.15)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    ctx.restore();
+    // Small door
+    ctx.fillStyle = "#1a2030";
+    ctx.fillRect(wx - 3, topY - 8, 6, 8);
+    ctx.strokeStyle = "#4a5570";
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(wx - 3, topY - 8, 6, 8);
   }
+
+  // ---- Stacked crates on the platform ----
+  const cratePositions = [
+    { ox: -10, oy: 0, sz: 8 },
+    { ox: -2, oy: 0, sz: 7 },
+    { ox: 6, oy: 0, sz: 8 },
+    { ox: -6, oy: -8, sz: 7 },
+    { ox: 2, oy: -8, sz: 7 },
+    { ox: -2, oy: -15, sz: 6 },
+  ];
+  for (const cr of cratePositions) {
+    const cx = depot.x + cr.ox;
+    const cy = topY + cr.oy - cr.sz;
+    // Crate body
+    ctx.fillStyle = "#8a7030";
+    ctx.fillRect(cx - cr.sz / 2, cy, cr.sz, cr.sz);
+    // Cross straps
+    ctx.strokeStyle = "#604800";
+    ctx.lineWidth = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(cx - cr.sz / 2, cy);
+    ctx.lineTo(cx + cr.sz / 2, cy + cr.sz);
+    ctx.moveTo(cx + cr.sz / 2, cy);
+    ctx.lineTo(cx - cr.sz / 2, cy + cr.sz);
+    ctx.stroke();
+    // Border
+    ctx.strokeStyle = "#6a5820";
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(cx - cr.sz / 2, cy, cr.sz, cr.sz);
+  }
+
+  // ---- Cannon (sits on platform, right side) ----
+  const cannonAge = now - depot.cannonFireTime;
+  const recoil = cannonAge < 300 ? Math.max(0, 1 - cannonAge / 300) * 6 : 0;
+  const cannonBaseX = depot.x + 18;
+  const cannonBaseY = topY;
+
+  // Cannon wheel/base
+  ctx.fillStyle = "#3a4050";
+  ctx.beginPath();
+  ctx.arc(cannonBaseX - 4, cannonBaseY - 3, 5, 0, Math.PI * 2);
+  ctx.arc(cannonBaseX + 4, cannonBaseY - 3, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#2a3040";
+  ctx.beginPath();
+  ctx.arc(cannonBaseX - 4, cannonBaseY - 3, 2, 0, Math.PI * 2);
+  ctx.arc(cannonBaseX + 4, cannonBaseY - 3, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cannon barrel (points upward with slight tilt, recoils when fired)
+  ctx.save();
+  ctx.translate(cannonBaseX, cannonBaseY - 6);
+  ctx.rotate(-0.15); // Slight tilt
+  ctx.fillStyle = "#555d70";
+  ctx.fillRect(-3.5, -18 + recoil, 7, 18);
+  // Barrel mouth
+  ctx.fillStyle = "#1a1f2e";
+  ctx.fillRect(-2.5, -18 + recoil, 5, 2);
+  // Barrel rim
+  ctx.fillStyle = "#6a7080";
+  ctx.fillRect(-4.5, -19 + recoil, 9, 3);
+  ctx.restore();
+
+  // ---- Cannon smoke ----
+  if (cannonAge < 800) {
+    const smokeAlpha = Math.max(0, 1 - cannonAge / 800) * 0.5;
+    ctx.globalAlpha = smokeAlpha;
+    for (let i = 0; i < 5; i++) {
+      const sx = cannonBaseX + Math.sin(cannonAge / 100 + i * 1.5) * (8 + cannonAge / 50);
+      const sy = cannonBaseY - 24 - cannonAge / 25 - i * 6;
+      const sr = 3 + cannonAge / 150 + i * 2;
+      ctx.beginPath();
+      ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+      ctx.fillStyle = "#aab0c0";
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ---- "AMMO" label ----
+  ctx.fillStyle = "#8090a0";
+  ctx.font = "bold 6px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("AMMO", depot.x, topY + hd - 4);
+
+  // ---- Waterline highlight ----
+  ctx.beginPath();
+  ctx.moveTo(depot.x - hw + 5, topY + hd);
+  ctx.lineTo(depot.x + hw - 5, topY + hd);
+  ctx.strokeStyle = "rgba(100, 160, 200, 0.15)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.restore();
 }
 
 // ==================== RENDERING: PICKUPS ====================
