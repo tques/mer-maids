@@ -762,59 +762,16 @@ const Index = () => {
         }
       }
 
-      // === AMMO BOX SYSTEM ===
+      // === AMMO PICKUP SYSTEMS (managed by pickups.ts) ===
       if (gameStartedRef.current) {
-        if (ammoRef.current <= AMMO_LOW_THRESHOLD && !ammoBoxRef.current) {
-          const edgeX = Math.random() < 0.5 ? 20 : WORLD_WIDTH - 20;
-          const surfY = getWaterSurfaceY(viewH);
-          const boxY = 40 + Math.random() * (surfY - 80);
-          ammoBoxRef.current = { x: edgeX, y: boxY, spawnTime: performance.now() };
-          ammoBoxAlertRef.current = 3000;
-        }
-
-        if (ammoBoxAlertRef.current > 0) {
-          ammoBoxAlertRef.current -= frameDelta;
-        }
-
-        const box = ammoBoxRef.current;
-        if (box) {
-          let ddx = Math.abs(pos.x - box.x);
-          if (ddx > WORLD_WIDTH / 2) ddx = WORLD_WIDTH - ddx;
-          const ddy = Math.abs(pos.y - box.y);
-          if (ddx < TRI_SIZE + AMMO_BOX_SIZE && ddy < TRI_SIZE + AMMO_BOX_SIZE) {
-            ammoRef.current = MAX_AMMO;
-            ammoBoxRef.current = null;
-            ammoBoxAlertRef.current = 0;
-          }
-        }
-      }
-
-      // === RARE AMMO DROPS (spawn near play area periodically) ===
-      if (gameStartedRef.current) {
-        ammoDropTimerRef.current -= dt;
-        if (ammoDropTimerRef.current <= 0 && !ammoDropBoxRef.current) {
-          ammoDropTimerRef.current = 40 + Math.random() * 40; // 40-80 seconds
-          const surfY = getWaterSurfaceY(viewH);
-          // Spawn randomly in the play area (not at edges)
-          const dropX = 200 + Math.random() * (WORLD_WIDTH - 400);
-          const dropY = 30 + Math.random() * (surfY - 60);
-          ammoDropBoxRef.current = { x: dropX, y: dropY, spawnTime: performance.now() };
-        }
-        const drop = ammoDropBoxRef.current;
-        if (drop) {
-          // Despawn after 20 seconds
-          if (performance.now() - drop.spawnTime > 20000) {
-            ammoDropBoxRef.current = null;
-          } else {
-            let ddx = Math.abs(pos.x - drop.x);
-            if (ddx > WORLD_WIDTH / 2) ddx = WORLD_WIDTH - ddx;
-            const ddy = Math.abs(pos.y - drop.y);
-            if (ddx < TRI_SIZE + AMMO_BOX_SIZE && ddy < TRI_SIZE + AMMO_BOX_SIZE) {
-              ammoRef.current = Math.min(ammoRef.current + 20, MAX_AMMO);
-              ammoDropBoxRef.current = null;
-            }
-          }
-        }
+        ammoRef.current = updateAmmoCrate(
+          ammoRef.current, pos.x, pos.y, TRI_SIZE,
+          WORLD_WIDTH, viewH, frameDelta,
+        );
+        ammoRef.current = updateAmmoDrop(
+          ammoRef.current, pos.x, pos.y, TRI_SIZE,
+          WORLD_WIDTH, viewH, dt,
+        );
       }
 
       // Update water particles and jet trail
