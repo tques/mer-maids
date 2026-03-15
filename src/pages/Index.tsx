@@ -1224,6 +1224,10 @@ const Index = () => {
                 <p>
                   <span style={{ color: "#5a9" }}>BARREL ROLL</span> — Dodge enemy fire with a quick lateral roll.
                 </p>
+                <p>
+                  <span style={{ color: "#ff7675" }}>BOOST</span> — Hold{" "}
+                  <span style={{ color: "#ff7675" }}>W</span> for high-speed boost. Uses more fuel, locks steering, deflects missiles.
+                </p>
               </div>
             </div>
 
