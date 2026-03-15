@@ -124,8 +124,7 @@ export function resetEnemies() {
   chaserBullets = [];
   homingMissiles = [];
   bombs = [];
-  explosions = [];
-  scorePopups = [];
+  resetEffects();
   bomberSpawnTimer = 0;
   chaserSpawnTimer = 8;
   gameTime = 0;
