@@ -1196,9 +1196,9 @@ const Index = () => {
               </div>
               <p className="text-sm leading-relaxed" style={{ color: "#ccc" }}>
                 You are a M.E.R. Maid. Your job is to pilot the Marine Emergency Response Unit, a mech with powerful
-                water propulsion jets that allow it to dive through the water and flythrough the skys. Eliminate the
-                pink bombs that are attacking the cities barrier and avoid the red fights supporting them. Be aware of
-                the slow moving submarines. While they are easy targets they do more damage to the barrier. If you're
+                water propulsion jets that allow it to dive through the water and fly through the skys. Eliminate the
+                pink bombers that are attacking the cities barrier and avoid the red fighters supporting them. Be aware
+                of the slow moving submarines. While they are easy targets they do more damage to the barrier. If you're
                 running low on ammo the depot will launch ammo for you to collect and the city itself will be dropping
                 armor for collection below the city. Lastly, if you're low of fuel just land in the water.
               </p>
