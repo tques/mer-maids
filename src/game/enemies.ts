@@ -537,16 +537,8 @@ export function updateEnemies(
     if (b.y > viewH + 20) b.alive = false; // Off-screen below
   }
 
-  // ==================== EXPLOSION & POPUP UPDATE ====================
-  for (const ex of explosions) {
-    ex.life -= dt / ex.maxLife;
-    ex.radius += (ex.maxRadius - ex.radius) * 0.15; // Ease toward max size
-  }
-
-  for (const sp of scorePopups) {
-    sp.life -= dt * 1.2;
-    sp.y -= 0.8; // Float upward
-  }
+  // Update shared effects (explosions, score popups)
+  updateEffects(dt);
 
   // ==================== CLEANUP DEAD ENTITIES ====================
   enemies = enemies.filter((e) => e.alive);
@@ -554,8 +546,6 @@ export function updateEnemies(
   chaserBullets = chaserBullets.filter((cb) => cb.alive);
   homingMissiles = homingMissiles.filter((m) => m.alive);
   bombs = bombs.filter((b) => b.alive);
-  explosions = explosions.filter((ex) => ex.life > 0);
-  scorePopups = scorePopups.filter((sp) => sp.life > 0);
 }
 
 // ==================== SCORE VALUES ====================
