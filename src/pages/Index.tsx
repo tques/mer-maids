@@ -1247,6 +1247,9 @@ const Index = () => {
                   <span style={{ color: "#ccc" }}>A / D</span> — Barrel Roll
                 </p>
                 <p>
+                  <span style={{ color: "#ccc" }}>W</span> — Boost
+                </p>
+                <p>
                   <span style={{ color: "#ccc" }}>ESC</span> — Pause
                 </p>
               </div>
