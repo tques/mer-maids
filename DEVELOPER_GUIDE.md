@@ -138,6 +138,22 @@ This is the heart of the game. It contains:
 - `checkBulletCollisions()`: Tests player bullets against all enemy types.
 - `drawEnemies()`: Renders all air enemy types, their projectiles, and calls `drawEffects()`.
 
+### `src/game/gunboat.ts` — Gunboat (Armored Surface Enemy)
+
+- Rare, heavily armored surface vessel that floats on the water surface following wave motion.
+- Protected by an **impenetrable red barrier dome** on top — player bullets from above are blocked (with visual flash feedback).
+- Can **only be destroyed by attacking from below** (underwater shots or rams).
+- Fires bullets rapidly (0.35s interval) at the player within a **180° upper hemisphere** arc (far left to far right, but never into the water).
+- **Will not fire** when the player is submerged — diving underwater is both the attack strategy and a way to avoid its fire.
+- **Reverses direction** when approaching the city platform or ammo depot, maintaining safe distance.
+- First spawns after 30 seconds, then every 45–60 seconds. Max 1–3 active depending on wave difficulty.
+- Awards 300 points on destruction.
+- `updateGunboats()`: Handles spawning, movement, platform avoidance, firing AI, and bullet updates.
+- `checkBulletHitsGunboat()`: Tests player bullets — blocks above-water hits, damages below-water hits.
+- `checkRamGunboat()`: Allows ramming from underwater only.
+- `checkGunboatBulletHitsPlayer()`: Tests gunboat bullets against the player.
+- `drawGunboats()`: Renders hull, turret, engine glow, barrier dome with hex pattern, and health pips.
+
 ### `src/game/submarine.ts` — Underwater Enemies
 
 - Submarines approach the city from underwater, charge up, then detonate to damage it.
