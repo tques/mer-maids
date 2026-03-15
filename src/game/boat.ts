@@ -54,7 +54,7 @@ export function createBoat(worldWidth: number): Boat {
 export function getBoatTopY(boat: Boat, viewH: number): number {
   const surfaceY = getWaterSurfaceY(viewH);
   const waveY = getWaveY(boat.x, surfaceY);
-  return waveY - 10;  // Platform sits 10px above the wave line
+  return waveY - 22;  // Platform sits 22px above the wave line (floats visibly)
 }
 
 // ==================== RENDERING ====================
