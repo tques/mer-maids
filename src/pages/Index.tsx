@@ -11,6 +11,7 @@ import { createBoat, drawBoat, collideWithBoat, Boat } from "../game/boat";
 import {
   updateEnemies,
   checkBulletCollisions,
+  checkRamCollisions,
   checkChaserBulletHitsPlayer,
   checkMissileHitsPlayer,
   deflectMissiles,
