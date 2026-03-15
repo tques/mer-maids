@@ -219,10 +219,10 @@ Ammo/pickup constants are in `src/game/pickups.ts`:
 5. Clean up dead entities in the filter step
 
 ### Adding a new power-up type
-1. Add to the `PowerupType` union in `src/game/powerups.ts`
-2. Add spawn logic in `checkScoreRewards()`
+1. Add to the `PowerupType` union in `src/game/pickups.ts`
+2. Add spawn logic in `checkScoreRewards()` (for score-based) or create a new update function (for timer-based)
 3. Add pickup effect in `Index.tsx` where `checkPowerupPickup()` is called
-4. Add visual rendering in `drawPowerups()`
+4. Add visual rendering in `drawPickups()`
 
 ---
 
