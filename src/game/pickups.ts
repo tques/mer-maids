@@ -13,9 +13,10 @@
  *    - Spawns every 1200 points scored
  *    - Drops from city waterline, sinks to target depth
  *
- * 3. **Ammo Crate** (gold box, labeled "Ammo")
+ * 3. **Ammo Crate** (gold box, launched from depot cannon)
  *    - Fully restores ammo to max (60)
- *    - Spawns at world edges when ammo drops below threshold (12)
+ *    - Spawns at world-edge ammo depots when ammo drops below threshold (12)
+ *    - Launched from cannon, deploys parachute at apex, descends slowly
  *    - Only one can exist at a time
  *    - Persists until collected (no despawn timer)
  *
@@ -25,14 +26,20 @@
  *    - Despawns after 20 seconds if not collected
  *    - Blinks when about to despawn
  *
+ * 5. **Ammo Depots** (small city-like platforms at world edges)
+ *    - Two static platforms at x=80 and x=worldWidth-80
+ *    - City-style graphics (buildings, windows, hull) but NO barrier
+ *    - Each has a cannon that launches ammo crates
+ *    - Cannon animates (recoil + smoke) when firing
+ *
  * Rules:
  * - Only ONE of each underwater type (health/repair) can exist at a time
  * - Only ONE ammo crate and ONE rare drop can exist at a time
  * - Underwater pickups bob gently and blink before despawning (18s)
- * - Ammo crates bob at their spawn position in the air
+ * - Ammo crates launch from depot cannon, parachute down, then bob gently
  */
 
-import { getWaterSurfaceY } from "./water";
+import { getWaterSurfaceY, getWaveY } from "./water";
 
 // ==================== CONSTANTS ====================
 
@@ -54,6 +61,26 @@ export const AMMO_LOW_THRESHOLD = 12;
 /** How long rare ammo drops exist before despawning (ms) */
 const AMMO_DROP_LIFETIME = 20000; // 20 seconds
 
+// --- Ammo depot constants ---
+
+/** Width of each ammo depot platform */
+const DEPOT_WIDTH = 120;
+
+/** Depth of the depot hull below surface */
+const DEPOT_HULL_DEPTH = 20;
+
+/** Cannon launch upward velocity (px per second) */
+const CANNON_LAUNCH_VY = -280;
+
+/** Gravity applied during launch phase (px/s²) */
+const CANNON_GRAVITY = 200;
+
+/** Parachute descent speed (px per second) */
+const PARACHUTE_SPEED = 35;
+
+/** Target Y for parachute landing (relative to surface) */
+const PARACHUTE_TARGET_ABOVE_SURFACE = 50;
+
 // ==================== INTERFACES ====================
 
 /** The two underwater power-up types */
@@ -73,14 +100,31 @@ export interface Powerup {
   sinking: boolean;   // true while still falling to target depth
 }
 
+/** Ammo crate flight phase */
+type AmmoCratePhase = "launching" | "parachuting" | "landed";
+
 /**
- * An ammo pickup (crate or rare drop).
- * Floats in the air at its spawn position with a gentle bob.
+ * An ammo crate launched from a depot cannon.
+ * Goes through phases: launching (ballistic arc) → parachuting (slow descent) → landed (bobbing).
  */
 export interface AmmoBox {
-  x: number;         // World X position
-  y: number;         // World Y position
-  spawnTime: number;  // performance.now() timestamp of spawn
+  x: number;           // World X position
+  y: number;           // World Y position (updated each frame)
+  vx: number;          // Horizontal velocity (px/s)
+  vy: number;          // Vertical velocity (px/s, negative = upward)
+  phase: AmmoCratePhase;
+  targetY: number;     // Final resting Y when parachuting
+  spawnTime: number;   // performance.now() timestamp of spawn
+  depotIndex: number;  // Which depot (0 or 1) launched this crate
+}
+
+/**
+ * An ammo depot platform at a world edge.
+ * Small city-like structure with a cannon.
+ */
+interface AmmoDepot {
+  x: number;           // World X center
+  cannonFireTime: number; // When the cannon last fired (for recoil animation)
 }
 
 // ==================== MODULE STATE ====================
@@ -90,20 +134,24 @@ let powerups: Powerup[] = [];
 let nextHealthReward = 1500;   // Score threshold for next health kit
 let nextRepairReward = 1200;   // Score threshold for next repair kit
 
-// --- Ammo crate (emergency, spawns when ammo is low) ---
+// --- Ammo crate (emergency, launched from depot cannon) ---
 let ammoCrate: AmmoBox | null = null;
 let ammoCrateAlert = 0;        // HUD flash timer (ms remaining)
 
 // --- Rare ammo drop (periodic bonus) ---
-let ammoDrop: AmmoBox | null = null;
+let ammoDrop: { x: number; y: number; spawnTime: number } | null = null;
 let ammoDropTimer = 30 + Math.random() * 30; // Countdown to first drop (seconds)
+
+// --- Ammo depots (two platforms at world edges) ---
+let depots: AmmoDepot[] = [];
 
 // ==================== RESET ====================
 
 /**
  * Reset all pickup state. Called at game start and between waves.
+ * Also initializes depot positions based on world width.
  */
-export function resetPickups() {
+export function resetPickups(worldWidth?: number) {
   // Underwater pickups
   powerups = [];
   nextHealthReward = 1500;
@@ -114,6 +162,14 @@ export function resetPickups() {
   ammoCrateAlert = 0;
   ammoDrop = null;
   ammoDropTimer = 30 + Math.random() * 30;
+
+  // Initialize depots (only when world width is provided)
+  if (worldWidth) {
+    depots = [
+      { x: 80, cannonFireTime: 0 },
+      { x: worldWidth - 80, cannonFireTime: 0 },
+    ];
+  }
 }
 
 // ==================== ACCESSORS ====================
@@ -129,6 +185,9 @@ export function getAmmoCrateAlert() { return ammoCrateAlert; }
 
 /** Get the current rare ammo drop (or null) */
 export function getAmmoDrop() { return ammoDrop; }
+
+/** Get the ammo depot platforms */
+export function getDepots() { return depots; }
 
 // ==================== UNDERWATER PICKUP SPAWNING ====================
 
@@ -204,19 +263,52 @@ export function checkPowerupPickup(px: number, py: number, radius: number): Powe
   return null;
 }
 
-// ==================== AMMO CRATE SPAWNING & COLLISION ====================
+// ==================== AMMO CRATE: DEPOT CANNON LAUNCH ====================
 
 /**
- * Check if an emergency ammo crate should spawn (ammo low)
- * and handle player collision with it.
+ * Choose which depot to launch from (picks the one closer to the player,
+ * or random if equidistant). Fires the crate from the depot's cannon.
+ */
+function launchCrateFromDepot(playerX: number, viewH: number, worldWidth: number) {
+  if (depots.length < 2) return;
+
+  // Pick depot farther from player so crate flies toward the action
+  const d0 = Math.abs(playerX - depots[0].x);
+  const d1 = Math.abs(playerX - depots[1].x);
+  const depotIdx = d0 > d1 ? 0 : 1;
+  const depot = depots[depotIdx];
+
+  const surfY = getWaterSurfaceY(viewH);
+  const waveY = getWaveY(depot.x, surfY);
+  const cannonY = waveY - 10 - 30; // Top of depot buildings minus cannon height
+
+  // Launch direction: toward center of world
+  const launchDir = depot.x < worldWidth / 2 ? 1 : -1;
+
+  const targetY = surfY - PARACHUTE_TARGET_ABOVE_SURFACE;
+
+  ammoCrate = {
+    x: depot.x,
+    y: cannonY,
+    vx: launchDir * (60 + Math.random() * 40), // Slight horizontal drift
+    vy: CANNON_LAUNCH_VY,
+    phase: "launching",
+    targetY,
+    spawnTime: performance.now(),
+    depotIndex: depotIdx,
+  };
+
+  // Record fire time for cannon recoil animation
+  depot.cannonFireTime = performance.now();
+  ammoCrateAlert = 3000;
+}
+
+/**
+ * Update the emergency ammo crate system:
+ * - Spawn (launch from depot) when ammo is low
+ * - Update physics based on current phase
+ * - Check player collision
  *
- * @param ammo - Current player ammo count
- * @param playerX - Player X position
- * @param playerY - Player Y position
- * @param playerRadius - Player collision radius
- * @param worldWidth - Total world width
- * @param viewH - Logical view height
- * @param frameDelta - Frame delta in ms (for alert timer)
  * @returns New ammo count (MAX_AMMO if collected, unchanged otherwise)
  */
 export function updateAmmoCrate(
@@ -228,22 +320,52 @@ export function updateAmmoCrate(
   viewH: number,
   frameDelta: number,
 ): number {
-  // Spawn crate at world edge when ammo is low
+  const dt = frameDelta / 1000; // Convert ms to seconds
+
+  // ---- Spawn: launch from depot when ammo is low ----
   if (ammo <= AMMO_LOW_THRESHOLD && !ammoCrate) {
-    const edgeX = Math.random() < 0.5 ? 20 : worldWidth - 20;
-    const surfY = getWaterSurfaceY(viewH);
-    const boxY = 40 + Math.random() * (surfY - 80);
-    ammoCrate = { x: edgeX, y: boxY, spawnTime: performance.now() };
-    ammoCrateAlert = 3000;
+    launchCrateFromDepot(playerX, viewH, worldWidth);
   }
 
-  // Tick down alert timer
+  // ---- Tick down HUD alert timer ----
   if (ammoCrateAlert > 0) {
     ammoCrateAlert -= frameDelta;
   }
 
-  // Check player collision with crate
+  // ---- Update crate physics ----
   if (ammoCrate) {
+    if (ammoCrate.phase === "launching") {
+      // Ballistic arc: gravity pulls it down, moves horizontally
+      ammoCrate.vy += CANNON_GRAVITY * dt;
+      ammoCrate.x += ammoCrate.vx * dt;
+      ammoCrate.y += ammoCrate.vy * dt;
+
+      // Transition to parachute when velocity becomes downward (apex reached)
+      if (ammoCrate.vy > 0) {
+        ammoCrate.phase = "parachuting";
+        ammoCrate.vy = PARACHUTE_SPEED; // Slow descent
+        ammoCrate.vx *= 0.3; // Reduce horizontal drift under chute
+      }
+    } else if (ammoCrate.phase === "parachuting") {
+      // Gentle descent under parachute
+      ammoCrate.y += ammoCrate.vy * dt;
+      ammoCrate.x += ammoCrate.vx * dt;
+      ammoCrate.vx *= 0.98; // Gradually stop drifting
+
+      // Land when reaching target Y
+      if (ammoCrate.y >= ammoCrate.targetY) {
+        ammoCrate.y = ammoCrate.targetY;
+        ammoCrate.phase = "landed";
+        ammoCrate.vx = 0;
+        ammoCrate.vy = 0;
+      }
+    }
+    // "landed" phase: crate bobs gently (handled in draw)
+
+    // Wrap X position
+    ammoCrate.x = ((ammoCrate.x % worldWidth) + worldWidth) % worldWidth;
+
+    // ---- Check player collision (all phases are collectible) ----
     let ddx = Math.abs(playerX - ammoCrate.x);
     if (ddx > worldWidth / 2) ddx = worldWidth - ddx;
     const ddy = Math.abs(playerY - ammoCrate.y);
@@ -338,7 +460,162 @@ export function updatePowerups() {
   powerups = powerups.filter(p => p.alive);
 }
 
-// ==================== RENDERING ====================
+// ==================== RENDERING: AMMO DEPOTS ====================
+
+/**
+ * Draw both ammo depot platforms.
+ * Each depot is a small city-like platform at a world edge with:
+ * - Dark hull sitting on the water surface
+ * - Small buildings with lit windows
+ * - A cannon turret on top
+ * - Recoil + smoke animation when firing
+ *
+ * @param ctx - Canvas context (in world-space, camera-translated)
+ * @param viewH - Logical view height (for water surface calculation)
+ */
+export function drawAmmoDepots(ctx: CanvasRenderingContext2D, viewH: number) {
+  const now = performance.now();
+  const surfaceY = getWaterSurfaceY(viewH);
+
+  for (const depot of depots) {
+    const waveY = getWaveY(depot.x, surfaceY);
+    const topY = waveY - 10; // Platform sits above wave
+    const hw = DEPOT_WIDTH / 2;
+    const hd = DEPOT_HULL_DEPTH;
+
+    ctx.save();
+
+    // ---- Underwater shadow ----
+    ctx.beginPath();
+    ctx.ellipse(depot.x, topY + hd + 5, hw * 0.6, 8, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(10, 20, 40, 0.25)";
+    ctx.fill();
+
+    // ---- Platform hull (dark rounded rectangle) ----
+    const baseR = 8;
+    ctx.beginPath();
+    ctx.moveTo(depot.x - hw + baseR, topY + hd);
+    ctx.lineTo(depot.x + hw - baseR, topY + hd);
+    ctx.quadraticCurveTo(depot.x + hw, topY + hd, depot.x + hw, topY + hd - baseR);
+    ctx.lineTo(depot.x + hw, topY + 3);
+    ctx.quadraticCurveTo(depot.x + hw, topY, depot.x + hw - baseR, topY);
+    ctx.lineTo(depot.x - hw + baseR, topY);
+    ctx.quadraticCurveTo(depot.x - hw, topY, depot.x - hw, topY + 3);
+    ctx.lineTo(depot.x - hw, topY + hd - baseR);
+    ctx.quadraticCurveTo(depot.x - hw, topY + hd, depot.x - hw + baseR, topY + hd);
+    ctx.closePath();
+    ctx.fillStyle = "#1a1f2e";
+    ctx.fill();
+
+    // ---- Platform surface highlight ----
+    ctx.beginPath();
+    ctx.moveTo(depot.x - hw + baseR, topY);
+    ctx.lineTo(depot.x + hw - baseR, topY);
+    ctx.quadraticCurveTo(depot.x + hw, topY, depot.x + hw - 3, topY + 3);
+    ctx.lineTo(depot.x - hw + 3, topY + 3);
+    ctx.quadraticCurveTo(depot.x - hw, topY, depot.x - hw + baseR, topY);
+    ctx.closePath();
+    ctx.fillStyle = "#252b3a";
+    ctx.fill();
+
+    // ---- Hull lines ----
+    ctx.strokeStyle = "#3a4560";
+    ctx.lineWidth = 0.5;
+    for (let i = 1; i <= 2; i++) {
+      const ly = topY + (hd * i) / 3;
+      ctx.beginPath();
+      ctx.moveTo(depot.x - hw + 6, ly);
+      ctx.lineTo(depot.x + hw - 6, ly);
+      ctx.stroke();
+    }
+
+    // ---- Small buildings (city-style, no barrier) ----
+    const buildings = [
+      { ox: -35, w: 14, h: 18 },
+      { ox: -15, w: 10, h: 28 },
+      { ox: 5, w: 16, h: 22 },
+      { ox: 28, w: 12, h: 15 },
+      { ox: 42, w: 10, h: 12 },
+    ];
+
+    for (const b of buildings) {
+      const bx = depot.x + b.ox;
+      const by = topY - b.h;
+
+      // Building body
+      ctx.fillStyle = "#1e2538";
+      ctx.fillRect(bx - b.w / 2, by, b.w, b.h);
+
+      // Left edge highlight
+      ctx.fillStyle = "#2a3350";
+      ctx.fillRect(bx - b.w / 2, by, 2, b.h);
+
+      // Window lights (tiny lit squares)
+      ctx.fillStyle = "#6a8aaa";
+      for (let wy = by + 4; wy < topY - 3; wy += 6) {
+        for (let wx = bx - b.w / 2 + 4; wx < bx + b.w / 2 - 2; wx += 5) {
+          if (Math.random() > 0.35) {
+            ctx.fillRect(wx, wy, 2, 2);
+          }
+        }
+      }
+    }
+
+    // ---- Cannon turret ----
+    const cannonAge = now - depot.cannonFireTime;
+    const recoil = cannonAge < 300 ? Math.max(0, 1 - cannonAge / 300) * 6 : 0;
+    const cannonBaseX = depot.x;
+    const cannonBaseY = topY - 30; // On top of buildings
+
+    // Cannon base (small platform)
+    ctx.fillStyle = "#3a4050";
+    ctx.fillRect(cannonBaseX - 8, cannonBaseY + 4, 16, 6);
+
+    // Cannon barrel (points upward, with recoil)
+    ctx.fillStyle = "#555d70";
+    ctx.save();
+    ctx.translate(cannonBaseX, cannonBaseY + 4 + recoil);
+    ctx.fillRect(-3, -14, 6, 14);
+    // Barrel tip
+    ctx.fillStyle = "#6a7080";
+    ctx.fillRect(-4, -16, 8, 3);
+    ctx.restore();
+
+    // ---- Cannon smoke (puff after firing) ----
+    if (cannonAge < 800) {
+      const smokeAlpha = Math.max(0, 1 - cannonAge / 800) * 0.5;
+      ctx.globalAlpha = smokeAlpha;
+      for (let i = 0; i < 4; i++) {
+        const sx = cannonBaseX + Math.sin(cannonAge / 100 + i * 1.5) * (8 + cannonAge / 60);
+        const sy = cannonBaseY - 16 - cannonAge / 30 - i * 5;
+        const sr = 3 + cannonAge / 200 + i * 1.5;
+        ctx.beginPath();
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fillStyle = "#aab0c0";
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // ---- "AMMO" label on the depot ----
+    ctx.fillStyle = "#8090a0";
+    ctx.font = "bold 6px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("AMMO", depot.x, topY + hd - 4);
+
+    // ---- Waterline highlight ----
+    ctx.beginPath();
+    ctx.moveTo(depot.x - hw + 5, topY + hd);
+    ctx.lineTo(depot.x + hw - 5, topY + hd);
+    ctx.strokeStyle = "rgba(100, 160, 200, 0.15)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+}
+
+// ==================== RENDERING: PICKUPS ====================
 
 /**
  * Draw all active pickups with visual effects.
@@ -346,7 +623,7 @@ export function updatePowerups() {
  *
  * Draws:
  * - Underwater pickups (health/repair) with glow, cross shape, label, bubbles
- * - Emergency ammo crate (gold box with bullet icons)
+ * - Emergency ammo crate (gold box with parachute or bullet icons)
  * - Rare ammo drop (blue box with "+20" label, blinks near despawn)
  */
 export function drawPickups(ctx: CanvasRenderingContext2D) {
@@ -425,41 +702,93 @@ export function drawPickups(ctx: CanvasRenderingContext2D) {
     ctx.restore();
   }
 
-  // ==================== EMERGENCY AMMO CRATE (gold box) ====================
+  // ==================== EMERGENCY AMMO CRATE (cannon-launched) ====================
   if (ammoCrate) {
-    const t = (now - ammoCrate.spawnTime) / 400;
-    const bobY = ammoCrate.y + Math.sin(t) * 4;
+    const age = now - ammoCrate.spawnTime;
     const s = AMMO_BOX_SIZE;
+
     ctx.save();
-    ctx.translate(ammoCrate.x, bobY);
-    // Crate body
-    ctx.fillStyle = "#c8a020";
-    ctx.fillRect(-s / 2, -s / 2, s, s);
-    // Lid highlight
-    ctx.fillStyle = "#f0c830";
-    ctx.fillRect(-s / 2, -s / 2, s, s * 0.35);
-    // Bullet icons (3 small vertical rounds)
-    ctx.fillStyle = "#805a00";
-    const bw = 3, bh = 10;
-    ctx.fillRect(-bw * 2, -bh / 2 + 2, bw, bh);
-    ctx.fillRect(-bw / 2, -bh / 2 + 2, bw, bh);
-    ctx.fillRect(bw, -bh / 2 + 2, bw, bh);
-    // Bullet tips
-    ctx.fillStyle = "#d4a017";
-    ctx.beginPath();
-    ctx.arc(-bw * 2 + bw / 2, -bh / 2 + 2, bw / 2 + 0.5, Math.PI, 0);
-    ctx.arc(-bw / 2 + bw / 2, -bh / 2 + 2, bw / 2 + 0.5, Math.PI, 0);
-    ctx.arc(bw + bw / 2, -bh / 2 + 2, bw / 2 + 0.5, Math.PI, 0);
-    ctx.fill();
-    // Border
-    ctx.strokeStyle = "#604800";
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(-s / 2, -s / 2, s, s);
-    // "Ammo" label
+
+    if (ammoCrate.phase === "launching") {
+      // ---- Launching phase: crate with smoke trail ----
+      ctx.translate(ammoCrate.x, ammoCrate.y);
+
+      // Smoke trail particles behind the crate
+      ctx.globalAlpha = 0.3;
+      for (let i = 0; i < 3; i++) {
+        const trailY = 10 + i * 8 + Math.sin(age / 50 + i) * 3;
+        const trailR = 3 + i * 1.5;
+        ctx.beginPath();
+        ctx.arc(Math.sin(age / 80 + i * 2) * 4, trailY, trailR, 0, Math.PI * 2);
+        ctx.fillStyle = "#889098";
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // Draw the crate body
+      drawAmmoCrateBox(ctx, s);
+
+    } else if (ammoCrate.phase === "parachuting") {
+      // ---- Parachuting phase: crate with deployed parachute ----
+      const swayX = Math.sin(age / 600) * 8;
+      ctx.translate(ammoCrate.x + swayX, ammoCrate.y);
+
+      // Parachute canopy (dome shape above the crate)
+      const chuteW = 32;
+      const chuteH = 20;
+      const chuteY = -s / 2 - 8 - chuteH;
+
+      // Canopy fill (olive/tan military style)
+      ctx.beginPath();
+      ctx.moveTo(-chuteW, chuteY + chuteH);
+      ctx.quadraticCurveTo(-chuteW * 0.5, chuteY - 4, 0, chuteY);
+      ctx.quadraticCurveTo(chuteW * 0.5, chuteY - 4, chuteW, chuteY + chuteH);
+      ctx.closePath();
+      ctx.fillStyle = "#8a7a50";
+      ctx.fill();
+      ctx.strokeStyle = "#6a5a30";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Canopy panels (vertical lines)
+      ctx.strokeStyle = "#706040";
+      ctx.lineWidth = 0.5;
+      for (let i = -2; i <= 2; i++) {
+        const px = i * (chuteW / 3);
+        ctx.beginPath();
+        ctx.moveTo(px, chuteY + 2);
+        ctx.lineTo(px * 0.6, chuteY + chuteH);
+        ctx.stroke();
+      }
+
+      // Parachute strings (from canopy edges to crate)
+      ctx.strokeStyle = "#a09070";
+      ctx.lineWidth = 0.7;
+      for (const sx of [-chuteW + 4, -chuteW / 2, 0, chuteW / 2, chuteW - 4]) {
+        ctx.beginPath();
+        ctx.moveTo(sx, chuteY + chuteH);
+        ctx.lineTo(sx > 0 ? s / 2 - 2 : -s / 2 + 2, -s / 2 - 2);
+        ctx.stroke();
+      }
+
+      // Draw the crate body
+      drawAmmoCrateBox(ctx, s);
+
+    } else {
+      // ---- Landed phase: gentle bobbing ----
+      const t = age / 400;
+      const bobY = ammoCrate.y + Math.sin(t) * 4;
+      ctx.translate(ammoCrate.x, bobY);
+      drawAmmoCrateBox(ctx, s);
+    }
+
+    // "Ammo" label above crate
     ctx.fillStyle = "#fff";
     ctx.font = "bold 8px monospace";
     ctx.textAlign = "center";
-    ctx.fillText("Ammo", 0, -s / 2 - 6);
+    const labelY = ammoCrate.phase === "parachuting" ? -s / 2 - 36 : -s / 2 - 6;
+    ctx.fillText("Ammo", 0, labelY);
+
     ctx.restore();
   }
 
@@ -490,9 +819,43 @@ export function drawPickups(ctx: CanvasRenderingContext2D) {
   }
 }
 
+// ==================== RENDERING: AMMO CRATE BOX (shared helper) ====================
+
+/**
+ * Draw the gold ammo crate box at the current transform origin.
+ * Used by all crate phases (launching, parachuting, landed).
+ */
+function drawAmmoCrateBox(ctx: CanvasRenderingContext2D, s: number) {
+  // Crate body
+  ctx.fillStyle = "#c8a020";
+  ctx.fillRect(-s / 2, -s / 2, s, s);
+  // Lid highlight
+  ctx.fillStyle = "#f0c830";
+  ctx.fillRect(-s / 2, -s / 2, s, s * 0.35);
+  // Bullet icons (3 small vertical rounds)
+  ctx.fillStyle = "#805a00";
+  const bw = 3, bh = 10;
+  ctx.fillRect(-bw * 2, -bh / 2 + 2, bw, bh);
+  ctx.fillRect(-bw / 2, -bh / 2 + 2, bw, bh);
+  ctx.fillRect(bw, -bh / 2 + 2, bw, bh);
+  // Bullet tips
+  ctx.fillStyle = "#d4a017";
+  ctx.beginPath();
+  ctx.arc(-bw * 2 + bw / 2, -bh / 2 + 2, bw / 2 + 0.5, Math.PI, 0);
+  ctx.arc(-bw / 2 + bw / 2, -bh / 2 + 2, bw / 2 + 0.5, Math.PI, 0);
+  ctx.arc(bw + bw / 2, -bh / 2 + 2, bw / 2 + 0.5, Math.PI, 0);
+  ctx.fill();
+  // Border
+  ctx.strokeStyle = "#604800";
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(-s / 2, -s / 2, s, s);
+}
+
+// ==================== RENDERING: HUD ALERT ====================
+
 /**
  * Draw the ammo crate alert on the HUD.
- * Shows a flashing "AMMO CRATE SPAWNED" message when a new crate appears.
+ * Shows a flashing "AMMO CRATE LAUNCHED" message when a new crate is fired.
  *
  * @param ctx - Canvas context (in screen/HUD space)
  * @param hudX - HUD left margin
@@ -503,7 +866,7 @@ export function drawAmmoCrateAlert(ctx: CanvasRenderingContext2D, hudX: number, 
     const flash = Math.sin(performance.now() / 200) > 0;
     if (flash) {
       ctx.fillStyle = "#f0c830";
-      ctx.fillText("▼ AMMO CRATE SPAWNED ▼", hudX, hudY);
+      ctx.fillText("▼ AMMO CRATE LAUNCHED ▼", hudX, hudY);
     }
   }
 }

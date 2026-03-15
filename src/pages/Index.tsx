@@ -34,6 +34,7 @@ import {
   checkPowerupPickup,
   updatePowerups,
   drawPickups,
+  drawAmmoDepots,
   updateAmmoCrate,
   updateAmmoDrop,
   drawAmmoCrateAlert,
@@ -640,7 +641,7 @@ const Index = () => {
         if (waveResult.startNextWave) {
           resetEnemies();
           resetSubmarines();
-          resetPickups();
+          resetPickups(WORLD_WIDTH);
         }
 
         updateEnemies(dt, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
@@ -827,6 +828,9 @@ const Index = () => {
           const barrierUp = shipHPRef.current > 3;
           drawBoat(ctx, boatRef.current, viewH, shipHPRef.current / SHIP_MAX_HP, barrierUp);
         }
+
+        // Ammo depots (small city platforms at world edges)
+        drawAmmoDepots(ctx, viewH);
 
         // Powerups
         drawPickups(ctx);
@@ -1078,7 +1082,7 @@ const Index = () => {
         waveRef.current = createWaveState();
         resetEnemies();
         resetSubmarines();
-        resetPickups();
+        resetPickups(WORLD_WIDTH);
         resetJetTrail();
         fuelRef.current = MAX_FUEL;
       }
@@ -1157,7 +1161,7 @@ const Index = () => {
             waveRef.current = createWaveState();
             resetEnemies();
             resetSubmarines();
-            resetPickups();
+            resetPickups(WORLD_WIDTH);
             resetJetTrail();
             fuelRef.current = MAX_FUEL;
           }}
