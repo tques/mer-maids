@@ -666,6 +666,7 @@ const Index = () => {
         if (waveResult.waveCompleted) {
           fleeAllEnemies();
           fleeSubmarines();
+          fleeGunboats();
         }
         if (waveResult.newLife) {
           playerLivesRef.current = Math.min(playerLivesRef.current + 1, PLAYER_LIVES + 5);
