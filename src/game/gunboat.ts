@@ -247,18 +247,18 @@ export function updateGunboats(
     const distToPlayer = Math.hypot(playerX - g.x, playerY - gy);
 
     g.shootCooldown -= dt;
-    if (g.shootCooldown <= 0 && distToPlayer < GUNBOAT_VISION_RANGE) {
+    // Only fire if player is above water (not submerged)
+    const playerAbove = playerY <= gy;
+    if (g.shootCooldown <= 0 && distToPlayer < GUNBOAT_VISION_RANGE && playerAbove) {
       g.shootCooldown = GUNBOAT_SHOOT_INTERVAL;
 
       const aimAngle = Math.atan2(playerY - gy, playerX - g.x);
-      // Clamp to lower hemisphere (0 to PI, i.e. downward 180°)
-      const clampedAngle = Math.max(0, Math.min(Math.PI, aimAngle < 0 ? Math.PI + aimAngle : aimAngle));
-      // Actually allow full 180° below: angles between 0 and PI
-      const finalAngle = aimAngle >= 0 ? aimAngle : Math.max(aimAngle, -0.1); // slight upward tolerance
+      // Clamp to upper hemisphere: -PI to 0 (left to right, above the boat)
+      const finalAngle = Math.max(-Math.PI, Math.min(0, aimAngle));
 
       gunboatBullets.push({
         x: g.x + Math.cos(finalAngle) * 20,
-        y: gy + Math.sin(finalAngle) * 10 + 5,
+        y: gy + Math.sin(finalAngle) * 10 - 5,
         dx: Math.cos(finalAngle) * GUNBOAT_BULLET_SPEED,
         dy: Math.sin(finalAngle) * GUNBOAT_BULLET_SPEED,
         alive: true,
