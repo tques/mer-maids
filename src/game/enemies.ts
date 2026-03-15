@@ -96,7 +96,7 @@ let chasers: Chaser[] = [];
 let chaserBullets: ChaserBullet[] = [];
 let homingMissiles: HomingMissile[] = [];
 let bombs: Bomb[] = [];
-let explosions: Explosion[] = [];
+
 let bomberSpawnTimer = 0; // Countdown to next bomber spawn
 let chaserSpawnTimer = 3; // Countdown to next chaser spawn
 let gameTime = 0; // Total elapsed game time (for difficulty ramping)
