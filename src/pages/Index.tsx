@@ -539,10 +539,10 @@ const Index = () => {
           vel.y -= buoyancyForce * dtScale;
         }
 
-        // Ship shake during boost
+        // Ship shake during boost — more aggressive
         if (isBoosting && !submerged) {
-          pos.x += (Math.random() - 0.5) * 1.2 * dtScale;
-          pos.y += (Math.random() - 0.5) * 1.2 * dtScale;
+          pos.x += (Math.random() - 0.5) * 2.4 * dtScale;
+          pos.y += (Math.random() - 0.5) * 2.4 * dtScale;
         }
 
         pos.x += vel.x * dtScale;
