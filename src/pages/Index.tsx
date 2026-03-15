@@ -1361,14 +1361,14 @@ const Index = () => {
               onClick={() => window.location.reload()}
               className="px-6 py-3 text-sm tracking-widest uppercase border cursor-pointer"
               style={{
-                color: pauseMenuIndex === 2 ? "#D93636" : "#888",
-                borderColor: pauseMenuIndex === 2 ? "#D93636" : "#555",
-                backgroundColor: pauseMenuIndex === 2 ? "rgba(217,54,54,0.1)" : "transparent",
+                color: pauseMenuIndex === 3 ? "#D93636" : "#888",
+                borderColor: pauseMenuIndex === 3 ? "#D93636" : "#555",
+                backgroundColor: pauseMenuIndex === 3 ? "rgba(217,54,54,0.1)" : "transparent",
                 fontFamily: "var(--font-mono)",
                 minWidth: "280px",
               }}
             >
-              {pauseMenuIndex === 2 ? "► " : "  "}Restart
+              {pauseMenuIndex === 3 ? "► " : "  "}Restart
             </button>
           </div>
           <div
