@@ -196,6 +196,12 @@ const Index = () => {
     resize();
     window.addEventListener("resize", resize);
 
+    // Setup background music
+    const audio = new Audio("/audio/background-music.mp3");
+    audio.loop = true;
+    audio.volume = 0.4;
+    musicRef.current = audio;
+
     const onMouseMove = (e: MouseEvent) => {
       if (gamepadAimingRef.current) return; // ignore mouse movement while gamepad is active
       const rect = canvas.getBoundingClientRect();
