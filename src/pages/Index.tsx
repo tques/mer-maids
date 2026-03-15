@@ -64,6 +64,15 @@ import {
   drawGunboats,
   fleeGunboats,
 } from "../game/gunboat";
+import {
+  resetMinelayer,
+  updateMinelayer,
+  checkBulletHitsMine,
+  checkMineHitsPlayer,
+  checkRamMine,
+  drawMinelayer,
+  fleeMinelayers,
+} from "../game/minelayer";
 
 const SPEED = 7; // was 5.5 — base thrust power increased
 const TRI_SIZE = 20;
@@ -560,7 +569,8 @@ const Index = () => {
           if (hasBlades) {
             const ramScore = checkRamCollisions(pos.x, pos.y, TRI_SIZE);
             const gunboatRamScore = checkRamGunboat(pos.x, pos.y, TRI_SIZE, viewH);
-            const totalRamScore = ramScore + gunboatRamScore;
+            const mineRamScore = checkRamMine(pos.x, pos.y, TRI_SIZE);
+            const totalRamScore = ramScore + gunboatRamScore + mineRamScore;
             if (totalRamScore > 0) {
               scoreRef.current += totalRamScore;
               shake(Math.cos(angle), Math.sin(angle));
@@ -667,6 +677,7 @@ const Index = () => {
           fleeAllEnemies();
           fleeSubmarines();
           fleeGunboats();
+          fleeMinelayers();
         }
         if (waveResult.newLife) {
           playerLivesRef.current = Math.min(playerLivesRef.current + 1, PLAYER_LIVES + 5);
@@ -676,6 +687,7 @@ const Index = () => {
           resetEnemies();
           resetSubmarines();
           resetGunboats();
+          resetMinelayer();
           resetPickups(WORLD_WIDTH);
         }
 
@@ -701,6 +713,7 @@ const Index = () => {
           }
         }
         updateGunboats(dt, WORLD_WIDTH, viewH, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing, boatX, boatW);
+        updateMinelayer(dt, WORLD_WIDTH, viewH, waveDiff, wave.enemiesFleeing);
         const result = checkBulletCollisions(bulletsRef.current);
         bulletsRef.current = result.remaining;
         scoreRef.current += result.score;
@@ -710,6 +723,9 @@ const Index = () => {
         const gunboatResult = checkBulletHitsGunboat(bulletsRef.current, viewH);
         bulletsRef.current = gunboatResult.remaining;
         scoreRef.current += gunboatResult.score;
+        const mineResult = checkBulletHitsMine(bulletsRef.current);
+        bulletsRef.current = mineResult.remaining;
+        scoreRef.current += mineResult.score;
       }
 
       // Enemy projectile collisions
@@ -720,10 +736,11 @@ const Index = () => {
           const playerHits = checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
           const missileHits = checkMissileHitsPlayer(pos.x, pos.y, TRI_SIZE);
           const gunboatHits = checkGunboatBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
-          const totalHits = playerHits + gunboatHits + missileHits * 2; // missiles deal 2 damage
+          const mineHits = checkMineHitsPlayer(pos.x, pos.y, TRI_SIZE);
+          const totalHits = playerHits + gunboatHits + mineHits + missileHits * 2; // missiles deal 2 damage
           if (totalHits > 0) {
-            spawnExplosion(pos.x, pos.y, missileHits > 0 ? 35 : 20);
-            shake(missileHits > 0 ? 1 : 0, 1);
+            spawnExplosion(pos.x, pos.y, missileHits > 0 || mineHits > 0 ? 35 : 20);
+            shake(missileHits > 0 || mineHits > 0 ? 1 : 0, 1);
             invulnRef.current = INVULN_DURATION;
             playerHPRef.current -= totalHits;
             if (playerHPRef.current <= 0) {
@@ -896,6 +913,9 @@ const Index = () => {
 
         // Gunboats (on water surface)
         drawGunboats(ctx, viewH);
+
+        // Minelayer planes and floating mines
+        drawMinelayer(ctx, viewH);
 
         // Boat
         if (boatRef.current) {
@@ -1193,6 +1213,7 @@ const Index = () => {
         waveRef.current = createWaveState();
         resetEnemies();
         resetSubmarines();
+        resetMinelayer();
         resetPickups(WORLD_WIDTH);
         resetJetTrail();
         fuelRef.current = MAX_FUEL;
@@ -1276,6 +1297,7 @@ const Index = () => {
             waveRef.current = createWaveState();
             resetEnemies();
             resetSubmarines();
+            resetMinelayer();
             resetPickups(WORLD_WIDTH);
             resetJetTrail();
             fuelRef.current = MAX_FUEL;
