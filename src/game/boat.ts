@@ -364,22 +364,16 @@ export function collideWithBoat(
 
   // Quick bounding box rejection
   if (px < boat.x - hw - radius || px > boat.x + hw + radius) return null;
-  if (py < topY - radius - 40 || py > topY + hd + radius) return null;
+  // Only collide from the top — ignore if player is below the surface
+  if (py > topY + 5) return null;
+  if (py < topY - radius - 40) return null;
 
-  // Check if inside the platform rectangle (with some padding)
+  // Check if horizontally within the platform
   const inX = px > boat.x - hw + 10 && px < boat.x + hw - 10;
-  const inY = py > topY - radius && py < topY + hd + radius;
+  const inY = py > topY - radius && py < topY + 5;
 
   if (inX && inY) {
-    // Push out from whichever edge is closer (top or bottom)
-    const distTop = py - (topY - radius);
-    const distBot = (topY + hd + radius) - py;
-
-    if (distTop < distBot) {
-      return { x: px, y: topY - radius - 1 };  // Push above
-    } else {
-      return { x: px, y: topY + hd + radius + 1 };  // Push below
-    }
+    return { x: px, y: topY - radius - 1 };  // Push above only
   }
 
   return null;
