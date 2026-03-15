@@ -235,39 +235,6 @@ export function checkBombHitsShip(boatX: number, boatWidth: number, shipY: numbe
   return hits;
 }
 
-// ==================== SCORE POPUPS ====================
-
-/** Floating score text that appears when enemies are destroyed */
-export interface ScorePopup {
-  x: number;
-  y: number;
-  value: number; // Score amount to display
-  life: number; // Remaining life (1.0 → 0.0)
-}
-
-let scorePopups: ScorePopup[] = [];
-
-export function getScorePopups() {
-  return scorePopups;
-}
-
-/**
- * Create a visual explosion and optional score popup.
- * @param scoreValue - If provided, shows floating "+N" text
- */
-export function spawnExplosion(x: number, y: number, size = 30, scoreValue?: number) {
-  explosions.push({
-    x,
-    y,
-    life: 1,
-    maxLife: 0.5,
-    radius: 4,
-    maxRadius: size,
-  });
-  if (scoreValue && scoreValue > 0) {
-    scorePopups.push({ x, y, value: scoreValue, life: 1.0 });
-  }
-}
 
 // ==================== WAVE FLEEING ====================
 
