@@ -345,7 +345,7 @@ const Index = () => {
       }
 
       // Handle pause menu navigation with gamepad
-      const PAUSE_MENU_COUNT = 3;
+      const PAUSE_MENU_COUNT = 4;
       if (pausedRef.current && gp.connected) {
         const dpadUpPressed = gp.dpadUp && !gpDpadUpPrev.current;
         const dpadDownPressed = gp.dpadDown && !gpDpadDownPrev.current;
