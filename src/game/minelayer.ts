@@ -45,9 +45,12 @@ const MINE_SIZE = 18;           // Similar to player ship (~TRI_SIZE)
 const MINE_SINK_SPEED = 0.8;    // Initial sinking speed
 const MINE_BUOYANCY = 0.04;     // Upward force in water
 const SCORE_MINE = 50;
+const SCORE_MINELAYER = 250;    // Shooting down the plane
+const PLANE_SIZE = 14;          // Collision radius
 const FIRST_SPAWN_DELAY = 45;   // Seconds before first minelayer
 const SPAWN_INTERVAL_MIN = 50;
 const SPAWN_INTERVAL_MAX = 80;
+const KILL_SPAWN_PENALTY = 30;  // Extra seconds added to spawn timer on kill
 
 // ==================== RESET & ACCESSORS ====================
 
