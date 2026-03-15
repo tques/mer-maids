@@ -260,39 +260,30 @@ export function checkPowerupPickup(px: number, py: number, radius: number): Powe
 // ==================== AMMO CRATE: DEPOT CANNON LAUNCH ====================
 
 /**
- * Choose which depot to launch from (picks the one closer to the player,
- * or random if equidistant). Fires the crate from the depot's cannon.
+ * Launch a crate from the single depot cannon.
  */
-function launchCrateFromDepot(playerX: number, viewH: number, worldWidth: number) {
-  if (depots.length < 2) return;
-
-  // Pick depot farther from player so crate flies toward the action
-  const d0 = Math.abs(playerX - depots[0].x);
-  const d1 = Math.abs(playerX - depots[1].x);
-  const depotIdx = d0 > d1 ? 0 : 1;
-  const depot = depots[depotIdx];
+function launchCrateFromDepot(viewH: number, worldWidth: number) {
+  if (!depot) return;
 
   const surfY = getWaterSurfaceY(viewH);
   const waveY = getWaveY(depot.x, surfY);
-  const cannonY = waveY - 10 - 30; // Top of depot buildings minus cannon height
+  const cannonY = waveY - 10 - 18; // Cannon sits on platform
 
-  // Launch direction: toward center of world
+  // Launch toward center of world
   const launchDir = depot.x < worldWidth / 2 ? 1 : -1;
-
   const targetY = surfY - PARACHUTE_TARGET_ABOVE_SURFACE;
 
   ammoCrate = {
     x: depot.x,
     y: cannonY,
-    vx: launchDir * (60 + Math.random() * 40), // Slight horizontal drift
+    vx: launchDir * (60 + Math.random() * 40),
     vy: CANNON_LAUNCH_VY,
     phase: "launching",
     targetY,
     spawnTime: performance.now(),
-    depotIndex: depotIdx,
+    depotIndex: 0,
   };
 
-  // Record fire time for cannon recoil animation
   depot.cannonFireTime = performance.now();
   ammoCrateAlert = 3000;
 }
