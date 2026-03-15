@@ -11,6 +11,7 @@ import { createBoat, drawBoat, collideWithBoat, Boat } from "../game/boat";
 import {
   updateEnemies,
   checkBulletCollisions,
+  checkRamCollisions,
   checkChaserBulletHitsPlayer,
   checkMissileHitsPlayer,
   deflectMissiles,
@@ -543,6 +544,16 @@ const Index = () => {
         if (isBoosting && !submerged) {
           pos.x += (Math.random() - 0.5) * 2.4 * dtScale;
           pos.y += (Math.random() - 0.5) * 2.4 * dtScale;
+
+          // Ram collision — only when blades are active (full HP)
+          const hasBlades = playerHPRef.current >= PLAYER_MAX_HP;
+          if (hasBlades) {
+            const ramScore = checkRamCollisions(pos.x, pos.y, TRI_SIZE);
+            if (ramScore > 0) {
+              scoreRef.current += ramScore;
+              shake(Math.cos(angle), Math.sin(angle));
+            }
+          }
         }
 
         pos.x += vel.x * dtScale;
@@ -917,6 +928,31 @@ const Index = () => {
           ctx.fillStyle = isInvuln ? "#aaeeff" : "#55efc4";
           ctx.fill();
 
+          // Ram blades — only at full HP
+          if (playerHPRef.current >= PLAYER_MAX_HP) {
+            ctx.fillStyle = "rgba(100, 255, 235, 0.85)";
+            ctx.strokeStyle = "rgba(60, 220, 200, 0.9)";
+            ctx.lineWidth = 1;
+
+            // Upper blade (swept back along arch)
+            ctx.beginPath();
+            ctx.moveTo(r * 0.5, -r * 0.45);
+            ctx.lineTo(-r * 0.7, -r * 0.7);
+            ctx.lineTo(-r * 0.3, -r * 0.35);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Lower blade (swept back along arch)
+            ctx.beginPath();
+            ctx.moveTo(r * 0.5, r * 0.45);
+            ctx.lineTo(-r * 0.7, r * 0.7);
+            ctx.lineTo(-r * 0.3, r * 0.35);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+          }
+
           ctx.shadowColor = "transparent";
           ctx.restore();
         }
@@ -1227,6 +1263,9 @@ const Index = () => {
                 <p>
                   <span style={{ color: "#ff7675" }}>BOOST</span> — Hold{" "}
                   <span style={{ color: "#ff7675" }}>W</span> for high-speed boost. Uses more fuel, locks steering, deflects missiles.
+                </p>
+                <p>
+                  <span style={{ color: "#64ffeb" }}>RAM BLADES</span> — At full HP, blades extend from your mech. Boost into enemies to destroy them instantly!
                 </p>
               </div>
             </div>

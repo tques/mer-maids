@@ -629,6 +629,59 @@ export function checkBulletCollisions(bullets: { x: number; y: number; dx: numbe
   return { remaining: remainingBullets, score };
 }
 
+// ==================== RAM COLLISION ====================
+
+/**
+ * Checks if the boosting player rams into any enemies (bombers, chasers, missiles).
+ * Destroys them on contact and returns total score earned.
+ */
+export function checkRamCollisions(px: number, py: number, radius: number): number {
+  let score = 0;
+  const ramRadius = radius * 1.3; // slightly larger than player for blade reach
+
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    const dist = Math.hypot(px - e.x, py - e.y);
+    if (dist < ramRadius + ENEMY_SIZE) {
+      e.alive = false;
+      spawnExplosion(e.x, e.y, 40, SCORE_BOMBER);
+      score += SCORE_BOMBER;
+    }
+  }
+
+  for (const c of chasers) {
+    if (!c.alive) continue;
+    const dist = Math.hypot(px - c.x, py - c.y);
+    if (dist < ramRadius + CHASER_SIZE) {
+      c.alive = false;
+      spawnExplosion(c.x, c.y, 35, SCORE_CHASER);
+      score += SCORE_CHASER;
+    }
+  }
+
+  for (const m of homingMissiles) {
+    if (!m.alive) continue;
+    const dist = Math.hypot(px - m.x, py - m.y);
+    if (dist < ramRadius + 8) {
+      m.alive = false;
+      spawnExplosion(m.x, m.y, 25, 50);
+      score += 50;
+    }
+  }
+
+  for (const bomb of bombs) {
+    if (!bomb.alive) continue;
+    const dist = Math.hypot(px - bomb.x, py - bomb.y);
+    if (dist < ramRadius + BOMB_SIZE) {
+      bomb.alive = false;
+      spawnExplosion(bomb.x, bomb.y, 20, SCORE_BOMB);
+      score += SCORE_BOMB;
+    }
+  }
+
+  return score;
+}
+
 // ==================== RENDERING ====================
 
 /**
