@@ -453,13 +453,13 @@ const Index = () => {
       const wasSubmerged = wasSubmergedRef.current;
       const speedMult = submerged ? WATER_SPEED_FACTOR : 1;
 
-      // Splash on entry/exit
-      if (submerged && !wasSubmerged) {
-        const vy = pos.y - lastPosRef.current.y;
-        spawnSplash(pos.x, getWaterSurfaceY(viewH), vy, true);
-      } else if (!submerged && wasSubmerged) {
-        const vy = pos.y - lastPosRef.current.y;
-        spawnSplash(pos.x, getWaterSurfaceY(viewH), vy, false);
+      // Splash on entry/exit — only when moving with enough velocity to avoid idle surface spam
+      const crossingVy = pos.y - lastPosRef.current.y;
+      const crossingSpeed = Math.abs(crossingVy) + Math.abs(pos.x - lastPosRef.current.x) * 0.3;
+      if (submerged && !wasSubmerged && crossingSpeed > 0.5) {
+        spawnSplash(pos.x, getWaterSurfaceY(viewH), crossingVy, true);
+      } else if (!submerged && wasSubmerged && crossingSpeed > 0.5) {
+        spawnSplash(pos.x, getWaterSurfaceY(viewH), crossingVy, false);
       }
       wasSubmergedRef.current = submerged;
       lastPosRef.current = { x: pos.x, y: pos.y };
