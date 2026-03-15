@@ -687,7 +687,6 @@ const Index = () => {
           resetEnemies();
           resetSubmarines();
           resetGunboats();
-          resetMinelayer();
           resetPickups(WORLD_WIDTH);
         }
 
