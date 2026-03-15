@@ -67,7 +67,7 @@ const AMMO_DROP_LIFETIME = 20000; // 20 seconds
 const DEPOT_WIDTH = 120;
 
 /** Depth of the depot hull below surface */
-const DEPOT_HULL_DEPTH = 20;
+const DEPOT_HULL_DEPTH = 40;
 
 /** Cannon launch upward velocity (px per second) */
 const CANNON_LAUNCH_VY = -480;
