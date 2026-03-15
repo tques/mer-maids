@@ -1195,9 +1195,12 @@ const Index = () => {
                 OBJECTIVE
               </div>
               <p className="text-sm leading-relaxed" style={{ color: "#ccc" }}>
-                You are a M.E.R. Maid — a water-based mech defending a floating city. Enemy bombers and fighters attack
-                in waves. Shoot them down before they breach the city's barrier. If the barrier falls or you lose all
-                lives, it's game over.
+                You are a M.E.R. Maid. Your job is to pilot the Marine Emergency Response Unit, a mech with powerful
+                water propulsion jets that allow it to dive through the water and flythrough the skys. Eliminate the
+                pink bombs that are attacking the cities barrier and avoid the red fights supporting them. Be aware of
+                the slow moving submarines. While they are easy targets they do more damage to the barrier. If you're
+                running low on ammo the depot will launch ammo for you to collect and the city itself will be dropping
+                armor for collection below the city. Lastly, if you're low of fuel just land in the water.
               </p>
             </div>
 
@@ -1208,7 +1211,7 @@ const Index = () => {
               </div>
               <div className="text-sm leading-relaxed space-y-1" style={{ color: "#ccc" }}>
                 <p>
-                  <span style={{ color: "#74b9ff" }}>FUEL</span> — Flying burns fuel.{" "}
+                  <span style={{ color: "#74b9ff" }}>FUEL</span> — Flying uses water.{" "}
                   <span style={{ color: "#74b9ff" }}>Dive underwater</span> to refuel.
                 </p>
                 <p>
