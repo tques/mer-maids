@@ -88,15 +88,6 @@ export interface Bomb {
   hangTime: number; // Brief delay before falling (just released from bomber)
 }
 
-/** A visual explosion effect */
-export interface Explosion {
-  x: number;
-  y: number;
-  life: number; // Remaining life (1.0 → 0.0)
-  maxLife: number; // Total lifetime in seconds
-  radius: number; // Current visual radius
-  maxRadius: number; // Maximum size
-}
 
 // ==================== MODULE STATE ====================
 
