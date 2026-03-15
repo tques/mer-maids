@@ -548,11 +548,14 @@ const Index = () => {
         pos.x += vel.x * dtScale;
         pos.y += vel.y * dtScale;
 
-        // Spawn jet trail when moving (boosted = more particles)
-        const jetThrottle = isBoosting ? Math.min(throttleRef.current * 1.6, 1) : throttleRef.current;
+        // Spawn jet trail when moving (boosted = much more particles)
+        const jetThrottle = isBoosting ? Math.min(throttleRef.current * 1.8, 1) : throttleRef.current;
         spawnJetParticles(pos.x, pos.y, angle, jetThrottle, submerged, fuelRef.current, MAX_FUEL);
         if (isBoosting && !submerged) {
+          // Triple extra particle spawns for aggressive boost trail
           spawnJetParticles(pos.x, pos.y, angle, 1, submerged, fuelRef.current, MAX_FUEL);
+          spawnJetParticles(pos.x, pos.y, angle, 1, submerged, fuelRef.current, MAX_FUEL);
+          spawnJetParticles(pos.x, pos.y, angle, 0.8, submerged, fuelRef.current, MAX_FUEL);
         }
 
         wasMovingRef.current = true;
