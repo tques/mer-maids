@@ -205,8 +205,11 @@ npm test
 Edit the constants at the top of `src/pages/Index.tsx`:
 - `SPEED` — Player thrust power
 - `GRAVITY` / `BUOYANCY` — Flight feel
-- `MAX_AMMO` / `MAX_FUEL` — Resource limits
+- `MAX_FUEL` — Fuel limit
 - `BULLET_SPEED` / `SHOOT_INTERVAL` — Weapon stats
+
+Ammo/pickup constants are in `src/game/pickups.ts`:
+- `MAX_AMMO` / `AMMO_LOW_THRESHOLD` — Ammo capacity and emergency crate trigger
 
 ### Adding a new enemy type
 1. Define an interface in `src/game/enemies.ts`
