@@ -64,6 +64,15 @@ import {
   drawGunboats,
   fleeGunboats,
 } from "../game/gunboat";
+import {
+  resetMinelayer,
+  updateMinelayer,
+  checkBulletHitsMine,
+  checkMineHitsPlayer,
+  checkRamMine,
+  drawMinelayer,
+  fleeMinelayers,
+} from "../game/minelayer";
 
 const SPEED = 7; // was 5.5 — base thrust power increased
 const TRI_SIZE = 20;
