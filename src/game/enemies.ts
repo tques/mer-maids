@@ -27,6 +27,7 @@
  */
 
 import { getWaterSurfaceY } from "./water";
+import { spawnExplosion, updateEffects, drawEffects, resetEffects, Explosion, ScorePopup, getExplosions, getScorePopups } from "./effects";
 
 // ==================== INTERFACES ====================
 
