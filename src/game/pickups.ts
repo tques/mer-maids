@@ -902,22 +902,29 @@ export function drawAmmoCrateAlert(ctx: CanvasRenderingContext2D, hudX: number, 
  */
 export function collideWithDepot(
   px: number, py: number, radius: number, viewH: number
-): { x: number; y: number } | null {
+): { x: number; y: number; damaging: boolean } | null {
   if (!depot) return null;
   const surfaceY = getWaterSurfaceY(viewH);
   const waveY = getWaveY(depot.x, surfaceY);
-  const topY = waveY - 10;
+  const topY = waveY - 22;  // Match raised platform height
   const hw = DEPOT_WIDTH / 2;
+  const hd = 36; // hull depth matching depot visual
 
   if (px < depot.x - hw - radius || px > depot.x + hw + radius) return null;
-  if (py > topY + 5) return null;
   if (py < topY - radius - 40) return null;
+  if (py > topY + hd + radius) return null;
 
   const inX = px > depot.x - hw + 5 && px < depot.x + hw - 5;
-  const inY = py > topY - radius && py < topY + 5;
 
-  if (inX && inY) {
-    return { x: px, y: topY - radius - 1 };
+  // Surface collision (from above) — damaging
+  if (inX && py > topY - radius && py < topY + 5) {
+    return { x: px, y: topY - radius - 1, damaging: true };
   }
+
+  // Underside collision (from below) — bounce only, no damage
+  if (inX && py > topY + 5 && py < topY + hd + radius) {
+    return { x: px, y: topY + hd + radius + 1, damaging: false };
+  }
+
   return null;
 }

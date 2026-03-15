@@ -353,23 +353,26 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
 export function collideWithBoat(
   px: number, py: number, radius: number,
   boat: Boat, viewH: number
-): { x: number; y: number } | null {
+): { x: number; y: number; damaging: boolean } | null {
   const topY = getBoatTopY(boat, viewH);
   const hw = boat.width / 2;
   const hd = boat.hullDepth;
 
   // Quick bounding box rejection
   if (px < boat.x - hw - radius || px > boat.x + hw + radius) return null;
-  // Only collide from the top — ignore if player is below the surface
-  if (py > topY + 5) return null;
   if (py < topY - radius - 40) return null;
+  if (py > topY + hd + radius) return null;
 
-  // Check if horizontally within the platform
   const inX = px > boat.x - hw + 10 && px < boat.x + hw - 10;
-  const inY = py > topY - radius && py < topY + 5;
 
-  if (inX && inY) {
-    return { x: px, y: topY - radius - 1 };  // Push above only
+  // Surface collision (from above) — damaging
+  if (inX && py > topY - radius && py < topY + 5) {
+    return { x: px, y: topY - radius - 1, damaging: true };
+  }
+
+  // Underside collision (from below) — bounce only, no damage
+  if (inX && py > topY + 5 && py < topY + hd + radius) {
+    return { x: px, y: topY + hd + radius + 1, damaging: false };
   }
 
   return null;
