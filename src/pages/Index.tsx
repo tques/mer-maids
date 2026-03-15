@@ -28,7 +28,20 @@ import {
   fleeSubmarines,
   areSubmarinesGone,
 } from "../game/submarine";
-import { resetPowerups, checkScoreRewards, checkPowerupPickup, updatePowerups, drawPowerups } from "../game/powerups";
+import {
+  resetPickups,
+  checkScoreRewards,
+  checkPowerupPickup,
+  updatePowerups,
+  drawPickups,
+  updateAmmoCrate,
+  updateAmmoDrop,
+  drawAmmoCrateAlert,
+  getAmmoCrateAlert,
+  MAX_AMMO,
+  AMMO_LOW_THRESHOLD,
+  AMMO_BOX_SIZE,
+} from "../game/pickups";
 import {
   createWaveState,
   updateWave,
