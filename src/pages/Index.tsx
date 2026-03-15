@@ -34,6 +34,7 @@ import {
   checkPowerupPickup,
   updatePowerups,
   drawPickups,
+  drawAmmoDepots,
   updateAmmoCrate,
   updateAmmoDrop,
   drawAmmoCrateAlert,
