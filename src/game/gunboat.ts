@@ -195,6 +195,8 @@ export function updateGunboats(
   viewHalfW: number,
   waveDifficulty: number,
   fleeing: boolean,
+  cityX: number = worldWidth / 2,
+  cityW: number = 400,
 ) {
   const waterY = getWaterSurfaceY(viewH);
 
