@@ -337,7 +337,7 @@ export function drawGunboats(ctx: CanvasRenderingContext2D, viewH: number) {
     // Turret barrel (points toward nearest threat direction)
     ctx.save();
     ctx.translate(0, -6);
-    const barrelAngle = g.dir === 1 ? Math.PI * 0.6 : Math.PI * 0.4;
+    const barrelAngle = g.dir === 1 ? -Math.PI * 0.35 : -Math.PI * 0.65;
     ctx.rotate(barrelAngle);
     ctx.fillStyle = "#2c3e50";
     ctx.fillRect(0, -1.5, 14, 3);
