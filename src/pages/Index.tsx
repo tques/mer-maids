@@ -1072,13 +1072,7 @@ const Index = () => {
       ctx.font = "bold 14px monospace";
 
       // Ammo box alert
-      if (ammoBoxRef.current && ammoBoxAlertRef.current > 0) {
-        const flash = Math.sin(performance.now() / 200) > 0;
-        if (flash) {
-          ctx.fillStyle = "#f0c830";
-          ctx.fillText("▼ AMMO CRATE SPAWNED ▼", hudX, hudY + 86);
-        }
-      }
+      drawAmmoCrateAlert(ctx, hudX, hudY + 86);
 
       ctx.fillStyle = "#D93636";
       ctx.fillText("LIVES", hudX, hudY);
