@@ -1326,6 +1326,37 @@ const Index = () => {
             >
               {pauseMenuIndex === 1 ? "► " : "  "}Stick: {useRightStick ? "RIGHT" : "LEFT"}
             </button>
+            <div
+              className="px-6 py-3 text-sm tracking-widest uppercase border"
+              style={{
+                color: pauseMenuIndex === 2 ? "#f7d794" : "#888",
+                borderColor: pauseMenuIndex === 2 ? "#f7d794" : "#555",
+                backgroundColor: pauseMenuIndex === 2 ? "rgba(247,215,148,0.1)" : "transparent",
+                fontFamily: "var(--font-mono)",
+                minWidth: "280px",
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <span>{pauseMenuIndex === 2 ? "► " : "  "}Music</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={musicVolume}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    setMusicVolume(v);
+                    if (musicRef.current) musicRef.current.volume = v;
+                  }}
+                  className="flex-1 accent-[#f7d794] cursor-pointer"
+                  style={{ height: "4px" }}
+                />
+                <span style={{ fontSize: "10px", minWidth: "28px", textAlign: "right" }}>
+                  {Math.round(musicVolume * 100)}%
+                </span>
+              </div>
+            </div>
             <button
               onClick={() => window.location.reload()}
               className="px-6 py-3 text-sm tracking-widest uppercase border cursor-pointer"
