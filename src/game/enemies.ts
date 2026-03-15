@@ -3,24 +3,16 @@
  *
  * Manages all airborne threats:
  *
- * 1. **Bombers** (pink) — Fly horizontally across the screen, drop tumbling
- *    bombs on the city. They cruise at a set altitude and drop bombs when
- *    near their target X position.
+ * 1. **Bombers** (pink) — Fly horizontally, drop tumbling bombs on the city.
+ * 2. **Chasers** (red/orange) — Fighter jets that pursue the player, fire beams
+ *    and launch homing missiles. Patrol when player is submerged/out of range.
+ * 3. **Homing Missiles** — Launched by chasers, track player with limited turn rate.
+ * 4. **Bombs** — Dropped by bombers, tumble and fall with gravity.
  *
- * 2. **Chasers** (red/orange) — Aggressive fighter jets that pursue the player.
- *    They fire beam bullets and occasionally launch homing missiles.
- *    They have a vision range and patrol when the player is out of sight
- *    or submerged.
- *
- * 3. **Homing Missiles** — Launched by chasers. They track the player with
- *    limited turn rate. Can be deflected by barrel rolls or destroyed by bullets.
- *
- * 4. **Bombs** — Dropped by bombers. They tumble and fall with gravity.
- *    Hit the city's dome barrier or the city itself if barrier is down.
- *
- * 5. **Explosions** — Visual effect spawned when anything is destroyed.
- *
- * 6. **Score Popups** — Floating "+150" text when enemies are killed.
+ * Related modules:
+ * - effects.ts — Explosions and score popups (shared with submarine.ts)
+ * - submarine.ts — Underwater enemies
+ * - pickups.ts — All collectible items (health, repair, ammo)
  *
  * All entity arrays are module-level for performance (not React state).
  * Call resetEnemies() when starting a new game/wave.
