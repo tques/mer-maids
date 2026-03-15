@@ -142,8 +142,8 @@ let ammoCrateAlert = 0;        // HUD flash timer (ms remaining)
 let ammoDrop: { x: number; y: number; spawnTime: number } | null = null;
 let ammoDropTimer = 30 + Math.random() * 30; // Countdown to first drop (seconds)
 
-// --- Ammo depots (two platforms at world edges) ---
-let depots: AmmoDepot[] = [];
+// --- Ammo depot (single platform at world edge) ---
+let depot: AmmoDepot | null = null;
 
 // ==================== RESET ====================
 
