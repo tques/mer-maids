@@ -769,7 +769,33 @@ const Index = () => {
           }
         }
 
-        // Powerup rewards based on score (only after 30s into wave to avoid wave-start spawns)
+        // Depot collision — bounce player off depot surface & damage
+        {
+          const depotPush = collideWithDepot(pos.x, pos.y, TRI_SIZE, viewH);
+          if (depotPush) {
+            pos.x = depotPush.x;
+            pos.y = depotPush.y;
+            velRef.current.x = (pos.x < WORLD_WIDTH / 2 ? -1 : 1) * 3.5;
+            velRef.current.y = -2.5;
+            if (invulnRef.current <= 0) {
+              playerHPRef.current -= 1;
+              invulnRef.current = INVULN_DURATION;
+              spawnExplosion(pos.x, pos.y, 15);
+              shake(pos.x < WORLD_WIDTH / 2 ? -1 : 1, -1);
+              if (playerHPRef.current <= 0) {
+                playerLivesRef.current -= 1;
+                if (playerLivesRef.current <= 0) {
+                  gameOverRef.current = true;
+                  setGameOver(true);
+                  setGameOverReason("Crashed into depot!");
+                } else {
+                  playerHPRef.current = PLAYER_MAX_HP;
+                }
+              }
+            }
+          }
+        }
+
         const waveElapsed = waveRef.current.waveTimer;
         if (waveElapsed > 30) {
           checkScoreRewards(scoreRef.current, boatX, boatW, viewH);
