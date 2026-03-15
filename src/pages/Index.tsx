@@ -55,6 +55,15 @@ import {
 } from "../game/waves";
 import { resetJetTrail, spawnJetParticles, updateJetTrail, drawJetTrail, getShipPitch } from "../game/jettrail";
 import { pollGamepad } from "../game/gamepad";
+import {
+  resetGunboats,
+  updateGunboats,
+  checkBulletHitsGunboat,
+  checkGunboatBulletHitsPlayer,
+  checkRamGunboat,
+  drawGunboats,
+  fleeGunboats,
+} from "../game/gunboat";
 
 const SPEED = 7; // was 5.5 — base thrust power increased
 const TRI_SIZE = 20;
