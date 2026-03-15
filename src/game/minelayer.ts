@@ -113,7 +113,7 @@ export function updateMinelayer(
   for (const m of mines) {
     if (!m.alive) continue;
     if (!m.settled) {
-      const surfaceY = waterY + getWaveY(m.x, performance.now() * 0.001);
+      const surfaceY = getWaveY(m.x, waterY, worldWidth);
       if (m.y < surfaceY) {
         // Above water — fall
         m.vy += 0.02;
@@ -131,12 +131,11 @@ export function updateMinelayer(
       }
     } else {
       // Float on surface following waves
-      const surfaceY = waterY + getWaveY(m.x, performance.now() * 0.001);
-      m.y = surfaceY;
+      m.y = getWaveY(m.x, waterY, worldWidth);
     }
   }
 
-  // Cleanup dead planes
+  // Cleanup dead planes (mines persist!)
   planes = planes.filter(p => p.alive);
 }
 
