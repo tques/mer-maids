@@ -26,10 +26,10 @@
  *    - Despawns after 20 seconds if not collected
  *    - Blinks when about to despawn
  *
- * 5. **Ammo Depots** (small city-like platforms at world edges)
- *    - Two static platforms at x=80 and x=worldWidth-80
- *    - City-style graphics (buildings, windows, hull) but NO barrier
- *    - Each has a cannon that launches ammo crates
+ * 5. **Ammo Depot** (single platform at right world edge)
+ *    - Static platform at x=worldWidth-80
+ *    - Warehouse buildings, stacked crates, cannon on platform (NO barrier)
+ *    - Cannon launches ammo crates with high ballistic arc
  *    - Cannon animates (recoil + smoke) when firing
  *
  * Rules:
