@@ -913,6 +913,9 @@ const Index = () => {
         // Gunboats (on water surface)
         drawGunboats(ctx, viewH);
 
+        // Minelayer planes and floating mines
+        drawMinelayer(ctx, viewH);
+
         // Boat
         if (boatRef.current) {
           const barrierUp = shipHPRef.current > 3;
