@@ -28,7 +28,20 @@ import {
   fleeSubmarines,
   areSubmarinesGone,
 } from "../game/submarine";
-import { resetPowerups, checkScoreRewards, checkPowerupPickup, updatePowerups, drawPowerups } from "../game/powerups";
+import {
+  resetPickups,
+  checkScoreRewards,
+  checkPowerupPickup,
+  updatePowerups,
+  drawPickups,
+  updateAmmoCrate,
+  updateAmmoDrop,
+  drawAmmoCrateAlert,
+  getAmmoCrateAlert,
+  MAX_AMMO,
+  AMMO_LOW_THRESHOLD,
+  AMMO_BOX_SIZE,
+} from "../game/pickups";
 import {
   createWaveState,
   updateWave,
@@ -60,9 +73,6 @@ const ROLL_FUEL_COST = 5; // fuel consumed per roll
 const ROLL_DURATION = 300;
 const WORLD_WIDTH = 3000;
 const ZOOM = 1.4;
-const MAX_AMMO = 60;
-const AMMO_LOW_THRESHOLD = 12;
-const AMMO_BOX_SIZE = 22;
 const MAX_FUEL = 50;
 const FUEL_BURN_RATE = 8; // fuel/sec while flying
 const FUEL_REFILL_RATE = 25; // fuel/sec while submerged
@@ -76,11 +86,6 @@ interface Bullet {
   id: number;
 }
 
-interface AmmoBox {
-  x: number;
-  y: number;
-  spawnTime: number;
-}
 
 const Index = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -126,10 +131,6 @@ const Index = () => {
   const gameOverRef = useRef(false);
   const pausedRef = useRef(false);
   const ammoRef = useRef(MAX_AMMO);
-  const ammoBoxRef = useRef<AmmoBox | null>(null);
-  const ammoBoxAlertRef = useRef(0);
-  const ammoDropBoxRef = useRef<AmmoBox | null>(null);
-  const ammoDropTimerRef = useRef(30 + Math.random() * 30);
   const scoreRef = useRef(0);
   const waveRef = useRef<WaveState>(createWaveState());
   const fuelRef = useRef(MAX_FUEL);
@@ -639,7 +640,7 @@ const Index = () => {
         if (waveResult.startNextWave) {
           resetEnemies();
           resetSubmarines();
-          resetPowerups();
+          resetPickups();
         }
 
         updateEnemies(dt, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
@@ -761,59 +762,16 @@ const Index = () => {
         }
       }
 
-      // === AMMO BOX SYSTEM ===
+      // === AMMO PICKUP SYSTEMS (managed by pickups.ts) ===
       if (gameStartedRef.current) {
-        if (ammoRef.current <= AMMO_LOW_THRESHOLD && !ammoBoxRef.current) {
-          const edgeX = Math.random() < 0.5 ? 20 : WORLD_WIDTH - 20;
-          const surfY = getWaterSurfaceY(viewH);
-          const boxY = 40 + Math.random() * (surfY - 80);
-          ammoBoxRef.current = { x: edgeX, y: boxY, spawnTime: performance.now() };
-          ammoBoxAlertRef.current = 3000;
-        }
-
-        if (ammoBoxAlertRef.current > 0) {
-          ammoBoxAlertRef.current -= frameDelta;
-        }
-
-        const box = ammoBoxRef.current;
-        if (box) {
-          let ddx = Math.abs(pos.x - box.x);
-          if (ddx > WORLD_WIDTH / 2) ddx = WORLD_WIDTH - ddx;
-          const ddy = Math.abs(pos.y - box.y);
-          if (ddx < TRI_SIZE + AMMO_BOX_SIZE && ddy < TRI_SIZE + AMMO_BOX_SIZE) {
-            ammoRef.current = MAX_AMMO;
-            ammoBoxRef.current = null;
-            ammoBoxAlertRef.current = 0;
-          }
-        }
-      }
-
-      // === RARE AMMO DROPS (spawn near play area periodically) ===
-      if (gameStartedRef.current) {
-        ammoDropTimerRef.current -= dt;
-        if (ammoDropTimerRef.current <= 0 && !ammoDropBoxRef.current) {
-          ammoDropTimerRef.current = 40 + Math.random() * 40; // 40-80 seconds
-          const surfY = getWaterSurfaceY(viewH);
-          // Spawn randomly in the play area (not at edges)
-          const dropX = 200 + Math.random() * (WORLD_WIDTH - 400);
-          const dropY = 30 + Math.random() * (surfY - 60);
-          ammoDropBoxRef.current = { x: dropX, y: dropY, spawnTime: performance.now() };
-        }
-        const drop = ammoDropBoxRef.current;
-        if (drop) {
-          // Despawn after 20 seconds
-          if (performance.now() - drop.spawnTime > 20000) {
-            ammoDropBoxRef.current = null;
-          } else {
-            let ddx = Math.abs(pos.x - drop.x);
-            if (ddx > WORLD_WIDTH / 2) ddx = WORLD_WIDTH - ddx;
-            const ddy = Math.abs(pos.y - drop.y);
-            if (ddx < TRI_SIZE + AMMO_BOX_SIZE && ddy < TRI_SIZE + AMMO_BOX_SIZE) {
-              ammoRef.current = Math.min(ammoRef.current + 20, MAX_AMMO);
-              ammoDropBoxRef.current = null;
-            }
-          }
-        }
+        ammoRef.current = updateAmmoCrate(
+          ammoRef.current, pos.x, pos.y, TRI_SIZE,
+          WORLD_WIDTH, viewH, frameDelta,
+        );
+        ammoRef.current = updateAmmoDrop(
+          ammoRef.current, pos.x, pos.y, TRI_SIZE,
+          WORLD_WIDTH, viewH, dt,
+        );
       }
 
       // Update water particles and jet trail
@@ -871,7 +829,7 @@ const Index = () => {
         }
 
         // Powerups
-        drawPowerups(ctx);
+        drawPickups(ctx);
 
         // Player bullets (beam-like, no shadowBlur for performance)
         for (const b of bulletsRef.current) {
@@ -906,71 +864,7 @@ const Index = () => {
           ctx.restore();
         }
 
-        // Ammo box
-        const box = ammoBoxRef.current;
-        if (box) {
-          const t = (performance.now() - box.spawnTime) / 400;
-          const bobY = box.y + Math.sin(t) * 4;
-          const s = AMMO_BOX_SIZE;
-          ctx.save();
-          ctx.translate(box.x, bobY);
-          // Crate body
-          ctx.fillStyle = "#c8a020";
-          ctx.fillRect(-s / 2, -s / 2, s, s);
-          // Lid highlight
-          ctx.fillStyle = "#f0c830";
-          ctx.fillRect(-s / 2, -s / 2, s, s * 0.35);
-          // Bullet icons (3 small vertical rounds)
-          ctx.fillStyle = "#805a00";
-          const bw = 3,
-            bh = 10;
-          ctx.fillRect(-bw * 2, -bh / 2 + 2, bw, bh);
-          ctx.fillRect(-bw / 2, -bh / 2 + 2, bw, bh);
-          ctx.fillRect(bw, -bh / 2 + 2, bw, bh);
-          // Bullet tips
-          ctx.fillStyle = "#d4a017";
-          ctx.beginPath();
-          ctx.arc(-bw * 2 + bw / 2, -bh / 2 + 2, bw / 2 + 0.5, Math.PI, 0);
-          ctx.arc(-bw / 2 + bw / 2, -bh / 2 + 2, bw / 2 + 0.5, Math.PI, 0);
-          ctx.arc(bw + bw / 2, -bh / 2 + 2, bw / 2 + 0.5, Math.PI, 0);
-          ctx.fill();
-          // Border
-          ctx.strokeStyle = "#604800";
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(-s / 2, -s / 2, s, s);
-          // "Ammo" label
-          ctx.fillStyle = "#fff";
-          ctx.font = "bold 8px monospace";
-          ctx.textAlign = "center";
-          ctx.fillText("Ammo", 0, -s / 2 - 6);
-          ctx.restore();
-        }
-
-        // Rare ammo drop
-        const drop = ammoDropBoxRef.current;
-        if (drop) {
-          const t = (performance.now() - drop.spawnTime) / 500;
-          const bobY = drop.y + Math.sin(t) * 5;
-          const s = AMMO_BOX_SIZE * 0.85;
-          const fadeAge = (performance.now() - drop.spawnTime) / 20000;
-          const blinkAlpha = fadeAge > 0.7 ? (Math.sin(performance.now() / 150) > 0 ? 1 : 0.3) : 1;
-          ctx.save();
-          ctx.globalAlpha = blinkAlpha;
-          ctx.translate(drop.x, bobY);
-          ctx.fillStyle = "#2a6080";
-          ctx.fillRect(-s / 2, -s / 2, s, s);
-          ctx.fillStyle = "#40a0d0";
-          ctx.fillRect(-s / 2, -s / 2, s, s * 0.3);
-          ctx.strokeStyle = "#1a4060";
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(-s / 2, -s / 2, s, s);
-          ctx.fillStyle = "#fff";
-          ctx.fillStyle = "#fff";
-          ctx.font = "bold 7px monospace";
-          ctx.textAlign = "center";
-          ctx.fillText("+20", 0, 3);
-          ctx.restore();
-        }
+        // Ammo pickups (drawn by pickups.ts alongside health/repair)
 
         // Player triangle
         const isInvuln = invulnRef.current > 0;
@@ -1071,13 +965,7 @@ const Index = () => {
       ctx.font = "bold 14px monospace";
 
       // Ammo box alert
-      if (ammoBoxRef.current && ammoBoxAlertRef.current > 0) {
-        const flash = Math.sin(performance.now() / 200) > 0;
-        if (flash) {
-          ctx.fillStyle = "#f0c830";
-          ctx.fillText("▼ AMMO CRATE SPAWNED ▼", hudX, hudY + 86);
-        }
-      }
+      drawAmmoCrateAlert(ctx, hudX, hudY + 86);
 
       ctx.fillStyle = "#D93636";
       ctx.fillText("LIVES", hudX, hudY);
@@ -1190,7 +1078,7 @@ const Index = () => {
         waveRef.current = createWaveState();
         resetEnemies();
         resetSubmarines();
-        resetPowerups();
+        resetPickups();
         resetJetTrail();
         fuelRef.current = MAX_FUEL;
       }
@@ -1269,7 +1157,7 @@ const Index = () => {
             waveRef.current = createWaveState();
             resetEnemies();
             resetSubmarines();
-            resetPowerups();
+            resetPickups();
             resetJetTrail();
             fuelRef.current = MAX_FUEL;
           }}

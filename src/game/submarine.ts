@@ -16,7 +16,7 @@
  */
 
 import { getWaterSurfaceY } from "./water";
-import { spawnExplosion } from "./enemies";
+import { spawnExplosion } from "./effects";
 
 // ==================== INTERFACE ====================
 

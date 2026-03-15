@@ -3,30 +3,26 @@
  *
  * Manages all airborne threats:
  *
- * 1. **Bombers** (pink) — Fly horizontally across the screen, drop tumbling
- *    bombs on the city. They cruise at a set altitude and drop bombs when
- *    near their target X position.
+ * 1. **Bombers** (pink) — Fly horizontally, drop tumbling bombs on the city.
+ * 2. **Chasers** (red/orange) — Fighter jets that pursue the player, fire beams
+ *    and launch homing missiles. Patrol when player is submerged/out of range.
+ * 3. **Homing Missiles** — Launched by chasers, track player with limited turn rate.
+ * 4. **Bombs** — Dropped by bombers, tumble and fall with gravity.
  *
- * 2. **Chasers** (red/orange) — Aggressive fighter jets that pursue the player.
- *    They fire beam bullets and occasionally launch homing missiles.
- *    They have a vision range and patrol when the player is out of sight
- *    or submerged.
- *
- * 3. **Homing Missiles** — Launched by chasers. They track the player with
- *    limited turn rate. Can be deflected by barrel rolls or destroyed by bullets.
- *
- * 4. **Bombs** — Dropped by bombers. They tumble and fall with gravity.
- *    Hit the city's dome barrier or the city itself if barrier is down.
- *
- * 5. **Explosions** — Visual effect spawned when anything is destroyed.
- *
- * 6. **Score Popups** — Floating "+150" text when enemies are killed.
+ * Related modules:
+ * - effects.ts — Explosions and score popups (shared with submarine.ts)
+ * - submarine.ts — Underwater enemies
+ * - pickups.ts — All collectible items (health, repair, ammo)
  *
  * All entity arrays are module-level for performance (not React state).
  * Call resetEnemies() when starting a new game/wave.
  */
 
 import { getWaterSurfaceY } from "./water";
+import { spawnExplosion, updateEffects, drawEffects, resetEffects } from "./effects";
+// Re-export effects for backward compatibility
+export { spawnExplosion, getExplosions, getScorePopups } from "./effects";
+export type { Explosion, ScorePopup } from "./effects";
 
 // ==================== INTERFACES ====================
 
@@ -84,15 +80,6 @@ export interface Bomb {
   hangTime: number; // Brief delay before falling (just released from bomber)
 }
 
-/** A visual explosion effect */
-export interface Explosion {
-  x: number;
-  y: number;
-  life: number; // Remaining life (1.0 → 0.0)
-  maxLife: number; // Total lifetime in seconds
-  radius: number; // Current visual radius
-  maxRadius: number; // Maximum size
-}
 
 // ==================== MODULE STATE ====================
 
@@ -101,7 +88,7 @@ let chasers: Chaser[] = [];
 let chaserBullets: ChaserBullet[] = [];
 let homingMissiles: HomingMissile[] = [];
 let bombs: Bomb[] = [];
-let explosions: Explosion[] = [];
+
 let bomberSpawnTimer = 0; // Countdown to next bomber spawn
 let chaserSpawnTimer = 3; // Countdown to next chaser spawn
 let gameTime = 0; // Total elapsed game time (for difficulty ramping)
@@ -129,8 +116,7 @@ export function resetEnemies() {
   chaserBullets = [];
   homingMissiles = [];
   bombs = [];
-  explosions = [];
-  scorePopups = [];
+  resetEffects();
   bomberSpawnTimer = 0;
   chaserSpawnTimer = 8;
   gameTime = 0;
@@ -151,9 +137,6 @@ export function getHomingMissiles() {
 }
 export function getBombs() {
   return bombs;
-}
-export function getExplosions() {
-  return explosions;
 }
 
 // ==================== COLLISION CHECKS ====================
@@ -244,39 +227,6 @@ export function checkBombHitsShip(boatX: number, boatWidth: number, shipY: numbe
   return hits;
 }
 
-// ==================== SCORE POPUPS ====================
-
-/** Floating score text that appears when enemies are destroyed */
-export interface ScorePopup {
-  x: number;
-  y: number;
-  value: number; // Score amount to display
-  life: number; // Remaining life (1.0 → 0.0)
-}
-
-let scorePopups: ScorePopup[] = [];
-
-export function getScorePopups() {
-  return scorePopups;
-}
-
-/**
- * Create a visual explosion and optional score popup.
- * @param scoreValue - If provided, shows floating "+N" text
- */
-export function spawnExplosion(x: number, y: number, size = 30, scoreValue?: number) {
-  explosions.push({
-    x,
-    y,
-    life: 1,
-    maxLife: 0.5,
-    radius: 4,
-    maxRadius: size,
-  });
-  if (scoreValue && scoreValue > 0) {
-    scorePopups.push({ x, y, value: scoreValue, life: 1.0 });
-  }
-}
 
 // ==================== WAVE FLEEING ====================
 
@@ -579,16 +529,8 @@ export function updateEnemies(
     if (b.y > viewH + 20) b.alive = false; // Off-screen below
   }
 
-  // ==================== EXPLOSION & POPUP UPDATE ====================
-  for (const ex of explosions) {
-    ex.life -= dt / ex.maxLife;
-    ex.radius += (ex.maxRadius - ex.radius) * 0.15; // Ease toward max size
-  }
-
-  for (const sp of scorePopups) {
-    sp.life -= dt * 1.2;
-    sp.y -= 0.8; // Float upward
-  }
+  // Update shared effects (explosions, score popups)
+  updateEffects(dt);
 
   // ==================== CLEANUP DEAD ENTITIES ====================
   enemies = enemies.filter((e) => e.alive);
@@ -596,8 +538,6 @@ export function updateEnemies(
   chaserBullets = chaserBullets.filter((cb) => cb.alive);
   homingMissiles = homingMissiles.filter((m) => m.alive);
   bombs = bombs.filter((b) => b.alive);
-  explosions = explosions.filter((ex) => ex.life > 0);
-  scorePopups = scorePopups.filter((sp) => sp.life > 0);
 }
 
 // ==================== SCORE VALUES ====================
@@ -933,32 +873,6 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.restore();
   }
 
-  // ---- Explosions (expanding orange/white circles) ----
-  for (const ex of explosions) {
-    ctx.save();
-    ctx.globalAlpha = ex.life;
-    ctx.beginPath();
-    ctx.arc(ex.x, ex.y, ex.radius, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 165, 50, ${ex.life * 0.6})`;
-    ctx.fill();
-    // Bright inner core
-    ctx.beginPath();
-    ctx.arc(ex.x, ex.y, ex.radius * 0.5, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 255, 200, ${ex.life * 0.8})`;
-    ctx.fill();
-    ctx.restore();
-  }
-
-  // ---- Score Popups (floating "+N" text) ----
-  for (const sp of scorePopups) {
-    ctx.save();
-    ctx.globalAlpha = Math.min(sp.life * 2, 1);
-    ctx.font = "bold 12px monospace";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#f7d794";
-    ctx.shadowColor = "rgba(0,0,0,0.7)";
-    ctx.shadowBlur = 4;
-    ctx.fillText(`+${sp.value}`, sp.x, sp.y);
-    ctx.restore();
-  }
+  // ---- Explosions & Score Popups (drawn by effects.ts) ----
+  drawEffects(ctx);
 }
