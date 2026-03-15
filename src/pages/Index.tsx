@@ -142,6 +142,8 @@ const Index = () => {
   const useRightStickRef = useRef(false);
   const [pauseMenuIndex, setPauseMenuIndex] = useState(0);
   const pauseMenuIndexRef = useRef(0);
+  const [musicVolume, setMusicVolume] = useState(0.4);
+  const musicRef = useRef<HTMLAudioElement | null>(null);
   const gamepadAimingRef = useRef(false); // true when gamepad stick was last used for aiming
   const lastGamepadAngleRef = useRef(0); // remember last stick angle when stick returns to center
   const loopRef = useRef<(() => void) | null>(null);
