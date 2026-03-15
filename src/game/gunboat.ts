@@ -244,6 +244,26 @@ export function updateGunboats(
     // Reverse at world edges occasionally
     if (Math.random() < 0.001) g.dir *= -1;
 
+    // Reverse direction near platforms (city and depot)
+    const DEPOT_X = worldWidth - 80;
+    const DEPOT_HW = 60;
+    const CITY_HW = cityW / 2;
+    const PLATFORM_MARGIN = 80;
+
+    // Near city
+    if (g.dir === 1 && g.x < cityX - CITY_HW - PLATFORM_MARGIN && g.x > cityX - CITY_HW - PLATFORM_MARGIN - 20) {
+      g.dir = -1;
+    } else if (g.dir === -1 && g.x > cityX + CITY_HW + PLATFORM_MARGIN && g.x < cityX + CITY_HW + PLATFORM_MARGIN + 20) {
+      g.dir = 1;
+    }
+
+    // Near depot
+    if (g.dir === 1 && g.x > DEPOT_X - DEPOT_HW - PLATFORM_MARGIN && g.x < DEPOT_X - DEPOT_HW - PLATFORM_MARGIN + 20) {
+      g.dir = -1;
+    } else if (g.dir === -1 && g.x < DEPOT_X + DEPOT_HW + PLATFORM_MARGIN && g.x > DEPOT_X + DEPOT_HW + PLATFORM_MARGIN - 20) {
+      g.dir = 1;
+    }
+
     // ---- Shooting (180° lower hemisphere toward player) ----
     const gy = getWaveY(g.x, waterY) - 8;
     const distToPlayer = Math.hypot(playerX - g.x, playerY - gy);
