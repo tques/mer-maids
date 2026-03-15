@@ -121,14 +121,22 @@ This is the heart of the game. It contains:
 - `drawBoat()`: Renders the full city — platform base, buildings with lights, dome barrier with cracks, smoke/fire effects when damaged.
 - `collideWithBoat()`: Pushes the player away from the city platform.
 
+### `src/game/effects.ts` — Shared Visual Effects
+
+- **Explosions**: Expanding orange/white circles that fade out. Spawned by enemies, submarines, and missiles on destruction.
+- **Score Popups**: Floating "+N" text that drifts upward. Appears at destroyed enemy locations.
+- `spawnExplosion()`: Creates an explosion (and optional score popup). Called from `enemies.ts` and `submarine.ts`.
+- `updateEffects()`: Ages explosions and popups, removes expired ones.
+- `drawEffects()`: Renders all active effects in world space.
+
 ### `src/game/enemies.ts` — Air Enemies
 
 - **Bombers**: Fly across the screen, drop tumbling bombs on the city.
 - **Chasers**: Aggressive fighters that pursue the player and fire bullets + homing missiles.
 - **Homing Missiles**: Track the player with turn rate limiting. Can be deflected by barrel rolls.
-- `updateEnemies()`: Spawns and updates all air enemies based on wave difficulty.
+- `updateEnemies()`: Spawns and updates all air enemies based on wave difficulty. Also calls `updateEffects()`.
 - `checkBulletCollisions()`: Tests player bullets against all enemy types.
-- `drawEnemies()`: Renders all air enemy types, their projectiles, explosions, and score popups.
+- `drawEnemies()`: Renders all air enemy types, their projectiles, and calls `drawEffects()`.
 
 ### `src/game/submarine.ts` — Underwater Enemies
 
@@ -137,13 +145,15 @@ This is the heart of the game. It contains:
 - `updateSubmarinesWithDamage()`: Handles spawning, movement, attack charging, and returns damage dealt.
 - `drawSubmarines()`: Renders menacing dark hull with crimson accents, pulsing red eye, and attack warning effects.
 
-### `src/game/powerups.ts` — Collectible Power-ups
+### `src/game/pickups.ts` — Collectible Pickups
 
-- **Health Kit** ("HP"): Restores 1 player HP. Spawns every 1500 points.
-- **Barrier Repair** ("Barrier"): Restores 3 city HP. Spawns every 1200 points.
+All collectible items in one place:
+- **Health Kit** ("HP"): Restores 1 player HP. Spawns every 1500 points. Sinks underwater from city waterline.
+- **Barrier Repair** ("Barrier"): Restores 3 city HP. Spawns every 1200 points. Sinks underwater from city waterline.
+- **Ammo Crate** (gold): Fully restores ammo. Spawns at world edges when ammo drops below threshold.
+- **Rare Ammo Drop** (blue, "+20"): Grants 20 ammo. Spawns periodically every 40–80 seconds, despawns after 20s.
+- Underwater pickups bob gently when settled and blink before despawning (18 seconds).
 - Only one of each type can exist at a time.
-- Power-ups drop from the city waterline and slowly sink to a target depth.
-- They bob gently when settled and blink before despawning (18 seconds).
 
 ### `src/game/waves.ts` — Wave System
 
