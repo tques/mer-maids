@@ -40,6 +40,7 @@ import {
   updateAmmoDrop,
   drawAmmoCrateAlert,
   getAmmoCrateAlert,
+  collideWithDepot,
   MAX_AMMO,
   AMMO_LOW_THRESHOLD,
   AMMO_BOX_SIZE,
@@ -768,7 +769,33 @@ const Index = () => {
           }
         }
 
-        // Powerup rewards based on score (only after 30s into wave to avoid wave-start spawns)
+        // Depot collision — bounce player off depot surface & damage
+        {
+          const depotPush = collideWithDepot(pos.x, pos.y, TRI_SIZE, viewH);
+          if (depotPush) {
+            pos.x = depotPush.x;
+            pos.y = depotPush.y;
+            velRef.current.x = (pos.x < WORLD_WIDTH / 2 ? -1 : 1) * 3.5;
+            velRef.current.y = -2.5;
+            if (invulnRef.current <= 0) {
+              playerHPRef.current -= 1;
+              invulnRef.current = INVULN_DURATION;
+              spawnExplosion(pos.x, pos.y, 15);
+              shake(pos.x < WORLD_WIDTH / 2 ? -1 : 1, -1);
+              if (playerHPRef.current <= 0) {
+                playerLivesRef.current -= 1;
+                if (playerLivesRef.current <= 0) {
+                  gameOverRef.current = true;
+                  setGameOver(true);
+                  setGameOverReason("Crashed into depot!");
+                } else {
+                  playerHPRef.current = PLAYER_MAX_HP;
+                }
+              }
+            }
+          }
+        }
+
         const waveElapsed = waveRef.current.waveTimer;
         if (waveElapsed > 30) {
           checkScoreRewards(scoreRef.current, boatX, boatW, viewH);
@@ -934,20 +961,20 @@ const Index = () => {
             ctx.strokeStyle = "rgba(60, 220, 200, 0.9)";
             ctx.lineWidth = 1;
 
-            // Upper blade (swept back along arch)
+            // Upper blade (wing sitting on top of arch)
             ctx.beginPath();
-            ctx.moveTo(r * 0.5, -r * 0.45);
-            ctx.lineTo(-r * 0.7, -r * 0.7);
-            ctx.lineTo(-r * 0.3, -r * 0.35);
+            ctx.moveTo(r * 0.6, -r * 0.3);
+            ctx.lineTo(-r * 0.15, -r * 0.55);
+            ctx.lineTo(-r * 0.05, -r * 0.28);
             ctx.closePath();
             ctx.fill();
             ctx.stroke();
 
-            // Lower blade (swept back along arch)
+            // Lower blade (wing sitting on bottom of arch)
             ctx.beginPath();
-            ctx.moveTo(r * 0.5, r * 0.45);
-            ctx.lineTo(-r * 0.7, r * 0.7);
-            ctx.lineTo(-r * 0.3, r * 0.35);
+            ctx.moveTo(r * 0.6, r * 0.3);
+            ctx.lineTo(-r * 0.15, r * 0.55);
+            ctx.lineTo(-r * 0.05, r * 0.28);
             ctx.closePath();
             ctx.fill();
             ctx.stroke();

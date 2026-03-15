@@ -473,11 +473,7 @@ export function drawAmmoDepots(ctx: CanvasRenderingContext2D, viewH: number) {
 
   ctx.save();
 
-  // ---- Underwater shadow ----
-  ctx.beginPath();
-  ctx.ellipse(depot.x, topY + hd + 5, hw * 0.6, 8, 0, 0, Math.PI * 2);
-  ctx.fillStyle = "rgba(10, 20, 40, 0.25)";
-  ctx.fill();
+  // (shadow removed)
 
   // ---- Platform hull ----
   const baseR = 8;
@@ -896,4 +892,32 @@ export function drawAmmoCrateAlert(ctx: CanvasRenderingContext2D, hudX: number, 
       ctx.fillText("▼ AMMO CRATE LAUNCHED ▼", hudX, hudY);
     }
   }
+}
+
+// ==================== DEPOT COLLISION ====================
+
+/**
+ * Check if the player collides with the depot platform (top surface only).
+ * Returns push-out position or null.
+ */
+export function collideWithDepot(
+  px: number, py: number, radius: number, viewH: number
+): { x: number; y: number } | null {
+  if (!depot) return null;
+  const surfaceY = getWaterSurfaceY(viewH);
+  const waveY = getWaveY(depot.x, surfaceY);
+  const topY = waveY - 10;
+  const hw = DEPOT_WIDTH / 2;
+
+  if (px < depot.x - hw - radius || px > depot.x + hw + radius) return null;
+  if (py > topY + 5) return null;
+  if (py < topY - radius - 40) return null;
+
+  const inX = px > depot.x - hw + 5 && px < depot.x + hw - 5;
+  const inY = py > topY - radius && py < topY + 5;
+
+  if (inX && inY) {
+    return { x: px, y: topY - radius - 1 };
+  }
+  return null;
 }
