@@ -180,8 +180,8 @@ export function getAmmoCrateAlert() { return ammoCrateAlert; }
 /** Get the current rare ammo drop (or null) */
 export function getAmmoDrop() { return ammoDrop; }
 
-/** Get the ammo depot platforms */
-export function getDepots() { return depots; }
+/** Get the ammo depot platform (or null) */
+export function getDepot() { return depot; }
 
 // ==================== UNDERWATER PICKUP SPAWNING ====================
 
