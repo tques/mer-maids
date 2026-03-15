@@ -949,6 +949,7 @@ const Index = () => {
 
           // Mech arch/crescent shape — aquatic teal
           const r = TRI_SIZE * 0.9;
+          const bladesActive = playerHPRef.current >= PLAYER_MAX_HP;
           ctx.beginPath();
           ctx.arc(0, 0, r, -Math.PI * 0.55, Math.PI * 0.55, false);
           ctx.lineTo(r * 0.3, TRI_SIZE * 0.35);
@@ -957,9 +958,20 @@ const Index = () => {
           ctx.closePath();
           ctx.fillStyle = isInvuln ? "#88ddff" : "#00b894";
           ctx.fill();
-          ctx.strokeStyle = isInvuln ? "#66ccee" : "#00856a";
-          ctx.lineWidth = 1;
-          ctx.stroke();
+          if (bladesActive) {
+            // Glowing aqua edge when blades are active
+            ctx.shadowColor = "rgba(100, 255, 235, 0.7)";
+            ctx.shadowBlur = 10;
+            ctx.strokeStyle = "rgba(100, 255, 235, 0.9)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.shadowColor = "transparent";
+            ctx.shadowBlur = 0;
+          } else {
+            ctx.strokeStyle = isInvuln ? "#66ccee" : "#00856a";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
           // Visor / eye slit
           ctx.beginPath();
           ctx.arc(r * 0.35, 0, r * 0.12, 0, Math.PI * 2);
