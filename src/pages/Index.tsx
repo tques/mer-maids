@@ -569,7 +569,8 @@ const Index = () => {
           if (hasBlades) {
             const ramScore = checkRamCollisions(pos.x, pos.y, TRI_SIZE);
             const gunboatRamScore = checkRamGunboat(pos.x, pos.y, TRI_SIZE, viewH);
-            const totalRamScore = ramScore + gunboatRamScore;
+            const mineRamScore = checkRamMine(pos.x, pos.y, TRI_SIZE);
+            const totalRamScore = ramScore + gunboatRamScore + mineRamScore;
             if (totalRamScore > 0) {
               scoreRef.current += totalRamScore;
               shake(Math.cos(angle), Math.sin(angle));
