@@ -881,7 +881,7 @@ const Index = () => {
         }
 
         // Powerups
-        drawPowerups(ctx);
+        drawPickups(ctx);
 
         // Player bullets (beam-like, no shadowBlur for performance)
         for (const b of bulletsRef.current) {
