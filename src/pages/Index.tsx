@@ -142,6 +142,8 @@ const Index = () => {
   const useRightStickRef = useRef(false);
   const [pauseMenuIndex, setPauseMenuIndex] = useState(0);
   const pauseMenuIndexRef = useRef(0);
+  const [musicVolume, setMusicVolume] = useState(0.4);
+  const musicRef = useRef<HTMLAudioElement | null>(null);
   const gamepadAimingRef = useRef(false); // true when gamepad stick was last used for aiming
   const lastGamepadAngleRef = useRef(0); // remember last stick angle when stick returns to center
   const loopRef = useRef<(() => void) | null>(null);
@@ -193,6 +195,12 @@ const Index = () => {
     };
     resize();
     window.addEventListener("resize", resize);
+
+    // Setup background music
+    const audio = new Audio("/audio/background-music.mp3");
+    audio.loop = true;
+    audio.volume = 0.4;
+    musicRef.current = audio;
 
     const onMouseMove = (e: MouseEvent) => {
       if (gamepadAimingRef.current) return; // ignore mouse movement while gamepad is active
@@ -337,7 +345,7 @@ const Index = () => {
       }
 
       // Handle pause menu navigation with gamepad
-      const PAUSE_MENU_COUNT = 3;
+      const PAUSE_MENU_COUNT = 4;
       if (pausedRef.current && gp.connected) {
         const dpadUpPressed = gp.dpadUp && !gpDpadUpPrev.current;
         const dpadDownPressed = gp.dpadDown && !gpDpadDownPrev.current;
@@ -364,7 +372,7 @@ const Index = () => {
             const newVal = !useRightStickRef.current;
             useRightStickRef.current = newVal;
             setUseRightStick(newVal);
-          } else if (pauseMenuIndexRef.current === 2) {
+          } else if (pauseMenuIndexRef.current === 3) {
             window.location.reload();
           }
         }
@@ -1085,6 +1093,7 @@ const Index = () => {
         resetPickups(WORLD_WIDTH);
         resetJetTrail();
         fuelRef.current = MAX_FUEL;
+        if (musicRef.current) { musicRef.current.currentTime = 0; musicRef.current.play().catch(() => {}); }
       }
 
       // Game over: A to restart
@@ -1095,7 +1104,7 @@ const Index = () => {
       // Paused: handled in game loop above
       // But we need to keep polling when paused since game loop stops
       if (pausedRef.current && gp.connected) {
-        const PAUSE_MENU_COUNT = 3;
+        const PAUSE_MENU_COUNT = 4;
         const dpadUpPressed = gp.dpadUp && !gpDpadUpPrev.current;
         const dpadDownPressed = gp.dpadDown && !gpDpadDownPrev.current;
         gpDpadUpPrev.current = gp.dpadUp;
@@ -1121,7 +1130,7 @@ const Index = () => {
             const newVal = !useRightStickRef.current;
             useRightStickRef.current = newVal;
             setUseRightStick(newVal);
-          } else if (pauseMenuIndexRef.current === 2) {
+          } else if (pauseMenuIndexRef.current === 3) {
             window.location.reload();
           }
         }
@@ -1164,6 +1173,7 @@ const Index = () => {
             resetPickups(WORLD_WIDTH);
             resetJetTrail();
             fuelRef.current = MAX_FUEL;
+            if (musicRef.current) { musicRef.current.currentTime = 0; musicRef.current.play().catch(() => {}); }
           }}
         >
           <div
@@ -1316,18 +1326,49 @@ const Index = () => {
             >
               {pauseMenuIndex === 1 ? "► " : "  "}Stick: {useRightStick ? "RIGHT" : "LEFT"}
             </button>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 text-sm tracking-widest uppercase border cursor-pointer"
+            <div
+              className="px-6 py-3 text-sm tracking-widest uppercase border"
               style={{
-                color: pauseMenuIndex === 2 ? "#D93636" : "#888",
-                borderColor: pauseMenuIndex === 2 ? "#D93636" : "#555",
-                backgroundColor: pauseMenuIndex === 2 ? "rgba(217,54,54,0.1)" : "transparent",
+                color: pauseMenuIndex === 2 ? "#f7d794" : "#888",
+                borderColor: pauseMenuIndex === 2 ? "#f7d794" : "#555",
+                backgroundColor: pauseMenuIndex === 2 ? "rgba(247,215,148,0.1)" : "transparent",
                 fontFamily: "var(--font-mono)",
                 minWidth: "280px",
               }}
             >
-              {pauseMenuIndex === 2 ? "► " : "  "}Restart
+              <div className="flex items-center gap-3">
+                <span>{pauseMenuIndex === 2 ? "► " : "  "}Music</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={musicVolume}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    setMusicVolume(v);
+                    if (musicRef.current) musicRef.current.volume = v;
+                  }}
+                  className="flex-1 accent-[#f7d794] cursor-pointer"
+                  style={{ height: "4px" }}
+                />
+                <span style={{ fontSize: "10px", minWidth: "28px", textAlign: "right" }}>
+                  {Math.round(musicVolume * 100)}%
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 text-sm tracking-widest uppercase border cursor-pointer"
+              style={{
+                color: pauseMenuIndex === 3 ? "#D93636" : "#888",
+                borderColor: pauseMenuIndex === 3 ? "#D93636" : "#555",
+                backgroundColor: pauseMenuIndex === 3 ? "rgba(217,54,54,0.1)" : "transparent",
+                fontFamily: "var(--font-mono)",
+                minWidth: "280px",
+              }}
+            >
+              {pauseMenuIndex === 3 ? "► " : "  "}Restart
             </button>
           </div>
           <div
