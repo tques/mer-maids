@@ -453,13 +453,13 @@ const Index = () => {
       const wasSubmerged = wasSubmergedRef.current;
       const speedMult = submerged ? WATER_SPEED_FACTOR : 1;
 
-      // Splash on entry/exit
-      if (submerged && !wasSubmerged) {
-        const vy = pos.y - lastPosRef.current.y;
-        spawnSplash(pos.x, getWaterSurfaceY(viewH), vy, true);
-      } else if (!submerged && wasSubmerged) {
-        const vy = pos.y - lastPosRef.current.y;
-        spawnSplash(pos.x, getWaterSurfaceY(viewH), vy, false);
+      // Splash on entry/exit — only when moving with enough velocity to avoid idle surface spam
+      const crossingVy = pos.y - lastPosRef.current.y;
+      const crossingSpeed = Math.abs(crossingVy) + Math.abs(pos.x - lastPosRef.current.x) * 0.3;
+      if (submerged && !wasSubmerged && crossingSpeed > 0.5) {
+        spawnSplash(pos.x, getWaterSurfaceY(viewH), crossingVy, true);
+      } else if (!submerged && wasSubmerged && crossingSpeed > 0.5) {
+        spawnSplash(pos.x, getWaterSurfaceY(viewH), crossingVy, false);
       }
       wasSubmergedRef.current = submerged;
       lastPosRef.current = { x: pos.x, y: pos.y };
@@ -539,20 +539,23 @@ const Index = () => {
           vel.y -= buoyancyForce * dtScale;
         }
 
-        // Ship shake during boost
+        // Ship shake during boost — more aggressive
         if (isBoosting && !submerged) {
-          pos.x += (Math.random() - 0.5) * 1.2 * dtScale;
-          pos.y += (Math.random() - 0.5) * 1.2 * dtScale;
+          pos.x += (Math.random() - 0.5) * 2.4 * dtScale;
+          pos.y += (Math.random() - 0.5) * 2.4 * dtScale;
         }
 
         pos.x += vel.x * dtScale;
         pos.y += vel.y * dtScale;
 
-        // Spawn jet trail when moving (boosted = more particles)
-        const jetThrottle = isBoosting ? Math.min(throttleRef.current * 1.6, 1) : throttleRef.current;
+        // Spawn jet trail when moving (boosted = much more particles)
+        const jetThrottle = isBoosting ? Math.min(throttleRef.current * 1.8, 1) : throttleRef.current;
         spawnJetParticles(pos.x, pos.y, angle, jetThrottle, submerged, fuelRef.current, MAX_FUEL);
         if (isBoosting && !submerged) {
+          // Triple extra particle spawns for aggressive boost trail
           spawnJetParticles(pos.x, pos.y, angle, 1, submerged, fuelRef.current, MAX_FUEL);
+          spawnJetParticles(pos.x, pos.y, angle, 1, submerged, fuelRef.current, MAX_FUEL);
+          spawnJetParticles(pos.x, pos.y, angle, 0.8, submerged, fuelRef.current, MAX_FUEL);
         }
 
         wasMovingRef.current = true;
@@ -1221,6 +1224,10 @@ const Index = () => {
                 <p>
                   <span style={{ color: "#5a9" }}>BARREL ROLL</span> — Dodge enemy fire with a quick lateral roll.
                 </p>
+                <p>
+                  <span style={{ color: "#ff7675" }}>BOOST</span> — Hold{" "}
+                  <span style={{ color: "#ff7675" }}>W</span> for high-speed boost. Uses more fuel, locks steering, deflects missiles.
+                </p>
               </div>
             </div>
 
@@ -1238,6 +1245,9 @@ const Index = () => {
                 </p>
                 <p>
                   <span style={{ color: "#ccc" }}>A / D</span> — Barrel Roll
+                </p>
+                <p>
+                  <span style={{ color: "#ccc" }}>W</span> — Boost
                 </p>
                 <p>
                   <span style={{ color: "#ccc" }}>ESC</span> — Pause
