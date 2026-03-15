@@ -1279,7 +1279,7 @@ const Index = () => {
             waveRef.current = createWaveState();
             resetEnemies();
             resetSubmarines();
-            resetPowerups();
+            resetPickups();
             resetJetTrail();
             fuelRef.current = MAX_FUEL;
           }}
