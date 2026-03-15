@@ -894,6 +894,9 @@ const Index = () => {
         // Enemies, bombs, explosions
         drawEnemies(ctx);
 
+        // Gunboats (on water surface)
+        drawGunboats(ctx, viewH);
+
         // Boat
         if (boatRef.current) {
           const barrierUp = shipHPRef.current > 3;
