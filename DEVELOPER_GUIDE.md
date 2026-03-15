@@ -38,6 +38,7 @@ src/
 │   ├── boat.ts            # Floating city — platform, buildings, dome barrier
 │   ├── effects.ts          # Shared visual effects — explosions, score popups
 │   ├── enemies.ts         # Air enemies — bombers, chasers, missiles, bombs
+│   ├── gunboat.ts         # Armored surface enemy — barrier dome, underwater-only vulnerability
 │   ├── submarine.ts       # Underwater enemies — submarines that attack the city
 │   ├── pickups.ts         # All collectibles — health kits, repair kits, ammo crates
 │   ├── waves.ts           # Wave progression system — difficulty scaling
