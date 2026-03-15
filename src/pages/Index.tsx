@@ -712,6 +712,7 @@ const Index = () => {
           }
         }
         updateGunboats(dt, WORLD_WIDTH, viewH, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing, boatX, boatW);
+        updateMinelayer(dt, WORLD_WIDTH, viewH, waveDiff, wave.enemiesFleeing);
         const result = checkBulletCollisions(bulletsRef.current);
         bulletsRef.current = result.remaining;
         scoreRef.current += result.score;
@@ -721,6 +722,9 @@ const Index = () => {
         const gunboatResult = checkBulletHitsGunboat(bulletsRef.current, viewH);
         bulletsRef.current = gunboatResult.remaining;
         scoreRef.current += gunboatResult.score;
+        const mineResult = checkBulletHitsMine(bulletsRef.current);
+        bulletsRef.current = mineResult.remaining;
+        scoreRef.current += mineResult.score;
       }
 
       // Enemy projectile collisions
