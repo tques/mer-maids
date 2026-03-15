@@ -87,7 +87,6 @@ interface Bullet {
   id: number;
 }
 
-
 const Index = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -199,7 +198,7 @@ const Index = () => {
     // Setup background music
     const audio = new Audio("/audio/background-music.mp3");
     audio.loop = true;
-    audio.volume = 0.4;
+    audio.volume = 0.0;
     musicRef.current = audio;
 
     const onMouseMove = (e: MouseEvent) => {
@@ -773,14 +772,8 @@ const Index = () => {
 
       // === AMMO PICKUP SYSTEMS (managed by pickups.ts) ===
       if (gameStartedRef.current) {
-        ammoRef.current = updateAmmoCrate(
-          ammoRef.current, pos.x, pos.y, TRI_SIZE,
-          WORLD_WIDTH, viewH, frameDelta,
-        );
-        ammoRef.current = updateAmmoDrop(
-          ammoRef.current, pos.x, pos.y, TRI_SIZE,
-          WORLD_WIDTH, viewH, dt,
-        );
+        ammoRef.current = updateAmmoCrate(ammoRef.current, pos.x, pos.y, TRI_SIZE, WORLD_WIDTH, viewH, frameDelta);
+        ammoRef.current = updateAmmoDrop(ammoRef.current, pos.x, pos.y, TRI_SIZE, WORLD_WIDTH, viewH, dt);
       }
 
       // Update water particles and jet trail
@@ -1093,7 +1086,10 @@ const Index = () => {
         resetPickups(WORLD_WIDTH);
         resetJetTrail();
         fuelRef.current = MAX_FUEL;
-        if (musicRef.current) { musicRef.current.currentTime = 0; musicRef.current.play().catch(() => {}); }
+        if (musicRef.current) {
+          musicRef.current.currentTime = 0;
+          musicRef.current.play().catch(() => {});
+        }
       }
 
       // Game over: A to restart
@@ -1173,7 +1169,10 @@ const Index = () => {
             resetPickups(WORLD_WIDTH);
             resetJetTrail();
             fuelRef.current = MAX_FUEL;
-            if (musicRef.current) { musicRef.current.currentTime = 0; musicRef.current.play().catch(() => {}); }
+            if (musicRef.current) {
+              musicRef.current.currentTime = 0;
+              musicRef.current.play().catch(() => {});
+            }
           }}
         >
           <div
