@@ -864,71 +864,7 @@ const Index = () => {
           ctx.restore();
         }
 
-        // Ammo box
-        const box = ammoBoxRef.current;
-        if (box) {
-          const t = (performance.now() - box.spawnTime) / 400;
-          const bobY = box.y + Math.sin(t) * 4;
-          const s = AMMO_BOX_SIZE;
-          ctx.save();
-          ctx.translate(box.x, bobY);
-          // Crate body
-          ctx.fillStyle = "#c8a020";
-          ctx.fillRect(-s / 2, -s / 2, s, s);
-          // Lid highlight
-          ctx.fillStyle = "#f0c830";
-          ctx.fillRect(-s / 2, -s / 2, s, s * 0.35);
-          // Bullet icons (3 small vertical rounds)
-          ctx.fillStyle = "#805a00";
-          const bw = 3,
-            bh = 10;
-          ctx.fillRect(-bw * 2, -bh / 2 + 2, bw, bh);
-          ctx.fillRect(-bw / 2, -bh / 2 + 2, bw, bh);
-          ctx.fillRect(bw, -bh / 2 + 2, bw, bh);
-          // Bullet tips
-          ctx.fillStyle = "#d4a017";
-          ctx.beginPath();
-          ctx.arc(-bw * 2 + bw / 2, -bh / 2 + 2, bw / 2 + 0.5, Math.PI, 0);
-          ctx.arc(-bw / 2 + bw / 2, -bh / 2 + 2, bw / 2 + 0.5, Math.PI, 0);
-          ctx.arc(bw + bw / 2, -bh / 2 + 2, bw / 2 + 0.5, Math.PI, 0);
-          ctx.fill();
-          // Border
-          ctx.strokeStyle = "#604800";
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(-s / 2, -s / 2, s, s);
-          // "Ammo" label
-          ctx.fillStyle = "#fff";
-          ctx.font = "bold 8px monospace";
-          ctx.textAlign = "center";
-          ctx.fillText("Ammo", 0, -s / 2 - 6);
-          ctx.restore();
-        }
-
-        // Rare ammo drop
-        const drop = ammoDropBoxRef.current;
-        if (drop) {
-          const t = (performance.now() - drop.spawnTime) / 500;
-          const bobY = drop.y + Math.sin(t) * 5;
-          const s = AMMO_BOX_SIZE * 0.85;
-          const fadeAge = (performance.now() - drop.spawnTime) / 20000;
-          const blinkAlpha = fadeAge > 0.7 ? (Math.sin(performance.now() / 150) > 0 ? 1 : 0.3) : 1;
-          ctx.save();
-          ctx.globalAlpha = blinkAlpha;
-          ctx.translate(drop.x, bobY);
-          ctx.fillStyle = "#2a6080";
-          ctx.fillRect(-s / 2, -s / 2, s, s);
-          ctx.fillStyle = "#40a0d0";
-          ctx.fillRect(-s / 2, -s / 2, s, s * 0.3);
-          ctx.strokeStyle = "#1a4060";
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(-s / 2, -s / 2, s, s);
-          ctx.fillStyle = "#fff";
-          ctx.fillStyle = "#fff";
-          ctx.font = "bold 7px monospace";
-          ctx.textAlign = "center";
-          ctx.fillText("+20", 0, 3);
-          ctx.restore();
-        }
+        // Ammo pickups (drawn by pickups.ts alongside health/repair)
 
         // Player triangle
         const isInvuln = invulnRef.current > 0;
