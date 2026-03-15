@@ -82,7 +82,7 @@ export function getBoatTopY(boat: Boat, viewH: number): number {
 export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: number, hpRatio: number = 1, barrierUp: boolean = true) {
   const surfaceY = getWaterSurfaceY(viewH);
   const waveY = getWaveY(boat.x, surfaceY);
-  const topY = waveY - 10;
+  const topY = waveY - 22;
 
   const hw = boat.width / 2;   // Half width for centering
   const hd = boat.hullDepth;
