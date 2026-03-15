@@ -928,6 +928,31 @@ const Index = () => {
           ctx.fillStyle = isInvuln ? "#aaeeff" : "#55efc4";
           ctx.fill();
 
+          // Ram blades — only at full HP
+          if (playerHPRef.current >= PLAYER_MAX_HP) {
+            ctx.fillStyle = "rgba(100, 255, 235, 0.85)";
+            ctx.strokeStyle = "rgba(60, 220, 200, 0.9)";
+            ctx.lineWidth = 1;
+
+            // Upper blade (swept back along arch)
+            ctx.beginPath();
+            ctx.moveTo(r * 0.5, -r * 0.45);
+            ctx.lineTo(-r * 0.7, -r * 0.7);
+            ctx.lineTo(-r * 0.3, -r * 0.35);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Lower blade (swept back along arch)
+            ctx.beginPath();
+            ctx.moveTo(r * 0.5, r * 0.45);
+            ctx.lineTo(-r * 0.7, r * 0.7);
+            ctx.lineTo(-r * 0.3, r * 0.35);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+          }
+
           ctx.shadowColor = "transparent";
           ctx.restore();
         }
