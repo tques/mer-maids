@@ -1104,7 +1104,7 @@ const Index = () => {
       // Paused: handled in game loop above
       // But we need to keep polling when paused since game loop stops
       if (pausedRef.current && gp.connected) {
-        const PAUSE_MENU_COUNT = 3;
+        const PAUSE_MENU_COUNT = 4;
         const dpadUpPressed = gp.dpadUp && !gpDpadUpPrev.current;
         const dpadDownPressed = gp.dpadDown && !gpDpadDownPrev.current;
         gpDpadUpPrev.current = gp.dpadUp;
