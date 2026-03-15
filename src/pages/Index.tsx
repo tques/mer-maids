@@ -1264,6 +1264,9 @@ const Index = () => {
                   <span style={{ color: "#ff7675" }}>BOOST</span> — Hold{" "}
                   <span style={{ color: "#ff7675" }}>W</span> for high-speed boost. Uses more fuel, locks steering, deflects missiles.
                 </p>
+                <p>
+                  <span style={{ color: "#64ffeb" }}>RAM BLADES</span> — At full HP, blades extend from your mech. Boost into enemies to destroy them instantly!
+                </p>
               </div>
             </div>
 
