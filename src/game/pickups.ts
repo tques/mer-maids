@@ -277,7 +277,7 @@ function launchCrateFromDepot(viewH: number, worldWidth: number) {
 
   const surfY = getWaterSurfaceY(viewH);
   const waveY = getWaveY(depot.x, surfY);
-  const cannonY = waveY - 10 - 18; // Cannon sits on platform
+  const cannonY = waveY - 22 - 18; // Cannon sits on platform
 
   // Launch toward center of world
   const launchDir = depot.x < worldWidth / 2 ? 1 : -1;
