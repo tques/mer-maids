@@ -881,32 +881,6 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.restore();
   }
 
-  // ---- Explosions (expanding orange/white circles) ----
-  for (const ex of explosions) {
-    ctx.save();
-    ctx.globalAlpha = ex.life;
-    ctx.beginPath();
-    ctx.arc(ex.x, ex.y, ex.radius, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 165, 50, ${ex.life * 0.6})`;
-    ctx.fill();
-    // Bright inner core
-    ctx.beginPath();
-    ctx.arc(ex.x, ex.y, ex.radius * 0.5, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 255, 200, ${ex.life * 0.8})`;
-    ctx.fill();
-    ctx.restore();
-  }
-
-  // ---- Score Popups (floating "+N" text) ----
-  for (const sp of scorePopups) {
-    ctx.save();
-    ctx.globalAlpha = Math.min(sp.life * 2, 1);
-    ctx.font = "bold 12px monospace";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#f7d794";
-    ctx.shadowColor = "rgba(0,0,0,0.7)";
-    ctx.shadowBlur = 4;
-    ctx.fillText(`+${sp.value}`, sp.x, sp.y);
-    ctx.restore();
-  }
+  // ---- Explosions & Score Popups (drawn by effects.ts) ----
+  drawEffects(ctx);
 }
