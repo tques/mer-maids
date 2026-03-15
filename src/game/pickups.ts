@@ -467,7 +467,7 @@ export function drawAmmoDepots(ctx: CanvasRenderingContext2D, viewH: number) {
   const surfaceY = getWaterSurfaceY(viewH);
 
   const waveY = getWaveY(depot.x, surfaceY);
-  const topY = waveY - 10; // Platform sits above wave
+  const topY = waveY - 22; // Platform sits above wave (raised)
   const hw = DEPOT_WIDTH / 2;
   const hd = DEPOT_HULL_DEPTH;
 
