@@ -40,6 +40,7 @@ import {
   updateAmmoDrop,
   drawAmmoCrateAlert,
   getAmmoCrateAlert,
+  collideWithDepot,
   MAX_AMMO,
   AMMO_LOW_THRESHOLD,
   AMMO_BOX_SIZE,

@@ -893,3 +893,31 @@ export function drawAmmoCrateAlert(ctx: CanvasRenderingContext2D, hudX: number, 
     }
   }
 }
+
+// ==================== DEPOT COLLISION ====================
+
+/**
+ * Check if the player collides with the depot platform (top surface only).
+ * Returns push-out position or null.
+ */
+export function collideWithDepot(
+  px: number, py: number, radius: number, viewH: number
+): { x: number; y: number } | null {
+  if (!depot) return null;
+  const surfaceY = getWaterSurfaceY(viewH);
+  const waveY = getWaveY(depot.x, surfaceY);
+  const topY = waveY - 10;
+  const hw = DEPOT_WIDTH / 2;
+
+  if (px < depot.x - hw - radius || px > depot.x + hw + radius) return null;
+  if (py > topY + 5) return null;
+  if (py < topY - radius - 40) return null;
+
+  const inX = px > depot.x - hw + 5 && px < depot.x + hw - 5;
+  const inY = py > topY - radius && py < topY + 5;
+
+  if (inX && inY) {
+    return { x: px, y: topY - radius - 1 };
+  }
+  return null;
+}
