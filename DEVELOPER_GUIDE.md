@@ -272,4 +272,4 @@ ctx.globalAlpha = 1; // reset
 - **Performance**: The game draws every frame. Avoid creating objects in the render loop — reuse arrays and objects.
 - **Debugging**: Add `console.log` in the game loop sparingly (it runs 60x/sec). Use conditional logging: `if (frameCount % 60 === 0) console.log(...)`.
 - **Canvas state**: Always pair `ctx.save()` with `ctx.restore()` to avoid leaking transforms/styles.
-- **Module state**: Enemy/submarine/powerup arrays are module-level (not React state). Reset them in their `reset*()` functions when starting a new game.
+- **Module state**: Enemy/submarine/pickup arrays are module-level (not React state). Reset them in their `reset*()` functions when starting a new game.
