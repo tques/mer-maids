@@ -934,20 +934,20 @@ const Index = () => {
             ctx.strokeStyle = "rgba(60, 220, 200, 0.9)";
             ctx.lineWidth = 1;
 
-            // Upper blade (swept back along arch)
+            // Upper blade (wing sitting on top of arch)
             ctx.beginPath();
-            ctx.moveTo(r * 0.5, -r * 0.45);
-            ctx.lineTo(-r * 0.7, -r * 0.7);
-            ctx.lineTo(-r * 0.3, -r * 0.35);
+            ctx.moveTo(r * 0.6, -r * 0.3);
+            ctx.lineTo(-r * 0.15, -r * 0.55);
+            ctx.lineTo(-r * 0.05, -r * 0.28);
             ctx.closePath();
             ctx.fill();
             ctx.stroke();
 
-            // Lower blade (swept back along arch)
+            // Lower blade (wing sitting on bottom of arch)
             ctx.beginPath();
-            ctx.moveTo(r * 0.5, r * 0.45);
-            ctx.lineTo(-r * 0.7, r * 0.7);
-            ctx.lineTo(-r * 0.3, r * 0.35);
+            ctx.moveTo(r * 0.6, r * 0.3);
+            ctx.lineTo(-r * 0.15, r * 0.55);
+            ctx.lineTo(-r * 0.05, r * 0.28);
             ctx.closePath();
             ctx.fill();
             ctx.stroke();

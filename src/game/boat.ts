@@ -89,11 +89,7 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
 
   ctx.save();
 
-  // --- Underwater shadow (subtle ellipse below the platform) ---
-  ctx.beginPath();
-  ctx.ellipse(boat.x, topY + hd + 8, hw * 0.7, 16, 0, 0, Math.PI * 2);
-  ctx.fillStyle = "rgba(10, 20, 40, 0.3)";
-  ctx.fill();
+  // (shadow removed)
 
   // --- Platform base — dark rounded rectangle ---
   ctx.beginPath();

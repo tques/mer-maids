@@ -473,11 +473,7 @@ export function drawAmmoDepots(ctx: CanvasRenderingContext2D, viewH: number) {
 
   ctx.save();
 
-  // ---- Underwater shadow ----
-  ctx.beginPath();
-  ctx.ellipse(depot.x, topY + hd + 5, hw * 0.6, 8, 0, 0, Math.PI * 2);
-  ctx.fillStyle = "rgba(10, 20, 40, 0.25)";
-  ctx.fill();
+  // (shadow removed)
 
   // ---- Platform hull ----
   const baseR = 8;
