@@ -491,26 +491,42 @@ export function updateEnemies(
   // ==================== HOMING MISSILE UPDATE ====================
   for (const m of homingMissiles) {
     if (!m.alive) continue;
-    m.life -= dt;
-    if (m.life <= 0) {
+
+    if (!m.deflected) {
+      // Home toward player with limited turn rate
+      const targetAngle = Math.atan2(playerY - m.y, playerX - m.x);
+      let angleDiff = targetAngle - m.angle;
+      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+      m.angle += angleDiff * MISSILE_TURN_RATE;
+    }
+    // Deflected missiles just fly straight in their current angle
+
+    m.x += Math.cos(m.angle) * m.speed;
+    m.y += Math.sin(m.angle) * m.speed;
+
+    // Explode on hitting water surface
+    if (m.y > waterY) {
       m.alive = false;
       spawnExplosion(m.x, m.y, 20);
       continue;
     }
-    // Home toward player with limited turn rate
-    const targetAngle = Math.atan2(playerY - m.y, playerX - m.x);
-    let angleDiff = targetAngle - m.angle;
-    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-    m.angle += angleDiff * MISSILE_TURN_RATE;
-    m.x += Math.cos(m.angle) * m.speed;
-    m.y += Math.sin(m.angle) * m.speed;
+    // Explode on hitting the sky ceiling
+    if (m.y < -50) {
+      m.alive = false;
+      spawnExplosion(m.x, m.y, 20);
+      continue;
+    }
+
     // Update smoke trail
     m.trail.push({ x: m.x, y: m.y, age: 0 });
     for (const t of m.trail) t.age += dt;
     m.trail = m.trail.filter((t) => t.age < 0.5);
-    // Cull if off-screen
-    if (Math.abs(m.x - playerX) > viewHalfW * 4) m.alive = false;
+    // Cull if very far off-screen
+    if (Math.abs(m.x - playerX) > viewHalfW * 4) {
+      m.alive = false;
+      spawnExplosion(m.x, m.y, 15);
+    }
   }
 
   // ==================== BOMB UPDATE ====================
