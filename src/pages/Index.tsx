@@ -1144,7 +1144,7 @@ const Index = () => {
       const hudX = 12;
       const hudY = 12;
       const panelW = 230;
-      const panelH = 130;
+      const panelH = 98;
 
       // --- Helper: draw angled glassy panel ---
       const drawPanel = (x: number, y: number, w: number, h: number, cutTL = 12, cutBR = 12) => {
