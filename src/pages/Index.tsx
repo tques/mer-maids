@@ -298,10 +298,10 @@ const Index = () => {
           const dir = key === "a" ? -1 : 1;
 
           // Introduce a time-based factor to create wavy motion
-          const timeFactor = performance.now() * 0.005; // Adjust the multiplier for more or less wave effect
+          //const timeFactor = performance.now() * 0.005; // Adjust the multiplier for more or less wave effect
 
-          const perpX = (-Math.sin(angle) + Math.cos(timeFactor)) * dir;
-          const perpY = (Math.cos(angle) - Math.sin(timeFactor)) * dir;
+          const perpX = (-Math.sin(angle) + Math.cos(1)) * dir;
+          const perpY = (Math.cos(angle) - Math.sin(1)) * dir;
 
           roll.active = true;
           roll.dir = dir as -1 | 1;
