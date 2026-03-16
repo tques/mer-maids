@@ -20,6 +20,7 @@
 
 import { getWaterSurfaceY } from "./water";
 import { spawnExplosion, updateEffects, drawEffects, resetEffects } from "./effects";
+import { checkMissileHitsMineOrPlane } from "./minelayer";
 // Re-export effects for backward compatibility
 export { spawnExplosion, getExplosions, getScorePopups } from "./effects";
 export type { Explosion, ScorePopup } from "./effects";
