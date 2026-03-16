@@ -1083,35 +1083,44 @@ const Index = () => {
           ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
           ctx.fill();
 
-          // Ram blades — glassy translucent wings
+          // Ram blades — swept-back fighter jet wings (symmetric)
           if (playerHPRef.current >= PLAYER_MAX_HP) {
             const bladeAlpha = 0.7 + Math.sin(glassTime) * 0.15;
 
-            // Upper blade
-            ctx.beginPath();
-            ctx.moveTo(r * 0.6, -r * 0.3);
-            ctx.lineTo(-r * 0.15, -r * 0.55);
-            ctx.lineTo(-r * 0.05, -r * 0.28);
-            ctx.closePath();
-            const bladeGrad1 = ctx.createLinearGradient(r * 0.6, -r * 0.3, -r * 0.15, -r * 0.55);
-            bladeGrad1.addColorStop(0, `rgba(160, 255, 240, ${bladeAlpha})`);
-            bladeGrad1.addColorStop(1, `rgba(80, 230, 210, ${bladeAlpha * 0.5})`);
-            ctx.fillStyle = bladeGrad1;
-            ctx.fill();
-            ctx.strokeStyle = "rgba(180, 255, 250, 0.6)";
-            ctx.lineWidth = 1;
-            ctx.stroke();
+            // Wing shape helper — draws one swept-back delta wing
+            const drawWing = (sign: number) => {
+              ctx.beginPath();
+              // Leading edge root (near fuselage)
+              ctx.moveTo(r * 0.3, sign * r * 0.18);
+              // Wing tip (swept back and out)
+              ctx.lineTo(-r * 0.55, sign * r * 0.7);
+              // Trailing edge tip
+              ctx.lineTo(-r * 0.45, sign * r * 0.55);
+              // Trailing edge root
+              ctx.lineTo(-r * 0.1, sign * r * 0.18);
+              ctx.closePath();
 
-            // Lower blade
-            ctx.beginPath();
-            ctx.moveTo(r * 0.6, r * 0.3);
-            ctx.lineTo(-r * 0.15, r * 0.55);
-            ctx.lineTo(-r * 0.05, r * 0.28);
-            ctx.closePath();
-            ctx.fillStyle = bladeGrad1;
-            ctx.fill();
-            ctx.strokeStyle = "rgba(180, 255, 250, 0.6)";
-            ctx.stroke();
+              const wGrad = ctx.createLinearGradient(r * 0.3, sign * r * 0.18, -r * 0.55, sign * r * 0.7);
+              wGrad.addColorStop(0, `rgba(160, 255, 240, ${bladeAlpha})`);
+              wGrad.addColorStop(0.6, `rgba(100, 240, 220, ${bladeAlpha * 0.7})`);
+              wGrad.addColorStop(1, `rgba(60, 210, 200, ${bladeAlpha * 0.35})`);
+              ctx.fillStyle = wGrad;
+              ctx.fill();
+              ctx.strokeStyle = "rgba(180, 255, 250, 0.6)";
+              ctx.lineWidth = 1;
+              ctx.stroke();
+
+              // Wing highlight stripe
+              ctx.beginPath();
+              ctx.moveTo(r * 0.2, sign * r * 0.2);
+              ctx.lineTo(-r * 0.35, sign * r * 0.52);
+              ctx.strokeStyle = `rgba(255, 255, 255, ${bladeAlpha * 0.3})`;
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            };
+
+            drawWing(-1); // Upper wing
+            drawWing(1);  // Lower wing
           }
 
           ctx.shadowColor = "transparent";
