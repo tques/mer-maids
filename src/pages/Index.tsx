@@ -1391,8 +1391,8 @@ const Index = () => {
       for (let i = 0; i < ammoLights; i++) {
         const sx = stripX + i * (segW + segGap);
         const lit = i < litAmmo;
-        const sColor = ammoLow ? "#ffcc00" : "#00ccff";
-        const sGlow = ammoLow ? "#ff9900" : "#0088bb";
+        const sColor = ammoLow ? "#ffcc00" : "#c0c8d0";
+        const sGlow = ammoLow ? "#ff9900" : "#8890a0";
         drawStripSegment(sx, stripY, segW, segH, lit, sColor, sGlow, i === 0, i === ammoLights - 1);
       }
       ctx.font = "bold 9px monospace";
