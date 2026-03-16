@@ -1070,10 +1070,11 @@ const Index = () => {
           ctx.fillStyle = bodyGrad;
           ctx.fill();
 
-          // Glass highlight — bright specular stripe
+          // Glass highlight — symmetric specular stripe on upper hull
           ctx.beginPath();
-          ctx.arc(0, 0, r * 0.88, -Math.PI * 0.48, -Math.PI * 0.1, false);
-          ctx.arc(0, 0, r * 0.7, -Math.PI * 0.1, -Math.PI * 0.48, true);
+          ctx.moveTo(r * 0.75, -r * 0.1);
+          ctx.quadraticCurveTo(r * 0.4, -r * 0.4, -r * 0.3, -r * 0.32);
+          ctx.quadraticCurveTo(r * 0.3, -r * 0.28, r * 0.75, -r * 0.1);
           ctx.closePath();
           ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
           ctx.fill();
