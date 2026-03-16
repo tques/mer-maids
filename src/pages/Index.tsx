@@ -1344,12 +1344,14 @@ const Index = () => {
       };
 
       // LIVES — green round indicator lights
+      const labelX = lx + 42; // consistent alignment point for all indicators
       ctx.font = "bold 10px monospace";
       ctx.fillStyle = "rgba(100,255,150,0.7)";
+      ctx.textAlign = "right";
+      ctx.fillText("LIVES", labelX - 4, ly);
       ctx.textAlign = "left";
-      ctx.fillText("LIVES", lx, ly);
       for (let i = 0; i < PLAYER_LIVES; i++) {
-        const lcx = lx + 52 + i * 24;
+        const lcx = labelX + 4 + i * 24;
         const lcy = ly - 4;
         drawRoundLight(lcx, lcy, 7, i < playerLivesRef.current, "#50ff90", "#1a8040");
       }
