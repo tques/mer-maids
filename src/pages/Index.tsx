@@ -294,12 +294,6 @@ const Index = () => {
           const dir = key === "a" ? -1 : 1;
           const perpX = -Math.sin(angle) * dir;
           const perpY = Math.cos(angle) * dir;
-
-          // ✅ Increase the magnitude of movement — this scales how far the player moves
-          const rollDistanceFactor = 10; // ← Increase this to make the roll more extreme (e.g., 5 to 20)
-          const moveX = perpX * rollDistanceFactor;
-          const moveY = perpY * rollDistanceFactor;
-
           roll.active = true;
           roll.dir = dir as -1 | 1;
           roll.startTime = performance.now();
@@ -308,13 +302,6 @@ const Index = () => {
           roll.perpX = perpX;
           roll.perpY = perpY;
           roll.spinAngle = 0;
-
-          // ✅ Apply the movement to the player's position (if you're updating position over time)
-          // This should be done in your animation loop (e.g., in a requestAnimationFrame update)
-          // For now, we just store the movement vector so it can be used in the animation
-          roll.moveX = moveX;
-          roll.moveY = moveY;
-
           deflectMissiles(); // Rolling throws off homing missiles
         }
       }
@@ -703,18 +690,7 @@ const Index = () => {
           resetPickups(WORLD_WIDTH);
         }
 
-        const deflectScore = updateEnemies(
-          dt,
-          WORLD_WIDTH,
-          viewH,
-          boatX,
-          boatW,
-          pos.x,
-          pos.y,
-          viewW / 2,
-          waveDiff,
-          wave.enemiesFleeing,
-        );
+        const deflectScore = updateEnemies(dt, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
         if (deflectScore > 0) scoreRef.current += deflectScore;
         const subDmg = updateSubmarinesWithDamage(
           dt,
@@ -908,7 +884,7 @@ const Index = () => {
       skyGrad.addColorStop(0.48, "#5a2868");
       skyGrad.addColorStop(0.56, "#8b3a62");
       skyGrad.addColorStop(0.63, "#c04e3e");
-      skyGrad.addColorStop(0.7, "#e07830");
+      skyGrad.addColorStop(0.70, "#e07830");
       skyGrad.addColorStop(0.76, "#f0a040");
       skyGrad.addColorStop(0.82, "#f7c864");
       skyGrad.addColorStop(0.88, "#fff0c0");
@@ -924,12 +900,12 @@ const Index = () => {
       const starOffX = camCenter * starParallax;
       ctx.fillStyle = "#fff";
       for (let i = 0; i < 120; i++) {
-        const baseX = (((i * 137 + starSeed) % 1000) / 1000) * viewW * 2;
-        const sy = (((i * 211 + starSeed * 3) % 1000) / 1000) * viewH * 0.45;
-        const sr = 0.4 + (((i * 73) % 100) / 100) * 1.2;
+        const baseX = ((i * 137 + starSeed) % 1000) / 1000 * viewW * 2;
+        const sy = ((i * 211 + starSeed * 3) % 1000) / 1000 * viewH * 0.45;
+        const sr = 0.4 + ((i * 73) % 100) / 100 * 1.2;
         const twinkle = 0.4 + Math.sin(performance.now() * 0.001 + i * 1.7) * 0.3;
         ctx.globalAlpha = twinkle;
-        const sx = ((((baseX - starOffX) % (viewW * 2)) + viewW * 2) % (viewW * 2)) - viewW * 0.5;
+        const sx = ((baseX - starOffX) % (viewW * 2) + viewW * 2) % (viewW * 2) - viewW * 0.5;
         ctx.beginPath();
         ctx.arc(sx, sy, sr, 0, Math.PI * 2);
         ctx.fill();
@@ -943,12 +919,11 @@ const Index = () => {
       ctx.globalAlpha = 0.12;
       for (let i = 0; i < 8; i++) {
         const seed = i * 347 + 13;
-        const baseX = ((seed % 2000) / 2000) * viewW * 3;
-        const cy = viewH * 0.25 + ((seed % 300) / 300) * viewH * 0.35;
+        const baseX = (seed % 2000) / 2000 * viewW * 3;
+        const cy = viewH * 0.25 + (seed % 300) / 300 * viewH * 0.35;
         const cw2 = 80 + (seed % 120);
         const ch2 = 8 + (seed % 12);
-        const cx =
-          ((((baseX - cloudOffX + cloudTime * viewW * 20) % (viewW * 3)) + viewW * 3) % (viewW * 3)) - viewW * 0.5;
+        const cx = ((baseX - cloudOffX + cloudTime * viewW * 20) % (viewW * 3) + viewW * 3) % (viewW * 3) - viewW * 0.5;
         ctx.fillStyle = i < 4 ? "rgba(200,150,180,0.3)" : "rgba(255,200,150,0.2)";
         ctx.beginPath();
         ctx.ellipse(cx, cy, cw2, ch2, 0, 0, Math.PI * 2);
@@ -962,17 +937,18 @@ const Index = () => {
       ctx.globalAlpha = 0.08;
       for (let i = 0; i < 5; i++) {
         const seed = i * 523 + 77;
-        const baseX = ((seed % 3000) / 3000) * viewW * 4;
-        const cy = viewH * 0.35 + ((seed % 200) / 200) * viewH * 0.25;
+        const baseX = (seed % 3000) / 3000 * viewW * 4;
+        const cy = viewH * 0.35 + (seed % 200) / 200 * viewH * 0.25;
         const cw2 = 120 + (seed % 180);
         const ch2 = 12 + (seed % 18);
-        const cx = ((((baseX - nearCloudOffX) % (viewW * 4)) + viewW * 4) % (viewW * 4)) - viewW * 0.5;
+        const cx = ((baseX - nearCloudOffX) % (viewW * 4) + viewW * 4) % (viewW * 4) - viewW * 0.5;
         ctx.fillStyle = "rgba(255,220,180,0.25)";
         ctx.beginPath();
         ctx.ellipse(cx, cy, cw2, ch2, 0.1, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
+
 
       // Apply camera translation (pixel-snapped to remove 1px seams at wrap boundaries)
       const drawCamX = Math.round(finalCamX * ZOOM) / ZOOM;
@@ -1187,7 +1163,7 @@ const Index = () => {
             };
 
             drawWing(-1); // Upper wing
-            drawWing(1); // Lower wing
+            drawWing(1);  // Lower wing
           }
 
           ctx.shadowColor = "transparent";
@@ -1226,16 +1202,7 @@ const Index = () => {
       };
 
       // --- Helper: draw a sleek bar with glow ---
-      const drawBar = (
-        x: number,
-        y: number,
-        w: number,
-        h: number,
-        fill: number,
-        color1: string,
-        color2: string,
-        low: boolean,
-      ) => {
+      const drawBar = (x: number, y: number, w: number, h: number, fill: number, color1: string, color2: string, low: boolean) => {
         // Track background
         ctx.fillStyle = "rgba(0,0,0,0.5)";
         ctx.fillRect(x, y, w, h);
@@ -1289,14 +1256,7 @@ const Index = () => {
       let ly = hudY + 20;
 
       // --- Helper: round indicator light (for lives) ---
-      const drawRoundLight = (
-        cx: number,
-        cy: number,
-        radius: number,
-        powered: boolean,
-        color: string,
-        glowColor: string,
-      ) => {
+      const drawRoundLight = (cx: number, cy: number, radius: number, powered: boolean, color: string, glowColor: string) => {
         ctx.beginPath();
         ctx.arc(cx, cy, radius + 2, 0, Math.PI * 2);
         ctx.fillStyle = "rgba(60,70,80,0.9)";
@@ -1321,33 +1281,19 @@ const Index = () => {
         ctx.fillStyle = powered ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.05)";
         ctx.fill();
         if (powered) {
-          ctx.save();
-          ctx.shadowColor = glowColor;
-          ctx.shadowBlur = 10;
-          ctx.beginPath();
-          ctx.arc(cx, cy, radius * 0.4, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(0,0,0,0)";
-          ctx.fill();
-          ctx.restore();
+          ctx.save(); ctx.shadowColor = glowColor; ctx.shadowBlur = 10;
+          ctx.beginPath(); ctx.arc(cx, cy, radius * 0.4, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(0,0,0,0)"; ctx.fill(); ctx.restore();
         }
       };
 
       // --- Helper: diamond/hex indicator (for HP) ---
-      const drawDiamondLight = (
-        cx: number,
-        cy: number,
-        size: number,
-        powered: boolean,
-        color: string,
-        glowColor: string,
-      ) => {
+      const drawDiamondLight = (cx: number, cy: number, size: number, powered: boolean, color: string, glowColor: string) => {
         const s = size;
         // Bezel
         ctx.beginPath();
-        ctx.moveTo(cx, cy - s - 2);
-        ctx.lineTo(cx + s + 2, cy);
-        ctx.lineTo(cx, cy + s + 2);
-        ctx.lineTo(cx - s - 2, cy);
+        ctx.moveTo(cx, cy - s - 2); ctx.lineTo(cx + s + 2, cy);
+        ctx.lineTo(cx, cy + s + 2); ctx.lineTo(cx - s - 2, cy);
         ctx.closePath();
         ctx.fillStyle = "rgba(60,70,80,0.9)";
         ctx.fill();
@@ -1356,10 +1302,8 @@ const Index = () => {
         ctx.stroke();
         // Inner gem
         ctx.beginPath();
-        ctx.moveTo(cx, cy - s);
-        ctx.lineTo(cx + s, cy);
-        ctx.lineTo(cx, cy + s);
-        ctx.lineTo(cx - s, cy);
+        ctx.moveTo(cx, cy - s); ctx.lineTo(cx + s, cy);
+        ctx.lineTo(cx, cy + s); ctx.lineTo(cx - s, cy);
         ctx.closePath();
         if (powered) {
           const g = ctx.createRadialGradient(cx - s * 0.15, cy - s * 0.15, 0, cx, cy, s);
@@ -1380,42 +1324,24 @@ const Index = () => {
         ctx.fillStyle = powered ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.04)";
         ctx.fill();
         if (powered) {
-          ctx.save();
-          ctx.shadowColor = glowColor;
-          ctx.shadowBlur = 10;
-          ctx.beginPath();
-          ctx.arc(cx, cy, s * 0.3, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(0,0,0,0)";
-          ctx.fill();
-          ctx.restore();
+          ctx.save(); ctx.shadowColor = glowColor; ctx.shadowBlur = 10;
+          ctx.beginPath(); ctx.arc(cx, cy, s * 0.3, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(0,0,0,0)"; ctx.fill(); ctx.restore();
         }
       };
 
       // --- Helper: ammo light strip segment ---
-      const drawStripSegment = (
-        x: number,
-        y: number,
-        w: number,
-        h: number,
-        powered: boolean,
-        color: string,
-        glowColor: string,
-        isFirst: boolean,
-        isLast: boolean,
-      ) => {
+      const drawStripSegment = (x: number, y: number, w: number, h: number, powered: boolean, color: string, glowColor: string, isFirst: boolean, isLast: boolean) => {
         const r = 2;
         ctx.beginPath();
         if (isFirst) {
-          ctx.moveTo(x + r, y);
-          ctx.lineTo(x + w, y);
-          ctx.lineTo(x + w, y + h);
-          ctx.lineTo(x + r, y + h);
+          ctx.moveTo(x + r, y); ctx.lineTo(x + w, y);
+          ctx.lineTo(x + w, y + h); ctx.lineTo(x + r, y + h);
           ctx.arcTo(x, y + h, x, y + h - r, r);
           ctx.lineTo(x, y + r);
           ctx.arcTo(x, y, x + r, y, r);
         } else if (isLast) {
-          ctx.moveTo(x, y);
-          ctx.lineTo(x + w - r, y);
+          ctx.moveTo(x, y); ctx.lineTo(x + w - r, y);
           ctx.arcTo(x + w, y, x + w, y + r, r);
           ctx.lineTo(x + w, y + h - r);
           ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
@@ -1449,15 +1375,12 @@ const Index = () => {
           // Glow
           ctx.shadowColor = glowColor;
           ctx.shadowBlur = 6;
-          ctx.beginPath();
-          ctx.rect(x + 2, y + 2, w - 4, h - 4);
-          ctx.fillStyle = "rgba(0,0,0,0)";
-          ctx.fill();
+          ctx.beginPath(); ctx.rect(x + 2, y + 2, w - 4, h - 4);
+          ctx.fillStyle = "rgba(0,0,0,0)"; ctx.fill();
           ctx.restore();
         } else {
           // Dark glass
-          ctx.beginPath();
-          ctx.rect(x + 1, y + 1, w - 2, h - 2);
+          ctx.beginPath(); ctx.rect(x + 1, y + 1, w - 2, h - 2);
           ctx.fillStyle = "rgba(20,22,26,0.7)";
           ctx.fill();
         }
@@ -1643,6 +1566,9 @@ const Index = () => {
           ctx.stroke();
         }
       }
+
+
+
 
       // Corner accents (mecha detail lines)
       ctx.strokeStyle = "rgba(0,220,255,0.2)";
@@ -1928,12 +1854,11 @@ const Index = () => {
                   <span style={{ color: "#5a9" }}>BARREL ROLL</span> — Dodge enemy fire with a quick lateral roll.
                 </p>
                 <p>
-                  <span style={{ color: "#ff7675" }}>BOOST</span> — Hold <span style={{ color: "#ff7675" }}>W</span> for
-                  high-speed boost. Uses more fuel, locks steering, deflects missiles.
+                  <span style={{ color: "#ff7675" }}>BOOST</span> — Hold{" "}
+                  <span style={{ color: "#ff7675" }}>W</span> for high-speed boost. Uses more fuel, locks steering, deflects missiles.
                 </p>
                 <p>
-                  <span style={{ color: "#64ffeb" }}>RAM BLADES</span> — At full HP, blades extend from your mech. Boost
-                  into enemies to destroy them instantly!
+                  <span style={{ color: "#64ffeb" }}>RAM BLADES</span> — At full HP, blades extend from your mech. Boost into enemies to destroy them instantly!
                 </p>
               </div>
             </div>
