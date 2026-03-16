@@ -690,7 +690,8 @@ const Index = () => {
           resetPickups(WORLD_WIDTH);
         }
 
-        updateEnemies(dt, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
+        const deflectScore = updateEnemies(dt, WORLD_WIDTH, viewH, boatX, boatW, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing);
+        if (deflectScore > 0) scoreRef.current += deflectScore;
         const subDmg = updateSubmarinesWithDamage(
           dt,
           viewH,
