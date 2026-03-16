@@ -263,6 +263,14 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
     ctx.fillStyle = domeGrad;
     ctx.fill();
 
+    // Draw specular highlight
+    ctx.beginPath();
+    ctx.arc(boat.x, domeCenterY, domeRadius, Math.PI, 0);
+    ctx.closePath();
+    ctx.fillStyle = specGrad;
+    ctx.fill();
+    ctx.fill();
+
     // Dome outline — gets brighter when damaged
     const outlineAlpha = critical ? (flickering ? 0.6 : 0.15) : (0.25 + (1 - hpRatio) * 0.2);
     ctx.beginPath();
