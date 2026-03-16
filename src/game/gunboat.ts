@@ -318,64 +318,79 @@ export function drawGunboats(ctx: CanvasRenderingContext2D, viewH: number) {
     ctx.save();
     ctx.translate(g.x, gy);
 
-    // ---- Submerged hull (darker, below waterline) ----
+    // ---- Submerged hull (dark industrial) ----
     ctx.beginPath();
     ctx.moveTo(-hw, 4);
     ctx.lineTo(-hw + 8, GUNBOAT_HEIGHT);
     ctx.lineTo(hw - 8, GUNBOAT_HEIGHT);
     ctx.lineTo(hw, 4);
     ctx.closePath();
-    ctx.fillStyle = "#2d3436";
+    ctx.fillStyle = "#1a1a1a";
     ctx.fill();
 
-    // ---- Main hull ----
+    // ---- Main hull (robotic dark metal) ----
     ctx.beginPath();
     ctx.moveTo(-hw - 4, 4);
     ctx.lineTo(-hw + 2, -4);
     ctx.lineTo(hw - 2, -4);
     ctx.lineTo(hw + 4, 4);
     ctx.closePath();
-    ctx.fillStyle = "#636e72";
+    const hullGrad = ctx.createLinearGradient(-hw, -4, hw, 4);
+    hullGrad.addColorStop(0, "#2a2a2a");
+    hullGrad.addColorStop(0.5, "#3a3a3a");
+    hullGrad.addColorStop(1, "#2a2a2a");
+    ctx.fillStyle = hullGrad;
     ctx.fill();
-    ctx.strokeStyle = "#4a5359";
+    ctx.strokeStyle = "#555";
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // ---- Deck details ----
-    // Bridge / superstructure
-    ctx.fillStyle = "#74808a";
+    // ---- Industrial panel lines ----
+    ctx.strokeStyle = "rgba(120, 120, 120, 0.25)";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(-hw * 0.5, -4);
+    ctx.lineTo(-hw * 0.5, 4);
+    ctx.moveTo(hw * 0.5, -4);
+    ctx.lineTo(hw * 0.5, 4);
+    ctx.stroke();
+
+    // ---- Deck / superstructure (dark robotic) ----
+    ctx.fillStyle = "#333";
     ctx.fillRect(-10, -10, 20, 7);
-    ctx.fillStyle = "#55626b";
+    ctx.fillStyle = "#282828";
     ctx.fillRect(-8, -13, 16, 4);
 
-    // Turret base
+    // Turret base (robotic red sensor)
     ctx.beginPath();
     ctx.arc(0, -6, 6, 0, Math.PI * 2);
-    ctx.fillStyle = "#e74c3c";
+    ctx.fillStyle = "#1a1a1a";
     ctx.fill();
-    ctx.strokeStyle = "#c0392b";
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, -6, 4, 0, Math.PI * 2);
+    const turretPulse = 0.6 + Math.sin(performance.now() * 0.008) * 0.4;
+    ctx.fillStyle = `rgba(255, 30, 0, ${turretPulse})`;
+    ctx.fill();
 
-    // Turret barrel (points toward nearest threat direction)
+    // Turret barrel
     ctx.save();
     ctx.translate(0, -6);
     const barrelAngle = g.dir === 1 ? -Math.PI * 0.35 : -Math.PI * 0.65;
     ctx.rotate(barrelAngle);
-    ctx.fillStyle = "#2c3e50";
+    ctx.fillStyle = "#444";
     ctx.fillRect(0, -1.5, 14, 3);
     ctx.restore();
 
-    // ---- Danger stripes (like submarines) ----
-    ctx.fillStyle = "rgba(231, 76, 60, 0.4)";
+    // ---- Danger markings (industrial hazard) ----
+    ctx.fillStyle = "rgba(200, 50, 20, 0.4)";
     ctx.fillRect(-hw + 3, 0, 8, 4);
     ctx.fillRect(hw - 11, 0, 8, 4);
 
-    // ---- Engine glow ----
+    // ---- Engine glow (alien red) ----
     const engineSide = g.dir === 1 ? -hw - 2 : hw + 2;
     ctx.beginPath();
     ctx.arc(engineSide, 0, 3, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 160, 50, ${0.4 + Math.sin(performance.now() * 0.01) * 0.3})`;
+    ctx.fillStyle = `rgba(255, 80, 20, ${0.4 + Math.sin(performance.now() * 0.01) * 0.3})`;
     ctx.fill();
 
     // ---- Barrier dome (upper hemisphere, always active) ----
