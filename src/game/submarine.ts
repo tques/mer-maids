@@ -24,6 +24,7 @@ import { spawnExplosion } from "./effects";
 export interface Submarine {
   x: number; // World X position
   y: number; // World Y position (depth below water surface)
+  targetY: number; // Target depth to rise to after spawning
   speed: number; // Horizontal movement speed
   dir: 1 | -1; // Direction: 1 = moving right, -1 = moving left
   alive: boolean;
@@ -45,6 +46,8 @@ const SUB_SPEED = 0.6; // Base horizontal speed (very slow, menacing)
 const SUB_ATTACK_TIME = 2.0; // Seconds to charge before detonation
 const SUB_DEPTH_MIN = 50; // Minimum depth below water surface
 const SUB_DEPTH_MAX = 140; // Maximum depth (deeper subs require deeper dives)
+const SUB_SPAWN_DEPTH = 350; // Spawn far below screen, then rise
+const SUB_RISE_SPEED = 0.4; // Vertical speed when rising to target depth
 
 // ==================== ACCESSORS & RESET ====================
 
@@ -91,7 +94,8 @@ export function updateSubmarines(
       const depthOffset = SUB_DEPTH_MIN + Math.random() * (SUB_DEPTH_MAX - SUB_DEPTH_MIN);
       submarines.push({
         x: spawnX,
-        y: waterY + depthOffset,
+        y: waterY + SUB_SPAWN_DEPTH,
+        targetY: waterY + depthOffset,
         speed: SUB_SPEED + Math.random() * 0.2,
         dir: dir as 1 | -1,
         alive: true,
@@ -182,7 +186,8 @@ export function updateSubmarinesWithDamage(
       const depthOffset = SUB_DEPTH_MIN + Math.random() * (SUB_DEPTH_MAX - SUB_DEPTH_MIN);
       submarines.push({
         x: spawnX,
-        y: waterY + depthOffset,
+        y: waterY + SUB_SPAWN_DEPTH,
+        targetY: waterY + depthOffset,
         speed: SUB_SPEED + Math.random() * 0.2,
         dir: dir as 1 | -1,
         alive: true,
@@ -202,6 +207,12 @@ export function updateSubmarinesWithDamage(
       sub.x -= sub.dir * 2.5;
       if (Math.abs(sub.x - playerX) > viewHalfW * 4) sub.alive = false;
       continue;
+    }
+
+    // Rise toward target depth
+    if (sub.y > sub.targetY) {
+      sub.y -= SUB_RISE_SPEED;
+      if (sub.y < sub.targetY) sub.y = sub.targetY;
     }
 
     if (!sub.attacking) {
