@@ -1462,9 +1462,9 @@ const Index = () => {
             liqGrad.addColorStop(0.5, "rgba(255,120,40,0.9)");
             liqGrad.addColorStop(1, "rgba(200,50,30,0.8)");
           } else {
-            liqGrad.addColorStop(0, "rgba(0,140,220,0.75)");
-            liqGrad.addColorStop(0.5, "rgba(0,200,255,0.9)");
-            liqGrad.addColorStop(1, "rgba(0,100,180,0.75)");
+            liqGrad.addColorStop(0, "rgba(0,140,220,0.4)");
+            liqGrad.addColorStop(0.5, "rgba(0,200,255,0.5)");
+            liqGrad.addColorStop(1, "rgba(0,100,180,0.4)");
           }
 
           ctx.save();
