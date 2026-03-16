@@ -1414,7 +1414,7 @@ const Index = () => {
       const tubeW = 14;
       const tubeH = 28;
       const tubeGap = 6;
-      const tubeStartX = labelX + 2;
+      const tubeStartX = labelX + 6;
       const tubeStartY = ly - 22;
       const fuelFrac = fuel / MAX_FUEL;
       const fuelPerTube = 1 / tubeCount;
