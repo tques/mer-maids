@@ -488,10 +488,10 @@ export function drawAmmoDepots(ctx: CanvasRenderingContext2D, viewH: number) {
   ctx.lineTo(depot.x - hw, topY + hd - baseR);
   ctx.quadraticCurveTo(depot.x - hw, topY + hd, depot.x - hw + baseR, topY + hd);
   ctx.closePath();
-  ctx.fillStyle = "#1a1f2e";
+  ctx.fillStyle = "rgba(20, 60, 80, 0.9)";
   ctx.fill();
 
-  // ---- Platform surface ----
+  // ---- Platform surface (glassy aqua highlight) ----
   ctx.beginPath();
   ctx.moveTo(depot.x - hw + baseR, topY);
   ctx.lineTo(depot.x + hw - baseR, topY);
@@ -499,7 +499,7 @@ export function drawAmmoDepots(ctx: CanvasRenderingContext2D, viewH: number) {
   ctx.lineTo(depot.x - hw + 3, topY + 3);
   ctx.quadraticCurveTo(depot.x - hw, topY, depot.x - hw + baseR, topY);
   ctx.closePath();
-  ctx.fillStyle = "#252b3a";
+  ctx.fillStyle = "rgba(100, 220, 210, 0.2)";
   ctx.fill();
 
   // ---- Hull lines ----
