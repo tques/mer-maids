@@ -852,7 +852,7 @@ const Index = () => {
         if (pickedUp === "health") {
           playerHPRef.current = Math.min(playerHPRef.current + 1, PLAYER_MAX_HP);
         } else if (pickedUp === "repair") {
-          shipHPRef.current = Math.min(shipHPRef.current + 3, SHIP_MAX_HP);
+          shipHPRef.current = Math.min(shipHPRef.current + 1, SHIP_MAX_HP);
         }
       }
 

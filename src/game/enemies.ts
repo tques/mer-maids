@@ -470,8 +470,8 @@ export function updateEnemies(
         y: c.y + Math.sin(mAngle) * (CHASER_SIZE + 6),
         angle: mAngle,
         speed: MISSILE_SPEED,
-        life: MISSILE_LIFETIME,
         alive: true,
+        deflected: false,
         trail: [],
       });
     }
