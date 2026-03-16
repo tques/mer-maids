@@ -272,43 +272,53 @@ export function fleeMinelayers() {
 // ==================== RENDERING ====================
 
 export function drawMinelayer(ctx: CanvasRenderingContext2D, viewH: number) {
-  // ---- Mine-layer planes (dark green/grey fast jets) ----
+  // ---- Minelayer planes (dark industrial, alien bombers) ----
   for (const p of planes) {
     if (!p.alive) continue;
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.scale(p.dir, 1);
 
-    // Shadow/glow
-    ctx.shadowColor = "rgba(50, 120, 50, 0.4)";
+    ctx.shadowColor = "rgba(200, 60, 0, 0.4)";
     ctx.shadowBlur = 8;
 
     const s = 14;
-    // Fuselage
+    // Dark industrial fuselage
     ctx.beginPath();
     ctx.moveTo(s * 1.3, 0);
-    ctx.lineTo(s * 0.3, -s * 0.4);
-    ctx.lineTo(-s * 0.9, -s * 0.35);
+    ctx.lineTo(s * 0.3, -s * 0.45);
+    ctx.lineTo(-s * 0.7, -s * 0.4);
+    ctx.lineTo(-s * 0.9, -s * 0.15);
     ctx.lineTo(-s * 0.7, 0);
-    ctx.lineTo(-s * 0.9, s * 0.35);
-    ctx.lineTo(s * 0.3, s * 0.4);
+    ctx.lineTo(-s * 0.9, s * 0.15);
+    ctx.lineTo(-s * 0.7, s * 0.4);
+    ctx.lineTo(s * 0.3, s * 0.45);
     ctx.closePath();
-    ctx.fillStyle = "#4a6741";
+    ctx.fillStyle = "#1e1e1e";
     ctx.fill();
-    ctx.strokeStyle = "#2d4027";
+    ctx.strokeStyle = "#444";
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Cockpit
+    // Panel lines
+    ctx.strokeStyle = "rgba(100, 100, 100, 0.3)";
+    ctx.lineWidth = 0.5;
     ctx.beginPath();
-    ctx.arc(s * 0.4, 0, s * 0.12, 0, Math.PI * 2);
-    ctx.fillStyle = "#8fbc8f";
+    ctx.moveTo(0, -s * 0.4);
+    ctx.lineTo(-s * 0.4, 0);
+    ctx.lineTo(0, s * 0.4);
+    ctx.stroke();
+
+    // Red sensor eye
+    ctx.beginPath();
+    ctx.arc(s * 0.5, 0, s * 0.1, 0, Math.PI * 2);
+    ctx.fillStyle = "#ff3300";
     ctx.fill();
 
-    // Engine glow
+    // Engine (red-orange)
     ctx.beginPath();
-    ctx.arc(-s * 0.8, 0, s * 0.1, 0, Math.PI * 2);
-    ctx.fillStyle = "#90ee90";
+    ctx.arc(-s * 0.8, 0, s * 0.08, 0, Math.PI * 2);
+    ctx.fillStyle = "#ff4500";
     ctx.globalAlpha = 0.5 + Math.sin(performance.now() * 0.015) * 0.3;
     ctx.fill();
     ctx.globalAlpha = 1;
