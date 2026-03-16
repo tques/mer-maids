@@ -24,7 +24,7 @@ export const WATER_SPEED_FACTOR = 0.65;
 export const WAVE_AMPLITUDE = 6;
 
 /** How fast waves animate (radians per frame, multiplied by dt) */
-export const WAVE_SPEED = 0.002;
+export const WAVE_SPEED = 0.018;
 
 // ==================== INTERFACES ====================
 
