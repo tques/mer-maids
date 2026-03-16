@@ -1040,12 +1040,19 @@ const Index = () => {
           const bladesActive = playerHPRef.current >= PLAYER_MAX_HP;
           const glassTime = performance.now() * 0.003;
 
-          // Main body — glossy crescent
+          // Main body — symmetric glossy hull
           ctx.beginPath();
-          ctx.arc(0, 0, r, -Math.PI * 0.55, Math.PI * 0.55, false);
-          ctx.lineTo(r * 0.3, TRI_SIZE * 0.35);
-          ctx.arc(0, 0, r * 0.45, Math.PI * 0.4, -Math.PI * 0.4, true);
-          ctx.lineTo(r * Math.cos(Math.PI * 0.55), -r * Math.sin(Math.PI * 0.55));
+          // Nose tip
+          ctx.moveTo(r, 0);
+          // Upper arc from nose to tail
+          ctx.quadraticCurveTo(r * 0.7, -r * 0.55, -r * 0.5, -r * 0.45);
+          // Tail notch upper
+          ctx.lineTo(-r * 0.25, -r * 0.12);
+          // Tail notch lower (symmetric)
+          ctx.lineTo(-r * 0.25, r * 0.12);
+          // Lower arc from tail to nose
+          ctx.lineTo(-r * 0.5, r * 0.45);
+          ctx.quadraticCurveTo(r * 0.7, r * 0.55, r, 0);
           ctx.closePath();
 
           // Glossy gradient fill
