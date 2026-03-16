@@ -1373,17 +1373,18 @@ const Index = () => {
       ly += 22;
       ctx.font = "bold 10px monospace";
       const ammoLow = ammo <= AMMO_LOW_THRESHOLD;
-      ctx.fillStyle = ammoLow ? "#ffcc00" : "rgba(0,180,255,0.7)";
-      ctx.fillText("AMMO", lx, ly);
+      ctx.fillStyle = ammoLow ? "#ffcc00" : "rgba(180,190,200,0.7)";
+      ctx.textAlign = "right";
+      ctx.fillText("AMMO", labelX - 4, ly);
+      ctx.textAlign = "left";
       const ammoLights = 12;
       const ammoFrac = ammo / MAX_AMMO;
       const litAmmo = Math.round(ammoFrac * ammoLights);
-      const stripX = lx + 48;
+      const stripX = labelX + 2;
       const stripY = ly - 10;
       const segW = 12;
       const segH = 12;
       const segGap = 1.5;
-      // Outer strip housing
       ctx.beginPath();
       const stripTotalW = ammoLights * (segW + segGap) - segGap;
       ctx.roundRect(stripX - 2, stripY - 2, stripTotalW + 4, segH + 4, 3);
@@ -1399,9 +1400,6 @@ const Index = () => {
         const sGlow = ammoLow ? "#ff9900" : "#8890a0";
         drawStripSegment(sx, stripY, segW, segH, lit, sColor, sGlow, i === 0, i === ammoLights - 1);
       }
-      ctx.font = "bold 9px monospace";
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.fillText(`${ammo}`, stripX + stripTotalW + 6, ly);
 
       // FUEL — liquid-filled vertical tubes
       ly += 34;
