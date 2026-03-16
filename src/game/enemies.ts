@@ -64,8 +64,8 @@ export interface HomingMissile {
   y: number;
   angle: number; // Current heading (radians)
   speed: number;
-  life: number; // Remaining lifetime in seconds
   alive: boolean;
+  deflected: boolean; // true = no longer homing, flies wild
   trail: { x: number; y: number; age: number }[]; // Smoke trail positions
 }
 
