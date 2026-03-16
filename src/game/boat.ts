@@ -192,7 +192,30 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
   const flickerRate = critical ? 80 : (exposed ? 120 : 200);
   const flickering = (damaged || exposed) && Math.sin(now / flickerRate) > 0;
 
-  // --- Draw each building (futuristic glass towers) ---
+  // --- Draw back-layer buildings (darker, recessed for depth) ---
+  for (const b of backBuildings) {
+    const bx = boat.x + b.ox;
+    const by = topY - b.h + 4; // Slightly higher base = looks further back
+    const bldGrad = ctx.createLinearGradient(bx - b.w / 2, by, bx + b.w / 2, by + b.h);
+    if (exposed) {
+      bldGrad.addColorStop(0, critical ? "rgba(20, 8, 8, 0.7)" : "rgba(10, 18, 28, 0.7)");
+      bldGrad.addColorStop(1, critical ? "rgba(15, 4, 4, 0.75)" : "rgba(8, 14, 22, 0.75)");
+    } else {
+      bldGrad.addColorStop(0, "rgba(18, 45, 60, 0.6)");
+      bldGrad.addColorStop(1, "rgba(10, 30, 45, 0.7)");
+    }
+    ctx.fillStyle = bldGrad;
+    ctx.fillRect(bx - b.w / 2, by, b.w, b.h - 4);
+    // Dim window lights
+    ctx.fillStyle = exposed ? "rgba(120, 40, 10, 0.3)" : "rgba(60, 160, 140, 0.25)";
+    for (let wy = by + 5; wy < topY - 2; wy += 7) {
+      for (let wx = bx - b.w / 2 + 4; wx < bx + b.w / 2 - 2; wx += 5) {
+        if (Math.random() > 0.5) ctx.fillRect(wx, wy, 2, 2);
+      }
+    }
+  }
+
+  // --- Draw front-layer buildings (futuristic glass towers) ---
   for (const b of buildings) {
     const bx = boat.x + b.ox;
     const by = topY - b.h;
