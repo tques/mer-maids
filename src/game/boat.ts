@@ -232,20 +232,29 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
     const domeRadius = hw * 0.85;  // Slightly smaller than platform width
     const domeCenterY = topY;      // Dome base at platform top
 
-    // Dome color shifts from blue (healthy) to red (damaged)
-    const domeR = Math.round(40 + (1 - hpRatio) * 180);
-    const domeG = Math.round(120 + hpRatio * 80 - (1 - hpRatio) * 80);
-    const domeB = Math.round(200 * hpRatio + 40);
-    const domeAlphaBase = 0.12 + (1 - hpRatio) * 0.15;
+    // Dome color — aqua/teal shifting to red when damaged
+    const domeR = Math.round(30 + (1 - hpRatio) * 200);
+    const domeG = Math.round(200 * hpRatio + 40);
+    const domeB = Math.round(220 * hpRatio + 30);
+    const domeAlphaBase = 0.10 + (1 - hpRatio) * 0.15;
 
-    // Radial gradient — transparent center, visible edges
+    // Radial gradient — glassy transparent center, visible edges
     const domeGrad = ctx.createRadialGradient(
       boat.x, domeCenterY, domeRadius * 0.3,
       boat.x, domeCenterY, domeRadius
     );
-    domeGrad.addColorStop(0, `rgba(${domeR}, ${domeG}, ${domeB}, 0.02)`);
-    domeGrad.addColorStop(0.7, `rgba(${domeR}, ${domeG}, ${domeB}, ${domeAlphaBase * 0.5})`);
+    domeGrad.addColorStop(0, `rgba(${domeR}, ${domeG}, ${domeB}, 0.01)`);
+    domeGrad.addColorStop(0.6, `rgba(${domeR}, ${domeG}, ${domeB}, ${domeAlphaBase * 0.4})`);
+    domeGrad.addColorStop(0.85, `rgba(${domeR}, ${domeG}, ${domeB}, ${domeAlphaBase * 0.7})`);
     domeGrad.addColorStop(1, `rgba(${domeR}, ${domeG}, ${domeB}, ${domeAlphaBase})`);
+
+    // Specular highlight on dome
+    const specGrad = ctx.createRadialGradient(
+      boat.x - domeRadius * 0.3, domeCenterY - domeRadius * 0.5, 0,
+      boat.x - domeRadius * 0.3, domeCenterY - domeRadius * 0.5, domeRadius * 0.4
+    );
+    specGrad.addColorStop(0, "rgba(255, 255, 255, 0.08)");
+    specGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
 
     // Draw dome as upper half of circle
     ctx.beginPath();
