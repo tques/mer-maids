@@ -1144,7 +1144,7 @@ const Index = () => {
       const hudX = 12;
       const hudY = 12;
       const panelW = 280;
-      const panelH = 134;
+      const panelH = 140;
 
       // --- Helper: draw angled glassy panel ---
       const drawPanel = (x: number, y: number, w: number, h: number, cutTL = 12, cutBR = 12) => {
@@ -1210,7 +1210,7 @@ const Index = () => {
       ctx.stroke();
 
       const lx = hudX + 10;
-      let ly = hudY + 18;
+      let ly = hudY + 20;
 
       // --- Helper: round indicator light (for lives) ---
       const drawRoundLight = (cx: number, cy: number, radius: number, powered: boolean, color: string, glowColor: string) => {
@@ -1344,33 +1344,33 @@ const Index = () => {
       };
 
       // LIVES — green round indicator lights
-      const labelX = lx + 42; // consistent alignment point for all indicators
+      const labelX = lx + 46; // consistent alignment point for all indicators
       ctx.font = "bold 10px monospace";
       ctx.fillStyle = "rgba(100,255,150,0.7)";
       ctx.textAlign = "right";
       ctx.fillText("LIVES", labelX - 4, ly);
       ctx.textAlign = "left";
       for (let i = 0; i < PLAYER_LIVES; i++) {
-        const lcx = labelX + 4 + i * 24;
+        const lcx = labelX + 8 + i * 24;
         const lcy = ly - 4;
         drawRoundLight(lcx, lcy, 7, i < playerLivesRef.current, "#50ff90", "#1a8040");
       }
 
       // HP — amber diamond indicator lights
-      ly += 22;
+      ly += 24;
       ctx.font = "bold 10px monospace";
       ctx.fillStyle = "rgba(255,180,60,0.7)";
       ctx.textAlign = "right";
       ctx.fillText("HP", labelX - 4, ly);
       ctx.textAlign = "left";
       for (let i = 0; i < PLAYER_MAX_HP; i++) {
-        const hcx = labelX + 4 + i * 26;
+        const hcx = labelX + 8 + i * 26;
         const hcy = ly - 3;
         drawDiamondLight(hcx, hcy, 7, i < playerHPRef.current, "#ffb830", "#996600");
       }
 
       // AMMO — cyan/yellow light strip
-      ly += 22;
+      ly += 24;
       ctx.font = "bold 10px monospace";
       const ammoLow = ammo <= AMMO_LOW_THRESHOLD;
       ctx.fillStyle = ammoLow ? "#ffcc00" : "rgba(180,190,200,0.7)";
@@ -1380,7 +1380,7 @@ const Index = () => {
       const ammoLights = 12;
       const ammoFrac = ammo / MAX_AMMO;
       const litAmmo = Math.round(ammoFrac * ammoLights);
-      const stripX = labelX + 2;
+      const stripX = labelX + 6;
       const stripY = ly - 10;
       const segW = 12;
       const segH = 12;
@@ -1402,7 +1402,7 @@ const Index = () => {
       }
 
       // FUEL — liquid-filled vertical tubes
-      ly += 34;
+      ly += 36;
       ctx.font = "bold 10px monospace";
       const fuelLow = fuel <= FUEL_LOW_THRESHOLD;
       ctx.fillStyle = fuelLow ? "#ff6060" : "rgba(0,180,255,0.7)";
@@ -1414,7 +1414,7 @@ const Index = () => {
       const tubeW = 14;
       const tubeH = 28;
       const tubeGap = 6;
-      const tubeStartX = labelX + 2;
+      const tubeStartX = labelX + 6;
       const tubeStartY = ly - 22;
       const fuelFrac = fuel / MAX_FUEL;
       const fuelPerTube = 1 / tubeCount;
