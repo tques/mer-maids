@@ -1402,7 +1402,7 @@ const Index = () => {
       }
 
       // FUEL — liquid-filled vertical tubes
-      ly += 34;
+      ly += 36;
       ctx.font = "bold 10px monospace";
       const fuelLow = fuel <= FUEL_LOW_THRESHOLD;
       ctx.fillStyle = fuelLow ? "#ff6060" : "rgba(0,180,255,0.7)";
