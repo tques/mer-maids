@@ -1210,7 +1210,7 @@ const Index = () => {
       ctx.stroke();
 
       const lx = hudX + 10;
-      let ly = hudY + 18;
+      let ly = hudY + 20;
 
       // --- Helper: round indicator light (for lives) ---
       const drawRoundLight = (cx: number, cy: number, radius: number, powered: boolean, color: string, glowColor: string) => {
