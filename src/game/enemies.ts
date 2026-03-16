@@ -529,6 +529,7 @@ export function updateEnemies(
           e.alive = false;
           m.alive = false;
           spawnExplosion(e.x, e.y, 35, SCORE_BOMBER);
+          deflectScore += SCORE_BOMBER;
           break;
         }
       }
