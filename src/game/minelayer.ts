@@ -62,6 +62,34 @@ export function resetMinelayer() {
 }
 
 export function getMines() { return mines; }
+export function getPlanes() { return planes; }
+
+/**
+ * Check if a deflected missile hits any mines or minelayer planes.
+ * Returns score earned and sets hit entity to dead.
+ */
+export function checkMissileHitsMineOrPlane(mx: number, my: number): { hit: boolean; score: number } {
+  // Check planes
+  for (const p of planes) {
+    if (!p.alive) continue;
+    if (Math.hypot(mx - p.x, my - p.y) < PLANE_SIZE + 6) {
+      p.alive = false;
+      spawnExplosion(p.x, p.y, 40, SCORE_MINELAYER);
+      spawnTimer += KILL_SPAWN_PENALTY;
+      return { hit: true, score: SCORE_MINELAYER };
+    }
+  }
+  // Check mines
+  for (const m of mines) {
+    if (!m.alive) continue;
+    if (Math.hypot(mx - m.x, my - m.y) < MINE_SIZE * 0.6 + 6) {
+      m.alive = false;
+      spawnExplosion(m.x, m.y, 40, SCORE_MINE);
+      return { hit: true, score: SCORE_MINE };
+    }
+  }
+  return { hit: false, score: 0 };
+}
 
 // ==================== UPDATE ====================
 

@@ -20,6 +20,7 @@
 
 import { getWaterSurfaceY } from "./water";
 import { spawnExplosion, updateEffects, drawEffects, resetEffects } from "./effects";
+import { checkMissileHitsMineOrPlane } from "./minelayer";
 // Re-export effects for backward compatibility
 export { spawnExplosion, getExplosions, getScorePopups } from "./effects";
 export type { Explosion, ScorePopup } from "./effects";
@@ -545,6 +546,14 @@ export function updateEnemies(
         }
       }
       if (!m.alive) continue;
+      // Check vs mines and minelayer planes
+      const mineHit = checkMissileHitsMineOrPlane(m.x, m.y);
+      if (mineHit.hit) {
+        m.alive = false;
+        spawnExplosion(m.x, m.y, 25);
+        deflectScore += mineHit.score;
+        continue;
+      }
     }
 
     // Update smoke trail
