@@ -499,8 +499,10 @@ export function updateEnemies(
       while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
       while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
       m.angle += angleDiff * MISSILE_TURN_RATE;
+    } else {
+      // Deflected missiles swerve erratically
+      m.angle += (Math.random() - 0.5) * 0.35;
     }
-    // Deflected missiles just fly straight in their current angle
 
     m.x += Math.cos(m.angle) * m.speed;
     m.y += Math.sin(m.angle) * m.speed;
