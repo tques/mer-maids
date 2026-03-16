@@ -234,13 +234,14 @@ export function drawWater(
   ctx.lineTo(x1, ch);  // Close at bottom-right
   ctx.closePath();
 
-  // Deep ocean gradient — light blue at surface, dark navy at bottom
+  // Tropical ocean gradient — vibrant turquoise to deep teal
   const grad = ctx.createLinearGradient(0, baseY - 10, 0, ch);
-  grad.addColorStop(0, "rgba(30, 110, 190, 0.50)");
-  grad.addColorStop(0.1, "rgba(20, 90, 170, 0.58)");
-  grad.addColorStop(0.3, "rgba(12, 65, 145, 0.68)");
-  grad.addColorStop(0.6, "rgba(6, 42, 115, 0.78)");
-  grad.addColorStop(1, "rgba(2, 18, 65, 0.88)");
+  grad.addColorStop(0, "rgba(40, 210, 200, 0.50)");
+  grad.addColorStop(0.08, "rgba(20, 185, 180, 0.55)");
+  grad.addColorStop(0.2, "rgba(10, 150, 160, 0.62)");
+  grad.addColorStop(0.4, "rgba(5, 110, 140, 0.72)");
+  grad.addColorStop(0.7, "rgba(2, 70, 110, 0.82)");
+  grad.addColorStop(1, "rgba(0, 30, 60, 0.90)");
   ctx.fillStyle = grad;
   ctx.fill();
 
