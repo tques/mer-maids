@@ -285,8 +285,9 @@ export function updateEnemies(
   viewHalfW: number,
   waveDifficulty: number = 1,
   fleeing: boolean = false,
-) {
+): number {
   const waterY = getWaterSurfaceY(viewH);
+  let deflectScore = 0;
   gameTime += dt;
 
   // Difficulty ramps with both time and wave number
@@ -499,8 +500,10 @@ export function updateEnemies(
       while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
       while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
       m.angle += angleDiff * MISSILE_TURN_RATE;
+    } else {
+      // Deflected missiles swerve erratically
+      m.angle += (Math.random() - 0.5) * 0.35;
     }
-    // Deflected missiles just fly straight in their current angle
 
     m.x += Math.cos(m.angle) * m.speed;
     m.y += Math.sin(m.angle) * m.speed;
@@ -516,6 +519,32 @@ export function updateEnemies(
       m.alive = false;
       spawnExplosion(m.x, m.y, 20);
       continue;
+    }
+
+    // Deflected missiles can kill enemies
+    if (m.deflected) {
+      for (const e of enemies) {
+        if (!e.alive) continue;
+        if (Math.hypot(m.x - e.x, m.y - e.y) < ENEMY_SIZE + 6) {
+          e.alive = false;
+          m.alive = false;
+          spawnExplosion(e.x, e.y, 35, SCORE_BOMBER);
+          deflectScore += SCORE_BOMBER;
+          break;
+        }
+      }
+      if (!m.alive) continue;
+      for (const c of chasers) {
+        if (!c.alive) continue;
+        if (Math.hypot(m.x - c.x, m.y - c.y) < CHASER_SIZE + 6) {
+          c.alive = false;
+          m.alive = false;
+          spawnExplosion(c.x, c.y, 30, SCORE_CHASER);
+          deflectScore += SCORE_CHASER;
+          break;
+        }
+      }
+      if (!m.alive) continue;
     }
 
     // Update smoke trail
@@ -554,6 +583,7 @@ export function updateEnemies(
   chaserBullets = chaserBullets.filter((cb) => cb.alive);
   homingMissiles = homingMissiles.filter((m) => m.alive);
   bombs = bombs.filter((b) => b.alive);
+  return deflectScore;
 }
 
 // ==================== SCORE VALUES ====================
