@@ -583,6 +583,7 @@ export function updateEnemies(
   chaserBullets = chaserBullets.filter((cb) => cb.alive);
   homingMissiles = homingMissiles.filter((m) => m.alive);
   bombs = bombs.filter((b) => b.alive);
+  return deflectScore;
 }
 
 // ==================== SCORE VALUES ====================
