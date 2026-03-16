@@ -91,9 +91,9 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
 
   // (shadow removed)
 
-  // --- Platform base — dark rounded rectangle ---
+  // --- Platform base — glassy translucent aqua ---
   ctx.beginPath();
-  const baseR = 20;  // Corner radius
+  const baseR = 20;
   ctx.moveTo(boat.x - hw + baseR, topY + hd);
   ctx.lineTo(boat.x + hw - baseR, topY + hd);
   ctx.quadraticCurveTo(boat.x + hw, topY + hd, boat.x + hw, topY + hd - baseR);
@@ -104,10 +104,14 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
   ctx.lineTo(boat.x - hw, topY + hd - baseR);
   ctx.quadraticCurveTo(boat.x - hw, topY + hd, boat.x - hw + baseR, topY + hd);
   ctx.closePath();
-  ctx.fillStyle = "#1a1f2e";  // Dark navy
+  const baseGrad = ctx.createLinearGradient(boat.x, topY, boat.x, topY + hd);
+  baseGrad.addColorStop(0, "rgba(20, 60, 80, 0.9)");
+  baseGrad.addColorStop(0.5, "rgba(10, 40, 60, 0.95)");
+  baseGrad.addColorStop(1, "rgba(5, 25, 45, 0.95)");
+  ctx.fillStyle = baseGrad;
   ctx.fill();
 
-  // --- Platform surface — lighter top edge ---
+  // --- Platform surface — glossy highlight ---
   ctx.beginPath();
   ctx.moveTo(boat.x - hw + baseR, topY);
   ctx.lineTo(boat.x + hw - baseR, topY);
@@ -115,7 +119,7 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
   ctx.lineTo(boat.x - hw + 5, topY + 5);
   ctx.quadraticCurveTo(boat.x - hw, topY, boat.x - hw + baseR, topY);
   ctx.closePath();
-  ctx.fillStyle = "#252b3a";
+  ctx.fillStyle = "rgba(100, 220, 210, 0.25)";
   ctx.fill();
 
   // --- Horizontal lines on the hull (decorative) ---
