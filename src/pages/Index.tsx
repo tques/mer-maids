@@ -1212,9 +1212,8 @@ const Index = () => {
       const lx = hudX + 10;
       let ly = hudY + 18;
 
-      // --- Helper: draw analog indicator light ---
-      const drawLight = (cx: number, cy: number, radius: number, powered: boolean, color: string, glowColor: string) => {
-        // Metal bezel ring
+      // --- Helper: round indicator light (for lives) ---
+      const drawRoundLight = (cx: number, cy: number, radius: number, powered: boolean, color: string, glowColor: string) => {
         ctx.beginPath();
         ctx.arc(cx, cy, radius + 2, 0, Math.PI * 2);
         ctx.fillStyle = "rgba(60,70,80,0.9)";
@@ -1222,89 +1221,183 @@ const Index = () => {
         ctx.strokeStyle = "rgba(120,130,140,0.5)";
         ctx.lineWidth = 1;
         ctx.stroke();
-        // Inner bezel shadow
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius + 0.5, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(0,0,0,0.4)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        // Bulb base (dark when off)
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
         if (powered) {
-          const bulbGrad = ctx.createRadialGradient(cx - radius * 0.25, cy - radius * 0.25, 0, cx, cy, radius);
-          bulbGrad.addColorStop(0, "rgba(255,255,255,0.95)");
-          bulbGrad.addColorStop(0.3, color);
-          bulbGrad.addColorStop(1, glowColor);
-          ctx.fillStyle = bulbGrad;
+          const g = ctx.createRadialGradient(cx - radius * 0.2, cy - radius * 0.2, 0, cx, cy, radius);
+          g.addColorStop(0, "rgba(255,255,255,0.95)");
+          g.addColorStop(0.3, color);
+          g.addColorStop(1, glowColor);
+          ctx.fillStyle = g;
         } else {
-          const offGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-          offGrad.addColorStop(0, "rgba(40,45,50,0.9)");
-          offGrad.addColorStop(1, "rgba(25,28,32,0.95)");
-          ctx.fillStyle = offGrad;
+          ctx.fillStyle = "rgba(30,33,38,0.9)";
         }
         ctx.fill();
-        // Glass specular highlight
         ctx.beginPath();
-        ctx.ellipse(cx - radius * 0.2, cy - radius * 0.3, radius * 0.5, radius * 0.3, -0.3, 0, Math.PI * 2);
-        ctx.fillStyle = powered ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.06)";
+        ctx.ellipse(cx - radius * 0.2, cy - radius * 0.3, radius * 0.45, radius * 0.25, -0.3, 0, Math.PI * 2);
+        ctx.fillStyle = powered ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.05)";
         ctx.fill();
-        // Outer glow when powered
         if (powered) {
-          ctx.save();
-          ctx.shadowColor = glowColor;
-          ctx.shadowBlur = 8;
-          ctx.beginPath();
-          ctx.arc(cx, cy, radius * 0.5, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(0,0,0,0)";
-          ctx.fill();
-          ctx.restore();
+          ctx.save(); ctx.shadowColor = glowColor; ctx.shadowBlur = 10;
+          ctx.beginPath(); ctx.arc(cx, cy, radius * 0.4, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(0,0,0,0)"; ctx.fill(); ctx.restore();
         }
       };
 
-      // LIVES — indicator lights
+      // --- Helper: diamond/hex indicator (for HP) ---
+      const drawDiamondLight = (cx: number, cy: number, size: number, powered: boolean, color: string, glowColor: string) => {
+        const s = size;
+        // Bezel
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - s - 2); ctx.lineTo(cx + s + 2, cy);
+        ctx.lineTo(cx, cy + s + 2); ctx.lineTo(cx - s - 2, cy);
+        ctx.closePath();
+        ctx.fillStyle = "rgba(60,70,80,0.9)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(120,130,140,0.4)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        // Inner gem
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - s); ctx.lineTo(cx + s, cy);
+        ctx.lineTo(cx, cy + s); ctx.lineTo(cx - s, cy);
+        ctx.closePath();
+        if (powered) {
+          const g = ctx.createRadialGradient(cx - s * 0.15, cy - s * 0.15, 0, cx, cy, s);
+          g.addColorStop(0, "rgba(255,255,255,0.9)");
+          g.addColorStop(0.35, color);
+          g.addColorStop(1, glowColor);
+          ctx.fillStyle = g;
+        } else {
+          ctx.fillStyle = "rgba(30,33,38,0.9)";
+        }
+        ctx.fill();
+        // Specular
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.3, cy - s * 0.6);
+        ctx.lineTo(cx + s * 0.2, cy - s * 0.15);
+        ctx.lineTo(cx - s * 0.1, cy - s * 0.1);
+        ctx.closePath();
+        ctx.fillStyle = powered ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.04)";
+        ctx.fill();
+        if (powered) {
+          ctx.save(); ctx.shadowColor = glowColor; ctx.shadowBlur = 10;
+          ctx.beginPath(); ctx.arc(cx, cy, s * 0.3, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(0,0,0,0)"; ctx.fill(); ctx.restore();
+        }
+      };
+
+      // --- Helper: ammo light strip segment ---
+      const drawStripSegment = (x: number, y: number, w: number, h: number, powered: boolean, color: string, glowColor: string, isFirst: boolean, isLast: boolean) => {
+        const r = 2;
+        ctx.beginPath();
+        if (isFirst) {
+          ctx.moveTo(x + r, y); ctx.lineTo(x + w, y);
+          ctx.lineTo(x + w, y + h); ctx.lineTo(x + r, y + h);
+          ctx.arcTo(x, y + h, x, y + h - r, r);
+          ctx.lineTo(x, y + r);
+          ctx.arcTo(x, y, x + r, y, r);
+        } else if (isLast) {
+          ctx.moveTo(x, y); ctx.lineTo(x + w - r, y);
+          ctx.arcTo(x + w, y, x + w, y + r, r);
+          ctx.lineTo(x + w, y + h - r);
+          ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+          ctx.lineTo(x, y + h);
+        } else {
+          ctx.rect(x, y, w, h);
+        }
+        ctx.closePath();
+        // Housing
+        ctx.fillStyle = "rgba(40,44,50,0.95)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(80,85,90,0.4)";
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+        // Colored glass panel
+        if (powered) {
+          ctx.save();
+          const g = ctx.createLinearGradient(x, y, x, y + h);
+          g.addColorStop(0, color);
+          g.addColorStop(0.5, glowColor);
+          g.addColorStop(1, color);
+          ctx.fillStyle = g;
+          ctx.globalAlpha = 0.85;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          // Glass sheen across top
+          ctx.beginPath();
+          ctx.rect(x + 1, y + 1, w - 2, h * 0.35);
+          ctx.fillStyle = "rgba(255,255,255,0.3)";
+          ctx.fill();
+          // Glow
+          ctx.shadowColor = glowColor;
+          ctx.shadowBlur = 6;
+          ctx.beginPath(); ctx.rect(x + 2, y + 2, w - 4, h - 4);
+          ctx.fillStyle = "rgba(0,0,0,0)"; ctx.fill();
+          ctx.restore();
+        } else {
+          // Dark glass
+          ctx.beginPath(); ctx.rect(x + 1, y + 1, w - 2, h - 2);
+          ctx.fillStyle = "rgba(20,22,26,0.7)";
+          ctx.fill();
+        }
+      };
+
+      // LIVES — green round indicator lights
       ctx.font = "bold 10px monospace";
-      ctx.fillStyle = "rgba(0,220,255,0.6)";
+      ctx.fillStyle = "rgba(100,255,150,0.7)";
       ctx.textAlign = "left";
       ctx.fillText("LIVES", lx, ly);
       for (let i = 0; i < PLAYER_LIVES; i++) {
         const lcx = lx + 52 + i * 24;
         const lcy = ly - 4;
-        drawLight(lcx, lcy, 7, i < playerLivesRef.current, "#00e0ff", "#006888");
+        drawRoundLight(lcx, lcy, 7, i < playerLivesRef.current, "#50ff90", "#1a8040");
       }
 
-      // HP — indicator lights
+      // HP — amber diamond indicator lights
       ly += 22;
       ctx.font = "bold 10px monospace";
-      ctx.fillStyle = "rgba(0,220,255,0.6)";
+      ctx.fillStyle = "rgba(255,180,60,0.7)";
       ctx.fillText("HP", lx, ly);
       for (let i = 0; i < PLAYER_MAX_HP; i++) {
-        const hcx = lx + 34 + i * 24;
-        const hcy = ly - 4;
-        const hpActive = i < playerHPRef.current;
-        drawLight(hcx, hcy, 7, hpActive, "#00e0ff", "#006888");
+        const hcx = lx + 34 + i * 26;
+        const hcy = ly - 3;
+        drawDiamondLight(hcx, hcy, 7, i < playerHPRef.current, "#ffb830", "#996600");
       }
 
-      // AMMO — row of indicator lights
+      // AMMO — cyan/yellow light strip
       ly += 22;
       ctx.font = "bold 10px monospace";
       const ammoLow = ammo <= AMMO_LOW_THRESHOLD;
-      ctx.fillStyle = ammoLow ? "#ffcc00" : "rgba(0,220,255,0.6)";
+      ctx.fillStyle = ammoLow ? "#ffcc00" : "rgba(0,180,255,0.7)";
       ctx.fillText("AMMO", lx, ly);
-      const ammoLights = 10;
+      const ammoLights = 12;
       const ammoFrac = ammo / MAX_AMMO;
       const litAmmo = Math.round(ammoFrac * ammoLights);
+      const stripX = lx + 48;
+      const stripY = ly - 10;
+      const segW = 12;
+      const segH = 12;
+      const segGap = 1.5;
+      // Outer strip housing
+      ctx.beginPath();
+      const stripTotalW = ammoLights * (segW + segGap) - segGap;
+      ctx.roundRect(stripX - 2, stripY - 2, stripTotalW + 4, segH + 4, 3);
+      ctx.fillStyle = "rgba(50,55,60,0.8)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(100,110,120,0.3)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
       for (let i = 0; i < ammoLights; i++) {
-        const acx = lx + 50 + i * 15;
-        const acy = ly - 4;
+        const sx = stripX + i * (segW + segGap);
         const lit = i < litAmmo;
-        const aColor = ammoLow ? "#ffcc00" : "#00e0ff";
-        const aGlow = ammoLow ? "#886600" : "#006888";
-        drawLight(acx, acy, 5, lit, aColor, aGlow);
+        const sColor = ammoLow ? "#ffcc00" : "#00ccff";
+        const sGlow = ammoLow ? "#ff9900" : "#0088bb";
+        drawStripSegment(sx, stripY, segW, segH, lit, sColor, sGlow, i === 0, i === ammoLights - 1);
       }
       ctx.font = "bold 9px monospace";
       ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.fillText(`${ammo}`, lx + 205, ly);
+      ctx.fillText(`${ammo}`, stripX + stripTotalW + 6, ly);
 
       // FUEL bar
       ly += 18;
