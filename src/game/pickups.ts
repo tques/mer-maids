@@ -513,7 +513,7 @@ export function drawAmmoDepots(ctx: CanvasRenderingContext2D, viewH: number) {
     ctx.stroke();
   }
 
-  // ---- Warehouse buildings (flat-roofed, corrugated look) ----
+  // ---- Warehouse buildings (futuristic glassy) ----
   const warehouses = [
     { ox: -35, w: 22, h: 16 },
     { ox: 30, w: 26, h: 14 },
@@ -522,12 +522,15 @@ export function drawAmmoDepots(ctx: CanvasRenderingContext2D, viewH: number) {
     const wx = depot.x + wh.ox;
     const wy = topY - wh.h;
 
-    // Corrugated wall
-    ctx.fillStyle = "#2a3040";
+    // Glassy wall
+    const whGrad = ctx.createLinearGradient(wx - wh.w / 2, wy, wx + wh.w / 2, wy + wh.h);
+    whGrad.addColorStop(0, "rgba(30, 70, 90, 0.8)");
+    whGrad.addColorStop(1, "rgba(15, 40, 60, 0.9)");
+    ctx.fillStyle = whGrad;
     ctx.fillRect(wx - wh.w / 2, wy, wh.w, wh.h);
 
-    // Vertical ridges (corrugation)
-    ctx.strokeStyle = "#3a4560";
+    // Vertical accent lines
+    ctx.strokeStyle = "rgba(80, 200, 190, 0.1)";
     ctx.lineWidth = 0.5;
     for (let rx = wx - wh.w / 2 + 4; rx < wx + wh.w / 2; rx += 4) {
       ctx.beginPath();
@@ -536,14 +539,14 @@ export function drawAmmoDepots(ctx: CanvasRenderingContext2D, viewH: number) {
       ctx.stroke();
     }
 
-    // Flat roof cap
-    ctx.fillStyle = "#3a4560";
-    ctx.fillRect(wx - wh.w / 2 - 1, wy, wh.w + 2, 3);
+    // Top highlight
+    ctx.fillStyle = "rgba(120, 230, 220, 0.12)";
+    ctx.fillRect(wx - wh.w / 2 - 1, wy, wh.w + 2, 2);
 
-    // Small door
-    ctx.fillStyle = "#1a2030";
+    // Door (aqua accent)
+    ctx.fillStyle = "rgba(10, 30, 45, 0.9)";
     ctx.fillRect(wx - 3, topY - 8, 6, 8);
-    ctx.strokeStyle = "#4a5570";
+    ctx.strokeStyle = "rgba(80, 200, 190, 0.2)";
     ctx.lineWidth = 0.5;
     ctx.strokeRect(wx - 3, topY - 8, 6, 8);
   }
