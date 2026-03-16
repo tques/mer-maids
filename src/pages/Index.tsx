@@ -288,7 +288,6 @@ const Index = () => {
 
         const roll = rollRef.current;
         const fuel = fuelRef.current;
-        console.log("Roll active:", roll.active, "Fuel current:", fuel); // Debugging logs
 
         if (!roll.active && fuel >= ROLL_FUEL_COST) {
           fuelRef.current -= ROLL_FUEL_COST;
@@ -297,11 +296,9 @@ const Index = () => {
           const angle = Math.atan2(wm.y - pos.y, wm.x - pos.x);
           const dir = key === "a" ? -1 : 1;
 
-          // Introduce a time-based factor to create wavy motion
-          //const timeFactor = performance.now() * 0.005; // Adjust the multiplier for more or less wave effect
-
-          const perpX = (-Math.sin(angle) + Math.cos(1)) * dir;
-          const perpY = (Math.cos(angle) - Math.sin(1)) * dir;
+          // Simplified perpX and perpY calculations
+          const perpX = -Math.sin(angle) * dir;
+          const perpY = Math.cos(angle) * dir;
 
           roll.active = true;
           roll.dir = dir as -1 | 1;
@@ -312,11 +309,7 @@ const Index = () => {
           roll.perpY = perpY;
           roll.spinAngle = 0;
 
-          console.log("Starting roll:", roll); // Debugging logs
-
           deflectMissiles(); // Rolling throws off homing missiles
-        } else {
-          console.log("Roll not started due to conditions"); // Debugging logs
         }
       }
     };
