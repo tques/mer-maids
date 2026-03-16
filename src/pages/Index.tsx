@@ -1181,7 +1181,7 @@ const Index = () => {
         ctx.strokeRect(x, y, w, h);
         // Pulse glow when low
         if (low) {
-          const pulse = 0.15 + Math.sin(now * 0.006) * 0.1;
+          const pulse = 0.15 + Math.sin(hudNow * 0.006) * 0.1;
           ctx.fillStyle = `rgba(255,80,80,${pulse})`;
           ctx.fillRect(x, y, w, h);
         }
