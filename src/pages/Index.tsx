@@ -1351,7 +1351,7 @@ const Index = () => {
       ctx.fillText("LIVES", labelX - 4, ly);
       ctx.textAlign = "left";
       for (let i = 0; i < PLAYER_LIVES; i++) {
-        const lcx = labelX + 4 + i * 24;
+        const lcx = labelX + 8 + i * 24;
         const lcy = ly - 4;
         drawRoundLight(lcx, lcy, 7, i < playerLivesRef.current, "#50ff90", "#1a8040");
       }
