@@ -297,7 +297,7 @@ const Index = () => {
           const dir = key === "a" ? -1 : 1;
 
           // Define a scaling factor to increase the distance of the roll
-          const scaleFactor = 4; // You can adjust this value as needed
+          const scaleFactor = 3; // You can adjust this value as needed
 
           // Simplified perpX and perpY calculations with scaling
           const perpX = -Math.sin(angle) * dir * scaleFactor;
