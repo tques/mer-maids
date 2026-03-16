@@ -296,9 +296,12 @@ const Index = () => {
           const angle = Math.atan2(wm.y - pos.y, wm.x - pos.x);
           const dir = key === "a" ? -1 : 1;
 
-          // Simplified perpX and perpY calculations
-          const perpX = -Math.sin(angle) * dir;
-          const perpY = Math.cos(angle) * dir;
+          // Define a scaling factor to increase the distance of the roll
+          const scaleFactor = 2; // You can adjust this value as needed
+
+          // Simplified perpX and perpY calculations with scaling
+          const perpX = -Math.sin(angle) * dir * scaleFactor;
+          const perpY = Math.cos(angle) * dir * scaleFactor;
 
           roll.active = true;
           roll.dir = dir as -1 | 1;
