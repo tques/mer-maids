@@ -158,20 +158,33 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
   const flickerRate = critical ? 80 : (exposed ? 120 : 200);
   const flickering = (damaged || exposed) && Math.sin(now / flickerRate) > 0;
 
-  // --- Draw each building ---
+  // --- Draw each building (futuristic glass towers) ---
   for (const b of buildings) {
     const bx = boat.x + b.ox;
     const by = topY - b.h;
 
-    // Building body color changes with damage state
-    ctx.fillStyle = exposed ? (critical ? "#0e0808" : "#121418") : (damaged ? (critical ? "#151020" : "#1a2030") : "#1e2538");
+    // Building body — glassy gradient
+    const bldGrad = ctx.createLinearGradient(bx - b.w / 2, by, bx + b.w / 2, by + b.h);
+    if (exposed) {
+      bldGrad.addColorStop(0, critical ? "rgba(30, 10, 10, 0.9)" : "rgba(15, 25, 35, 0.9)");
+      bldGrad.addColorStop(1, critical ? "rgba(20, 5, 5, 0.95)" : "rgba(10, 18, 28, 0.95)");
+    } else {
+      bldGrad.addColorStop(0, "rgba(30, 70, 90, 0.8)");
+      bldGrad.addColorStop(0.5, "rgba(20, 50, 70, 0.85)");
+      bldGrad.addColorStop(1, "rgba(15, 35, 55, 0.9)");
+    }
+    ctx.fillStyle = bldGrad;
     ctx.fillRect(bx - b.w / 2, by, b.w, b.h);
     
-    // Left edge highlight
-    ctx.fillStyle = exposed ? "#1a1a20" : (damaged ? "#1e2540" : "#2a3350");
+    // Glass reflection highlight (left edge)
+    ctx.fillStyle = exposed ? "rgba(40, 60, 80, 0.3)" : "rgba(120, 220, 210, 0.15)";
     ctx.fillRect(bx - b.w / 2, by, 3, b.h);
 
-    // Damage scars (horizontal lines on buildings when barrier is down)
+    // Top cap highlight
+    ctx.fillStyle = exposed ? "rgba(60, 40, 30, 0.3)" : "rgba(150, 240, 230, 0.12)";
+    ctx.fillRect(bx - b.w / 2, by, b.w, 2);
+
+    // Damage scars
     if (exposed) {
       ctx.fillStyle = "rgba(60, 30, 10, 0.3)";
       const scarCount = Math.ceil((1 - hpRatio) * 3);
@@ -181,18 +194,18 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
       }
     }
 
-    // Window lights — randomized grid of tiny colored squares
+    // Window lights — aqua/cyan for futuristic feel
     const lightChance = exposed ? 0.9 : (critical ? 0.85 : (damaged ? 0.55 : 0.3));
     const lightColor = exposed
-      ? (flickering ? "#cc4400" : "#220800")   // Emergency orange when exposed
+      ? (flickering ? "#cc4400" : "#220800")
       : (critical
-        ? (flickering ? "#aa3030" : "#331818") // Red warning when critical
-        : (damaged ? "#4a6a8a" : "#6a8aaa"));  // Normal blue-white
+        ? (flickering ? "#aa3030" : "#331818")
+        : (damaged ? "#4ab8c0" : "#80e8d8"));
 
     ctx.fillStyle = lightColor;
     for (let wy = by + 6; wy < topY - 4; wy += 8) {
       for (let wx = bx - b.w / 2 + 6; wx < bx + b.w / 2 - 3; wx += 6) {
-        if (Math.random() > lightChance) {  // Random windows are lit
+        if (Math.random() > lightChance) {
           ctx.fillRect(wx, wy, 2, 2);
         }
       }
