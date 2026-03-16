@@ -1136,95 +1136,227 @@ const Index = () => {
       ctx.restore(); // camera translation
       ctx.restore(); // zoom
 
-      // HUD (screen space, no transforms)
+      // ===== MECHA AERO HUD =====
       ctx.save();
-      ctx.font = "bold 14px monospace";
-      ctx.textAlign = "left";
+      const now = performance.now();
+      const hudX = 12;
+      const hudY = 12;
+      const panelW = 230;
+      const panelH = 130;
 
-      const hudY = 28;
-      const hudX = 16;
-      ctx.fillStyle = "rgba(0,0,0,0.4)";
-      ctx.fillRect(hudX - 4, hudY - 16, 200, 96);
-
-      // Ammo counter
-      const ammo = ammoRef.current;
-      const ammoColor = ammo <= AMMO_LOW_THRESHOLD ? "#f0c830" : "#aaa";
-      ctx.fillStyle = ammoColor;
-      ctx.fillText("AMMO", hudX, hudY + 44);
-      const ammoBarW = 120;
-      const ammoFill = (ammo / MAX_AMMO) * ammoBarW;
-      ctx.fillStyle = "#333";
-      ctx.fillRect(hudX + 50, hudY + 34, ammoBarW, 10);
-      ctx.fillStyle = ammo <= AMMO_LOW_THRESHOLD ? "#f0c830" : "#00b894";
-      ctx.fillRect(hudX + 50, hudY + 34, ammoFill, 10);
-      ctx.fillStyle = ammoColor;
-      ctx.font = "bold 11px monospace";
-      ctx.fillText(`${ammo}`, hudX + 50 + ammoBarW + 6, hudY + 44);
-      ctx.font = "bold 14px monospace";
-
-      // Fuel counter
-      const fuel = fuelRef.current;
-      const fuelColor = fuel <= FUEL_LOW_THRESHOLD ? "#74b9ff" : "#aaa";
-      ctx.fillStyle = fuelColor;
-      ctx.fillText("FUEL", hudX, hudY + 66);
-      const fuelBarW = 120;
-      const fuelFill = (fuel / MAX_FUEL) * fuelBarW;
-      ctx.fillStyle = "#333";
-      ctx.fillRect(hudX + 50, hudY + 56, fuelBarW, 10);
-      ctx.fillStyle = fuel <= FUEL_LOW_THRESHOLD ? "#74b9ff" : "#0984e3";
-      ctx.fillRect(hudX + 50, hudY + 56, fuelFill, 10);
-      ctx.fillStyle = fuelColor;
-      ctx.font = "bold 11px monospace";
-      ctx.fillText(`${Math.ceil(fuel)}`, hudX + 50 + fuelBarW + 6, hudY + 66);
-      ctx.font = "bold 14px monospace";
-
-      // Ammo box alert
-      drawAmmoCrateAlert(ctx, hudX, hudY + 86);
-
-      ctx.fillStyle = "#D93636";
-      ctx.fillText("LIVES", hudX, hudY);
-      for (let i = 0; i < PLAYER_LIVES; i++) {
-        const lx = hudX + 60 + i * 22;
+      // --- Helper: draw angled glassy panel ---
+      const drawPanel = (x: number, y: number, w: number, h: number, cutTL = 12, cutBR = 12) => {
         ctx.beginPath();
-        ctx.moveTo(lx + 8, hudY - 5);
-        ctx.lineTo(lx - 2, hudY - 10);
-        ctx.lineTo(lx - 2, hudY);
+        ctx.moveTo(x + cutTL, y);
+        ctx.lineTo(x + w, y);
+        ctx.lineTo(x + w, y + h - cutBR);
+        ctx.lineTo(x + w - cutBR, y + h);
+        ctx.lineTo(x, y + h);
+        ctx.lineTo(x, y + cutTL);
         ctx.closePath();
-        ctx.fillStyle = i < playerLivesRef.current ? "#D93636" : "#444";
-        ctx.fill();
+      };
+
+      // --- Helper: draw a sleek bar with glow ---
+      const drawBar = (x: number, y: number, w: number, h: number, fill: number, color1: string, color2: string, low: boolean) => {
+        // Track background
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        ctx.fillRect(x, y, w, h);
+        // Filled portion with gradient
+        const barW = Math.max(0, fill * w);
+        if (barW > 0) {
+          const grad = ctx.createLinearGradient(x, y, x + barW, y);
+          grad.addColorStop(0, color1);
+          grad.addColorStop(1, color2);
+          ctx.fillStyle = grad;
+          ctx.fillRect(x, y, barW, h);
+          // Top highlight
+          ctx.fillStyle = "rgba(255,255,255,0.25)";
+          ctx.fillRect(x, y, barW, h * 0.35);
+        }
+        // Border
+        ctx.strokeStyle = "rgba(255,255,255,0.1)";
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(x, y, w, h);
+        // Pulse glow when low
+        if (low) {
+          const pulse = 0.15 + Math.sin(now * 0.006) * 0.1;
+          ctx.fillStyle = `rgba(255,80,80,${pulse})`;
+          ctx.fillRect(x, y, w, h);
+        }
+      };
+
+      // ---- LEFT PANEL: Player status ----
+      ctx.save();
+      drawPanel(hudX, hudY, panelW, panelH);
+      // Panel glass fill
+      const panelGrad = ctx.createLinearGradient(hudX, hudY, hudX, hudY + panelH);
+      panelGrad.addColorStop(0, "rgba(0,20,40,0.75)");
+      panelGrad.addColorStop(0.5, "rgba(0,40,60,0.6)");
+      panelGrad.addColorStop(1, "rgba(0,10,30,0.8)");
+      ctx.fillStyle = panelGrad;
+      ctx.fill();
+      // Border glow
+      ctx.strokeStyle = "rgba(0,220,255,0.3)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // Inner highlight line
+      ctx.beginPath();
+      ctx.moveTo(hudX + 14, hudY + 1);
+      ctx.lineTo(hudX + panelW - 2, hudY + 1);
+      ctx.strokeStyle = "rgba(0,220,255,0.15)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      const lx = hudX + 10;
+      let ly = hudY + 18;
+
+      // LIVES — diamond icons
+      ctx.font = "bold 10px monospace";
+      ctx.fillStyle = "rgba(0,220,255,0.6)";
+      ctx.textAlign = "left";
+      ctx.fillText("LIVES", lx, ly);
+      for (let i = 0; i < PLAYER_LIVES; i++) {
+        const dx = lx + 48 + i * 20;
+        const dy = ly - 5;
+        ctx.save();
+        ctx.translate(dx, dy);
+        ctx.rotate(Math.PI / 4);
+        ctx.fillStyle = i < playerLivesRef.current ? "#00e0ff" : "rgba(255,255,255,0.1)";
+        ctx.fillRect(-5, -5, 10, 10);
+        if (i < playerLivesRef.current) {
+          ctx.fillStyle = "rgba(255,255,255,0.4)";
+          ctx.fillRect(-5, -5, 10, 5);
+        }
+        ctx.restore();
       }
 
-      ctx.fillStyle = "#aaa";
-      ctx.fillText("HP", hudX, hudY + 22);
+      // HP — segmented bar
+      ly += 20;
+      ctx.font = "bold 10px monospace";
+      ctx.fillStyle = "rgba(0,220,255,0.6)";
+      ctx.fillText("HP", lx, ly);
+      const hpBarX = lx + 28;
       for (let i = 0; i < PLAYER_MAX_HP; i++) {
-        ctx.fillStyle = i < playerHPRef.current ? "#D93636" : "#444";
-        ctx.fillRect(hudX + 30 + i * 18, hudY + 12, 14, 10);
+        const bx = hpBarX + i * 19;
+        const active = i < playerHPRef.current;
+        // Segment
+        ctx.fillStyle = active ? "#00e0ff" : "rgba(255,255,255,0.08)";
+        ctx.fillRect(bx, ly - 9, 15, 10);
+        if (active) {
+          // Glass highlight
+          ctx.fillStyle = "rgba(255,255,255,0.35)";
+          ctx.fillRect(bx, ly - 9, 15, 4);
+          // Glow
+          ctx.shadowColor = "#00e0ff";
+          ctx.shadowBlur = 4;
+          ctx.fillStyle = "rgba(0,224,255,0.15)";
+          ctx.fillRect(bx, ly - 9, 15, 10);
+          ctx.shadowBlur = 0;
+        }
       }
 
-      ctx.textAlign = "right";
-      const shipHudX = cw - 16;
-      ctx.fillStyle = "rgba(0,0,0,0.4)";
-      ctx.fillRect(shipHudX - 240, hudY - 16, 244, 30);
+      // AMMO bar
+      ly += 22;
+      ctx.font = "bold 10px monospace";
+      ctx.fillStyle = ammo <= AMMO_LOW_THRESHOLD ? "#ffcc00" : "rgba(0,220,255,0.6)";
+      ctx.fillText("AMMO", lx, ly);
+      drawBar(lx + 46, ly - 9, 120, 10, ammo / MAX_AMMO,
+        ammo <= AMMO_LOW_THRESHOLD ? "#cc8800" : "#00b894",
+        ammo <= AMMO_LOW_THRESHOLD ? "#ffcc00" : "#00e0ff",
+        ammo <= AMMO_LOW_THRESHOLD);
+      ctx.font = "bold 9px monospace";
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      ctx.fillText(`${ammo}`, lx + 170, ly);
+
+      // FUEL bar
+      ly += 18;
+      ctx.font = "bold 10px monospace";
+      ctx.fillStyle = fuel <= FUEL_LOW_THRESHOLD ? "#74b9ff" : "rgba(0,220,255,0.6)";
+      ctx.fillText("FUEL", lx, ly);
+      drawBar(lx + 46, ly - 9, 120, 10, fuel / MAX_FUEL,
+        fuel <= FUEL_LOW_THRESHOLD ? "#2060cc" : "#0984e3",
+        fuel <= FUEL_LOW_THRESHOLD ? "#74b9ff" : "#00e0ff",
+        fuel <= FUEL_LOW_THRESHOLD);
+      ctx.font = "bold 9px monospace";
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      ctx.fillText(`${Math.ceil(fuel)}`, lx + 170, ly);
+
+      // Corner accents (mecha detail lines)
+      ctx.strokeStyle = "rgba(0,220,255,0.2)";
+      ctx.lineWidth = 1;
+      // Top-left bracket
+      ctx.beginPath();
+      ctx.moveTo(hudX + 2, hudY + 20);
+      ctx.lineTo(hudX + 2, hudY + 14);
+      ctx.lineTo(hudX + 14, hudY + 2);
+      ctx.stroke();
+      // Bottom-right bracket
+      ctx.beginPath();
+      ctx.moveTo(hudX + panelW - 2, hudY + panelH - 20);
+      ctx.lineTo(hudX + panelW - 2, hudY + panelH - 14);
+      ctx.lineTo(hudX + panelW - 14, hudY + panelH - 2);
+      ctx.stroke();
+
+      ctx.restore();
+
+      // Ammo box alert (below panel)
+      drawAmmoCrateAlert(ctx, hudX + 10, hudY + panelH + 8);
+
+      // ---- RIGHT PANEL: City/Barrier status ----
+      const rPanelW = 250;
+      const rPanelH = 36;
+      const rX = cw - rPanelW - 12;
+      const rY = hudY;
+
+      ctx.save();
+      drawPanel(rX, rY, rPanelW, rPanelH, 0, 14);
+      const rGrad = ctx.createLinearGradient(rX, rY, rX, rY + rPanelH);
+      rGrad.addColorStop(0, "rgba(0,20,40,0.75)");
+      rGrad.addColorStop(1, "rgba(0,10,30,0.8)");
+      ctx.fillStyle = rGrad;
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,220,255,0.25)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
 
       const barrierUp = shipHPRef.current > 3;
-      ctx.fillStyle = barrierUp ? "#888" : "#c44";
-      ctx.fillText(barrierUp ? "CITY BARRIER" : "CITY HP", shipHudX - 180, hudY);
-      for (let i = 0; i < SHIP_MAX_HP; i++) {
-        const bx = shipHudX - 170 + i * 17;
-        const isBarrierSegment = i >= 3; // first 3 are city HP, rest is barrier
-        if (i < shipHPRef.current) {
-          ctx.fillStyle = isBarrierSegment ? "#5a9" : "#c66";
-        } else {
-          ctx.fillStyle = "#444";
-        }
-        ctx.fillRect(bx, hudY - 12, 13, 10);
-      }
+      ctx.font = "bold 10px monospace";
+      ctx.textAlign = "left";
+      ctx.fillStyle = barrierUp ? "rgba(0,220,255,0.6)" : "#ff6666";
+      ctx.fillText(barrierUp ? "CITY BARRIER" : "CITY HP", rX + 8, rY + 22);
 
-      // Score display
-      ctx.fillStyle = "#f7d794";
-      ctx.font = "bold 18px monospace";
+      for (let i = 0; i < SHIP_MAX_HP; i++) {
+        const bx = rX + 100 + i * 15;
+        const isBarrierSegment = i >= 3;
+        const active = i < shipHPRef.current;
+        if (active) {
+          ctx.fillStyle = isBarrierSegment ? "#00cc88" : "#ff5555";
+        } else {
+          ctx.fillStyle = "rgba(255,255,255,0.08)";
+        }
+        ctx.fillRect(bx, rY + 12, 11, 10);
+        if (active) {
+          ctx.fillStyle = "rgba(255,255,255,0.3)";
+          ctx.fillRect(bx, rY + 12, 11, 4);
+        }
+      }
+      ctx.restore();
+
+      // ---- CENTER: Score + Wave ----
+      ctx.save();
       ctx.textAlign = "center";
-      ctx.fillText(`SCORE: ${scoreRef.current}`, cw / 2, 30);
+      // Score with glow
+      ctx.shadowColor = "#00e0ff";
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = "#00e0ff";
+      ctx.font = "bold 20px monospace";
+      ctx.fillText(`${scoreRef.current}`, cw / 2, 30);
+      ctx.shadowBlur = 0;
+      // "SCORE" label above
+      ctx.fillStyle = "rgba(0,220,255,0.4)";
+      ctx.font = "bold 9px monospace";
+      ctx.fillText("SCORE", cw / 2, 14);
+      ctx.restore();
 
       // Wave HUD
       drawWaveHUD(ctx, waveRef.current, cw);
