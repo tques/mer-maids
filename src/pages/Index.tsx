@@ -1344,12 +1344,14 @@ const Index = () => {
       };
 
       // LIVES — green round indicator lights
+      const labelX = lx + 42; // consistent alignment point for all indicators
       ctx.font = "bold 10px monospace";
       ctx.fillStyle = "rgba(100,255,150,0.7)";
+      ctx.textAlign = "right";
+      ctx.fillText("LIVES", labelX - 4, ly);
       ctx.textAlign = "left";
-      ctx.fillText("LIVES", lx, ly);
       for (let i = 0; i < PLAYER_LIVES; i++) {
-        const lcx = lx + 52 + i * 24;
+        const lcx = labelX + 4 + i * 24;
         const lcy = ly - 4;
         drawRoundLight(lcx, lcy, 7, i < playerLivesRef.current, "#50ff90", "#1a8040");
       }
@@ -1358,9 +1360,11 @@ const Index = () => {
       ly += 22;
       ctx.font = "bold 10px monospace";
       ctx.fillStyle = "rgba(255,180,60,0.7)";
-      ctx.fillText("HP", lx, ly);
+      ctx.textAlign = "right";
+      ctx.fillText("HP", labelX - 4, ly);
+      ctx.textAlign = "left";
       for (let i = 0; i < PLAYER_MAX_HP; i++) {
-        const hcx = lx + 34 + i * 26;
+        const hcx = labelX + 4 + i * 26;
         const hcy = ly - 3;
         drawDiamondLight(hcx, hcy, 7, i < playerHPRef.current, "#ffb830", "#996600");
       }
@@ -1369,17 +1373,18 @@ const Index = () => {
       ly += 22;
       ctx.font = "bold 10px monospace";
       const ammoLow = ammo <= AMMO_LOW_THRESHOLD;
-      ctx.fillStyle = ammoLow ? "#ffcc00" : "rgba(0,180,255,0.7)";
-      ctx.fillText("AMMO", lx, ly);
+      ctx.fillStyle = ammoLow ? "#ffcc00" : "rgba(180,190,200,0.7)";
+      ctx.textAlign = "right";
+      ctx.fillText("AMMO", labelX - 4, ly);
+      ctx.textAlign = "left";
       const ammoLights = 12;
       const ammoFrac = ammo / MAX_AMMO;
       const litAmmo = Math.round(ammoFrac * ammoLights);
-      const stripX = lx + 48;
+      const stripX = labelX + 2;
       const stripY = ly - 10;
       const segW = 12;
       const segH = 12;
       const segGap = 1.5;
-      // Outer strip housing
       ctx.beginPath();
       const stripTotalW = ammoLights * (segW + segGap) - segGap;
       ctx.roundRect(stripX - 2, stripY - 2, stripTotalW + 4, segH + 4, 3);
@@ -1395,22 +1400,21 @@ const Index = () => {
         const sGlow = ammoLow ? "#ff9900" : "#8890a0";
         drawStripSegment(sx, stripY, segW, segH, lit, sColor, sGlow, i === 0, i === ammoLights - 1);
       }
-      ctx.font = "bold 9px monospace";
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.fillText(`${ammo}`, stripX + stripTotalW + 6, ly);
 
       // FUEL — liquid-filled vertical tubes
       ly += 34;
       ctx.font = "bold 10px monospace";
       const fuelLow = fuel <= FUEL_LOW_THRESHOLD;
       ctx.fillStyle = fuelLow ? "#ff6060" : "rgba(0,180,255,0.7)";
-      ctx.fillText("FUEL", lx, ly);
+      ctx.textAlign = "right";
+      ctx.fillText("FUEL", labelX - 4, ly);
+      ctx.textAlign = "left";
 
       const tubeCount = 5;
       const tubeW = 14;
       const tubeH = 28;
       const tubeGap = 6;
-      const tubeStartX = lx + 48;
+      const tubeStartX = labelX + 2;
       const tubeStartY = ly - 22;
       const fuelFrac = fuel / MAX_FUEL;
       const fuelPerTube = 1 / tubeCount;
@@ -1520,9 +1524,8 @@ const Index = () => {
         }
       }
 
-      ctx.font = "bold 9px monospace";
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.fillText(`${Math.ceil(fuel)}`, tubeStartX + tubeCount * (tubeW + tubeGap) + 4, ly);
+
+
 
       // Corner accents (mecha detail lines)
       ctx.strokeStyle = "rgba(0,220,255,0.2)";
