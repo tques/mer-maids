@@ -327,7 +327,7 @@ export function drawMinelayer(ctx: CanvasRenderingContext2D, viewH: number) {
     ctx.restore();
   }
 
-  // ---- Floating mines (dark spheres with spikes) ----
+  // ---- Floating mines (dark robotic spheres with mechanical spikes) ----
   for (const m of mines) {
     if (!m.alive) continue;
     const r = MINE_SIZE * 0.5;
@@ -336,16 +336,20 @@ export function drawMinelayer(ctx: CanvasRenderingContext2D, viewH: number) {
     ctx.save();
     ctx.translate(m.x, m.y);
 
-    // Mine body (dark sphere)
+    // Mine body (dark industrial metal)
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fillStyle = "#2c2c2c";
+    const mineGrad = ctx.createRadialGradient(-r * 0.2, -r * 0.2, 0, 0, 0, r);
+    mineGrad.addColorStop(0, "#3a3a3a");
+    mineGrad.addColorStop(0.7, "#1a1a1a");
+    mineGrad.addColorStop(1, "#111");
+    ctx.fillStyle = mineGrad;
     ctx.fill();
     ctx.strokeStyle = "#555";
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Spikes (contact detonators)
+    // Mechanical spikes (contact detonators)
     const spikeCount = 8;
     for (let i = 0; i < spikeCount; i++) {
       const angle = (i / spikeCount) * Math.PI * 2;
@@ -356,26 +360,19 @@ export function drawMinelayer(ctx: CanvasRenderingContext2D, viewH: number) {
       ctx.beginPath();
       ctx.moveTo(sx, sy);
       ctx.lineTo(ex, ey);
-      ctx.strokeStyle = "#777";
+      ctx.strokeStyle = "#666";
       ctx.lineWidth = 2;
       ctx.stroke();
-      // Spike tip
       ctx.beginPath();
       ctx.arc(ex, ey, 1.5, 0, Math.PI * 2);
-      ctx.fillStyle = "#999";
+      ctx.fillStyle = "#888";
       ctx.fill();
     }
 
-    // Warning light (pulsing red)
+    // Warning light (pulsing red, robotic)
     ctx.beginPath();
     ctx.arc(0, -r * 0.3, 2.5, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 40, 40, ${pulse})`;
-    ctx.fill();
-
-    // Metallic highlight
-    ctx.beginPath();
-    ctx.arc(-r * 0.25, -r * 0.25, r * 0.25, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255,255,255,0.1)";
+    ctx.fillStyle = `rgba(255, 30, 10, ${pulse})`;
     ctx.fill();
 
     ctx.restore();

@@ -302,94 +302,110 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
     const hw = SUB_WIDTH / 2;
     const hh = SUB_HEIGHT / 2;
 
-    // Red glow — brighter when attacking
-    ctx.shadowColor = sub.attacking ? "rgba(255, 30, 10, 0.7)" : "rgba(200, 50, 30, 0.4)";
-    ctx.shadowBlur = 12;
+    // Alien red glow
+    ctx.shadowColor = sub.attacking ? "rgba(255, 20, 0, 0.8)" : "rgba(200, 40, 20, 0.4)";
+    ctx.shadowBlur = 14;
 
-    // ---- Main hull (elliptical, dark gunmetal) ----
+    // ---- Main hull (industrial dark metal) ----
     ctx.beginPath();
     ctx.ellipse(0, 0, hw, hh, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#1a1a2e";
+    const hullGrad = ctx.createLinearGradient(0, -hh, 0, hh);
+    hullGrad.addColorStop(0, "#2a2a2a");
+    hullGrad.addColorStop(0.5, "#151515");
+    hullGrad.addColorStop(1, "#1a1a1a");
+    ctx.fillStyle = hullGrad;
     ctx.fill();
-    ctx.strokeStyle = "#4a0e0e";
+    ctx.strokeStyle = "#444";
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // ---- Danger stripe (crimson band across center) ----
+    // ---- Industrial panel segments ----
+    ctx.strokeStyle = "rgba(100, 100, 100, 0.25)";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(-hw * 0.5, -hh);
+    ctx.lineTo(-hw * 0.5, hh);
+    ctx.moveTo(hw * 0.2, -hh);
+    ctx.lineTo(hw * 0.2, hh);
+    ctx.stroke();
+
+    // ---- Danger stripe (rust red) ----
     ctx.beginPath();
     ctx.ellipse(0, 0, hw * 0.92, hh * 0.55, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#6b0000";
+    ctx.fillStyle = "#5a0000";
     ctx.fill();
-
-    // Inner hull (dark center)
     ctx.beginPath();
     ctx.ellipse(0, 0, hw * 0.75, hh * 0.35, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#1a1a2e";
+    ctx.fillStyle = "#151515";
     ctx.fill();
 
-    // ---- Conning tower (angular shape on top) ----
+    // ---- Conning tower (angular, robotic) ----
     ctx.beginPath();
-    ctx.moveTo(-7, -hh);
-    ctx.lineTo(-5, -hh - 9);
-    ctx.lineTo(5, -hh - 9);
-    ctx.lineTo(7, -hh);
+    ctx.moveTo(-8, -hh);
+    ctx.lineTo(-6, -hh - 10);
+    ctx.lineTo(6, -hh - 10);
+    ctx.lineTo(8, -hh);
     ctx.closePath();
-    ctx.fillStyle = "#2d0a0a";
+    ctx.fillStyle = "#222";
     ctx.fill();
-    ctx.strokeStyle = "#8b0000";
+    ctx.strokeStyle = "#600";
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // ---- Sensor mast (antenna with blinking red tip) ----
+    // ---- Sensor mast (antenna with blinking red) ----
     ctx.beginPath();
-    ctx.moveTo(0, -hh - 9);
-    ctx.lineTo(0, -hh - 15);
-    ctx.strokeStyle = "#cc0000";
+    ctx.moveTo(0, -hh - 10);
+    ctx.lineTo(0, -hh - 16);
+    ctx.strokeStyle = "#888";
     ctx.lineWidth = 1.2;
     ctx.stroke();
-
-    // Blinking sensor tip
     const sensorBlink = Math.sin(performance.now() * 0.008 + sub.x) > 0;
     if (sensorBlink) {
       ctx.beginPath();
-      ctx.arc(0, -hh - 15, 1.5, 0, Math.PI * 2);
+      ctx.arc(0, -hh - 16, 1.5, 0, Math.PI * 2);
       ctx.fillStyle = "#ff0000";
       ctx.fill();
     }
 
-    // ---- Armored nose (triangular ram on front) ----
+    // ---- Armored nose (mechanical ram) ----
     const noseX = sub.dir * hw;
     ctx.beginPath();
     ctx.moveTo(noseX, -hh * 0.6);
-    ctx.lineTo(noseX + sub.dir * 8, 0);
+    ctx.lineTo(noseX + sub.dir * 10, 0);
     ctx.lineTo(noseX, hh * 0.6);
     ctx.closePath();
-    ctx.fillStyle = "#4a0e0e";
+    ctx.fillStyle = "#333";
     ctx.fill();
+    ctx.strokeStyle = "#555";
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
 
-    // ---- Hostile eye porthole (pulsing red circle) ----
+    // ---- Hostile eye (pulsing red, robotic) ----
     const eyeX = sub.dir * hw * 0.35;
     ctx.beginPath();
-    ctx.arc(eyeX, 0, 3.5, 0, Math.PI * 2);
-    const eyePulse = 0.6 + Math.sin(performance.now() * 0.006) * 0.4;
-    ctx.fillStyle = sub.attacking ? "#ff0000" : `rgba(255, 40, 20, ${eyePulse})`;
+    ctx.arc(eyeX, 0, 4, 0, Math.PI * 2);
+    ctx.fillStyle = "#111";
     ctx.fill();
-    // Bright pupil
     ctx.beginPath();
-    ctx.arc(eyeX, 0, 1.5, 0, Math.PI * 2);
-    ctx.fillStyle = "#ffcc00";
+    ctx.arc(eyeX, 0, 3, 0, Math.PI * 2);
+    const eyePulse = 0.6 + Math.sin(performance.now() * 0.006) * 0.4;
+    ctx.fillStyle = sub.attacking ? "#ff0000" : `rgba(255, 30, 10, ${eyePulse})`;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(eyeX, 0, 1.2, 0, Math.PI * 2);
+    ctx.fillStyle = "#fff";
     ctx.fill();
 
-    // ---- Jagged tail fins ----
+    // ---- Jagged tail fins (mechanical) ----
     const tailX = -sub.dir * hw * 0.85;
     ctx.beginPath();
     ctx.moveTo(tailX, -hh * 0.4);
-    ctx.lineTo(tailX - sub.dir * 8, -hh - 5);
-    ctx.lineTo(tailX - sub.dir * 4, -hh * 0.1);
-    ctx.lineTo(tailX - sub.dir * 8, hh + 5);
+    ctx.lineTo(tailX - sub.dir * 9, -hh - 6);
+    ctx.lineTo(tailX - sub.dir * 5, -hh * 0.1);
+    ctx.lineTo(tailX - sub.dir * 9, hh + 6);
     ctx.lineTo(tailX, hh * 0.4);
     ctx.closePath();
-    ctx.fillStyle = "#6b0000";
+    ctx.fillStyle = "#3a0000";
     ctx.fill();
 
     // ---- Torpedo tube markings (small rectangles) ----

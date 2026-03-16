@@ -398,34 +398,30 @@ export function drawGunboats(ctx: CanvasRenderingContext2D, viewH: number) {
     const flashAlpha = g.barrierFlash > 0 ? 0.5 : 0.12;
     const barrierPulse = 0.03 * Math.sin(performance.now() * 0.004);
 
-    // Dome arc (upper hemisphere only)
     ctx.beginPath();
     ctx.arc(0, -2, barrierR, Math.PI, 0, false);
     ctx.closePath();
-
-    // Fill with translucent shield color
     const barrierColor = g.barrierFlash > 0
-      ? `rgba(255, 100, 80, ${flashAlpha})`
-      : `rgba(231, 76, 60, ${flashAlpha + barrierPulse})`;
+      ? `rgba(255, 80, 40, ${flashAlpha})`
+      : `rgba(200, 50, 30, ${flashAlpha + barrierPulse})`;
     ctx.fillStyle = barrierColor;
     ctx.fill();
 
-    // Barrier edge glow
     ctx.beginPath();
     ctx.arc(0, -2, barrierR, Math.PI, 0, false);
     const edgeAlpha = g.barrierFlash > 0 ? 0.8 : 0.3 + barrierPulse * 3;
-    ctx.strokeStyle = `rgba(231, 76, 60, ${edgeAlpha})`;
+    ctx.strokeStyle = `rgba(200, 50, 30, ${edgeAlpha})`;
     ctx.lineWidth = g.barrierFlash > 0 ? 2.5 : 1.5;
     ctx.stroke();
 
-    // Hex-pattern lines on barrier for detail
+    // Industrial hex pattern
     if (g.barrierFlash <= 0) {
-      ctx.globalAlpha = 0.08;
+      ctx.globalAlpha = 0.06;
       for (let a = Math.PI; a < Math.PI * 2; a += Math.PI / 6) {
         ctx.beginPath();
         ctx.moveTo(0, -2);
         ctx.lineTo(Math.cos(a) * barrierR, -2 + Math.sin(a) * barrierR);
-        ctx.strokeStyle = "#e74c3c";
+        ctx.strokeStyle = "#ff3300";
         ctx.lineWidth = 0.5;
         ctx.stroke();
       }
