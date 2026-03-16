@@ -875,17 +875,19 @@ const Index = () => {
       ctx.save();
       ctx.scale(ZOOM, ZOOM);
 
-      // Draw sky gradient (view space, no camera) — detailed sunset
+      // Draw sky gradient (view space, no camera) — smooth sunset
       const skyGrad = ctx.createLinearGradient(0, 0, 0, viewH);
       skyGrad.addColorStop(0, "#05061a");
-      skyGrad.addColorStop(0.15, "#0c1035");
-      skyGrad.addColorStop(0.30, "#1a1850");
-      skyGrad.addColorStop(0.45, "#3d2070");
-      skyGrad.addColorStop(0.55, "#8b3a62");
-      skyGrad.addColorStop(0.62, "#d45a3a");
-      skyGrad.addColorStop(0.68, "#f09030");
-      skyGrad.addColorStop(0.73, "#f7c864");
-      skyGrad.addColorStop(0.78, "#fff0c0");
+      skyGrad.addColorStop(0.12, "#0c1035");
+      skyGrad.addColorStop(0.25, "#161545");
+      skyGrad.addColorStop(0.38, "#2d1a5e");
+      skyGrad.addColorStop(0.48, "#5a2868");
+      skyGrad.addColorStop(0.56, "#8b3a62");
+      skyGrad.addColorStop(0.63, "#c04e3e");
+      skyGrad.addColorStop(0.70, "#e07830");
+      skyGrad.addColorStop(0.76, "#f0a040");
+      skyGrad.addColorStop(0.82, "#f7c864");
+      skyGrad.addColorStop(0.88, "#fff0c0");
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, viewW, viewH);
 
