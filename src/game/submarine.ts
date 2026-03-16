@@ -24,6 +24,7 @@ import { spawnExplosion } from "./effects";
 export interface Submarine {
   x: number; // World X position
   y: number; // World Y position (depth below water surface)
+  targetY: number; // Target depth to rise to after spawning
   speed: number; // Horizontal movement speed
   dir: 1 | -1; // Direction: 1 = moving right, -1 = moving left
   alive: boolean;
