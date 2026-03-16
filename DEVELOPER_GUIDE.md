@@ -89,14 +89,14 @@ The world wraps seamlessly — when the player crosses `x=3000`, they appear at 
 
 ## File-by-File Guide
 
-### `src/pages/Index.tsx` — Main Game Component (~1400 lines)
+### `src/pages/Index.tsx` — Main Game Component (~1700+ lines)
 
 This is the heart of the game. It contains:
 
-- **Constants** (lines 43-69): Tuning values for speed, gravity, ammo, fuel, etc.
-- **Refs** (lines 86-146): All mutable game state stored in React refs.
+- **Constants** (lines 43-100): Tuning values for speed, gravity, ammo, fuel, etc.
+- **Refs** (lines 100-160): All mutable game state stored in React refs.
 - **Input handling** (lines 190-258): Mouse, keyboard, and gamepad event listeners.
-- **Game loop** (lines 266-1078): The main `requestAnimationFrame` loop containing:
+- **Game loop** (lines 266-1140): The main `requestAnimationFrame` loop containing:
   - Input processing and aim calculation
   - Barrel roll mechanics
   - Physics (thrust, gravity, buoyancy, air drag)
@@ -104,7 +104,13 @@ This is the heart of the game. It contains:
   - Enemy/submarine/powerup updates
   - Collision detection
   - Canvas rendering (sky, water, entities, player, HUD)
-- **Menus** (lines 1182-1394): React JSX for start screen, pause menu, and game over screen.
+- **Player rendering** (~lines 1010-1140): Frutiger Aero mech with swept-back fighter jet ram wings.
+- **HUD rendering** (~lines 1140-1540): Analog instrument panel with unique indicator styles per stat:
+  - **Lives**: Green round bulb lights with metal bezels
+  - **HP**: Amber diamond/gem-shaped indicator lights
+  - **Ammo**: Silver light strip with colored glass panel segments
+  - **Fuel**: Vertical glass tubes with animated liquid fill, wobbling meniscus, tick marks, and glass reflections
+- **Menus** (lines 1580+): React JSX for start screen, pause menu, and game over screen.
 
 ### `src/game/water.ts` — Water System
 
@@ -132,12 +138,13 @@ This is the heart of the game. It contains:
 
 ### `src/game/enemies.ts` — Air Enemies
 
-- **Bombers**: Fly across the screen, drop tumbling bombs on the city.
+- **Bombers**: Fly across the screen, drop dark hexagonal tumbling bombs with pulsing toxic green cores on the city.
 - **Chasers**: Aggressive fighters that pursue the player and fire bullets + homing missiles.
 - **Homing Missiles**: Track the player with turn rate limiting. Can be deflected by barrel rolls.
 - `updateEnemies()`: Spawns and updates all air enemies based on wave difficulty. Also calls `updateEffects()`.
 - `checkBulletCollisions()`: Tests player bullets against all enemy types.
 - `drawEnemies()`: Renders all air enemy types, their projectiles, and calls `drawEffects()`.
+- Enemies use a **dark industrial robotic** aesthetic — metal paneling, mechanical details, pulsing red/green sensor eyes.
 
 ### `src/game/gunboat.ts` — Gunboat (Armored Surface Enemy)
 
@@ -161,6 +168,17 @@ This is the heart of the game. It contains:
 - The player must dive underwater to intercept them.
 - `updateSubmarinesWithDamage()`: Handles spawning, movement, attack charging, and returns damage dealt.
 - `drawSubmarines()`: Renders menacing dark hull with crimson accents, pulsing red eye, and attack warning effects.
+
+### `src/game/minelayer.ts` — Mine-Layer Plane & Floating Mines
+
+- A fast plane that flies edge-to-edge dropping naval mines.
+- **Mines** have buoyancy — they sink initially then float on the water surface. Never despawn naturally.
+- Players can shoot mines (explosion + score) but touching one deals 1 damage.
+- Mines use a **dark industrial aesthetic** — rust-toned orbs with slow rotation, red danger glow, energy spikes with glowing tips, and a central robotic eye.
+- `updateMinelayer()`: Handles plane spawning, mine dropping, and mine physics.
+- `checkBulletHitsMines()`: Tests player bullets against floating mines.
+- `checkPlayerHitsMine()`: Tests player collision with mines.
+- `drawMinelayer()`: Renders the plane and all active mines.
 
 ### `src/game/pickups.ts` — Collectible Pickups
 
