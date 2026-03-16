@@ -1143,7 +1143,7 @@ const Index = () => {
       const fuel = fuelRef.current;
       const hudX = 12;
       const hudY = 12;
-      const panelW = 260;
+      const panelW = 280;
       const panelH = 108;
 
       // --- Helper: draw angled glassy panel ---
