@@ -520,6 +520,30 @@ export function updateEnemies(
       continue;
     }
 
+    // Deflected missiles can kill enemies
+    if (m.deflected) {
+      for (const e of enemies) {
+        if (!e.alive) continue;
+        if (Math.hypot(m.x - e.x, m.y - e.y) < ENEMY_SIZE + 6) {
+          e.alive = false;
+          m.alive = false;
+          spawnExplosion(e.x, e.y, 35, SCORE_BOMBER);
+          break;
+        }
+      }
+      if (!m.alive) continue;
+      for (const c of chasers) {
+        if (!c.alive) continue;
+        if (Math.hypot(m.x - c.x, m.y - c.y) < CHASER_SIZE + 6) {
+          c.alive = false;
+          m.alive = false;
+          spawnExplosion(c.x, c.y, 30, SCORE_CHASER);
+          break;
+        }
+      }
+      if (!m.alive) continue;
+    }
+
     // Update smoke trail
     m.trail.push({ x: m.x, y: m.y, age: 0 });
     for (const t of m.trail) t.age += dt;
