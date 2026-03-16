@@ -891,17 +891,76 @@ const Index = () => {
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, viewW, viewH);
 
-      // Stars (upper portion of sky)
+      // === PARALLAX LAYERS ===
+      const camCenter = finalCamX + viewW / 2;
+
+      // Stars — very far layer (0.02 parallax)
       const starSeed = 42;
+      const starParallax = 0.02;
+      const starOffX = camCenter * starParallax;
       ctx.fillStyle = "#fff";
       for (let i = 0; i < 120; i++) {
-        const sx = ((i * 137 + starSeed) % 1000) / 1000 * viewW;
+        const baseX = ((i * 137 + starSeed) % 1000) / 1000 * viewW * 2;
         const sy = ((i * 211 + starSeed * 3) % 1000) / 1000 * viewH * 0.45;
         const sr = 0.4 + ((i * 73) % 100) / 100 * 1.2;
         const twinkle = 0.4 + Math.sin(performance.now() * 0.001 + i * 1.7) * 0.3;
         ctx.globalAlpha = twinkle;
+        const sx = ((baseX - starOffX) % (viewW * 2) + viewW * 2) % (viewW * 2) - viewW * 0.5;
         ctx.beginPath();
         ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // Distant mountains / haze layer (0.08 parallax)
+      const mtParallax = 0.08;
+      const mtOffX = camCenter * mtParallax;
+      const mtBaseY = viewH * 0.62;
+      ctx.fillStyle = "rgba(30,15,40,0.4)";
+      ctx.beginPath();
+      ctx.moveTo(0, mtBaseY + 20);
+      for (let px = 0; px <= viewW; px += 3) {
+        const wx = px + mtOffX;
+        const h = Math.sin(wx * 0.003) * 25 + Math.sin(wx * 0.008 + 1) * 15 + Math.sin(wx * 0.02 + 3) * 8;
+        ctx.lineTo(px, mtBaseY - h);
+      }
+      ctx.lineTo(viewW, mtBaseY + 20);
+      ctx.closePath();
+      ctx.fill();
+
+      // Mid-distance cloud wisps (0.15 parallax)
+      const cloudParallax = 0.15;
+      const cloudOffX = camCenter * cloudParallax;
+      const cloudTime = performance.now() * 0.00003;
+      ctx.globalAlpha = 0.12;
+      for (let i = 0; i < 8; i++) {
+        const seed = i * 347 + 13;
+        const baseX = (seed % 2000) / 2000 * viewW * 3;
+        const cy = viewH * 0.25 + (seed % 300) / 300 * viewH * 0.35;
+        const cw2 = 80 + (seed % 120);
+        const ch2 = 8 + (seed % 12);
+        const cx = ((baseX - cloudOffX + cloudTime * viewW * 20) % (viewW * 3) + viewW * 3) % (viewW * 3) - viewW * 0.5;
+        ctx.fillStyle = i < 4 ? "rgba(200,150,180,0.3)" : "rgba(255,200,150,0.2)";
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, cw2, ch2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // Near cloud layer (0.25 parallax) — larger, more visible
+      const nearCloudParallax = 0.25;
+      const nearCloudOffX = camCenter * nearCloudParallax;
+      ctx.globalAlpha = 0.08;
+      for (let i = 0; i < 5; i++) {
+        const seed = i * 523 + 77;
+        const baseX = (seed % 3000) / 3000 * viewW * 4;
+        const cy = viewH * 0.35 + (seed % 200) / 200 * viewH * 0.25;
+        const cw2 = 120 + (seed % 180);
+        const ch2 = 12 + (seed % 18);
+        const cx = ((baseX - nearCloudOffX) % (viewW * 4) + viewW * 4) % (viewW * 4) - viewW * 0.5;
+        ctx.fillStyle = "rgba(255,220,180,0.25)";
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, cw2, ch2, 0.1, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
