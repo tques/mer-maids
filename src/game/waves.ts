@@ -220,8 +220,8 @@ export function drawWaveTransition(ctx: CanvasRenderingContext2D, state: WaveSta
 export function drawWaveHUD(ctx: CanvasRenderingContext2D, state: WaveState, cw: number) {
   ctx.save();
   ctx.textAlign = "center";
-  ctx.font = "bold 12px monospace";
-  ctx.fillStyle = "#888";
-  ctx.fillText(`WAVE ${state.wave}`, cw / 2, 50);
+  ctx.font = "bold 10px monospace";
+  ctx.fillStyle = "rgba(0,220,255,0.4)";
+  ctx.fillText(`WAVE ${state.wave}`, cw / 2, 46);
   ctx.restore();
 }
