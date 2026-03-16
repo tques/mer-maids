@@ -46,6 +46,8 @@ const SUB_SPEED = 0.6; // Base horizontal speed (very slow, menacing)
 const SUB_ATTACK_TIME = 2.0; // Seconds to charge before detonation
 const SUB_DEPTH_MIN = 50; // Minimum depth below water surface
 const SUB_DEPTH_MAX = 140; // Maximum depth (deeper subs require deeper dives)
+const SUB_SPAWN_DEPTH = 350; // Spawn far below screen, then rise
+const SUB_RISE_SPEED = 0.4; // Vertical speed when rising to target depth
 
 // ==================== ACCESSORS & RESET ====================
 
