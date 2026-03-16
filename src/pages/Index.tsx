@@ -1400,7 +1400,7 @@ const Index = () => {
       ctx.fillText(`${ammo}`, stripX + stripTotalW + 6, ly);
 
       // FUEL — liquid-filled vertical tubes
-      ly += 20;
+      ly += 34;
       ctx.font = "bold 10px monospace";
       const fuelLow = fuel <= FUEL_LOW_THRESHOLD;
       ctx.fillStyle = fuelLow ? "#ff6060" : "rgba(0,180,255,0.7)";
