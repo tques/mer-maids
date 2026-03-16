@@ -540,6 +540,7 @@ export function updateEnemies(
           c.alive = false;
           m.alive = false;
           spawnExplosion(c.x, c.y, 30, SCORE_CHASER);
+          deflectScore += SCORE_CHASER;
           break;
         }
       }
