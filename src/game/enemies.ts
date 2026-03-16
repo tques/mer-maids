@@ -105,7 +105,7 @@ const CHASER_BULLET_SPEED = 6; // Speed of chaser beam bullets
 const CHASER_SHOOT_INTERVAL = 1.2; // Seconds between chaser shots
 const MISSILE_SPEED = 4; // Homing missile speed
 const MISSILE_TURN_RATE = 0.045; // How fast missiles can turn (radians/frame)
-const MISSILE_LIFETIME = 6; // Seconds before missile self-destructs
+// Missiles persist until they hit something — no lifetime limit
 
 // ==================== RESET & ACCESSORS ====================
 
