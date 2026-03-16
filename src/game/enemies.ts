@@ -64,8 +64,8 @@ export interface HomingMissile {
   y: number;
   angle: number; // Current heading (radians)
   speed: number;
-  life: number; // Remaining lifetime in seconds
   alive: boolean;
+  deflected: boolean; // true = no longer homing, flies wild
   trail: { x: number; y: number; age: number }[]; // Smoke trail positions
 }
 
@@ -105,7 +105,7 @@ const CHASER_BULLET_SPEED = 6; // Speed of chaser beam bullets
 const CHASER_SHOOT_INTERVAL = 1.2; // Seconds between chaser shots
 const MISSILE_SPEED = 4; // Homing missile speed
 const MISSILE_TURN_RATE = 0.045; // How fast missiles can turn (radians/frame)
-const MISSILE_LIFETIME = 6; // Seconds before missile self-destructs
+// Missiles persist until they hit something — no lifetime limit
 
 // ==================== RESET & ACCESSORS ====================
 
@@ -177,14 +177,14 @@ export function checkMissileHitsPlayer(px: number, py: number, radius: number): 
 /**
  * Deflect all active homing missiles.
  * Called when the player performs a barrel roll or boost.
- * Randomizes missile heading and shortens remaining lifetime.
+ * Missiles fly off wildly in a random direction, no longer tracking the player.
  */
 export function deflectMissiles() {
   for (const m of homingMissiles) {
-    if (!m.alive) continue;
+    if (!m.alive || m.deflected) continue;
     m.angle += (Math.random() - 0.5) * Math.PI * 1.5; // Wild random deflection
-    m.speed *= 0.6; // Slow them down
-    m.life = Math.min(m.life, 1.2); // Expire soon
+    m.speed = MISSILE_SPEED * (0.8 + Math.random() * 0.4); // Vary speed
+    m.deflected = true; // Stop homing permanently
   }
 }
 
@@ -470,8 +470,8 @@ export function updateEnemies(
         y: c.y + Math.sin(mAngle) * (CHASER_SIZE + 6),
         angle: mAngle,
         speed: MISSILE_SPEED,
-        life: MISSILE_LIFETIME,
         alive: true,
+        deflected: false,
         trail: [],
       });
     }
@@ -491,26 +491,42 @@ export function updateEnemies(
   // ==================== HOMING MISSILE UPDATE ====================
   for (const m of homingMissiles) {
     if (!m.alive) continue;
-    m.life -= dt;
-    if (m.life <= 0) {
+
+    if (!m.deflected) {
+      // Home toward player with limited turn rate
+      const targetAngle = Math.atan2(playerY - m.y, playerX - m.x);
+      let angleDiff = targetAngle - m.angle;
+      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+      m.angle += angleDiff * MISSILE_TURN_RATE;
+    }
+    // Deflected missiles just fly straight in their current angle
+
+    m.x += Math.cos(m.angle) * m.speed;
+    m.y += Math.sin(m.angle) * m.speed;
+
+    // Explode on hitting water surface
+    if (m.y > waterY) {
       m.alive = false;
       spawnExplosion(m.x, m.y, 20);
       continue;
     }
-    // Home toward player with limited turn rate
-    const targetAngle = Math.atan2(playerY - m.y, playerX - m.x);
-    let angleDiff = targetAngle - m.angle;
-    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-    m.angle += angleDiff * MISSILE_TURN_RATE;
-    m.x += Math.cos(m.angle) * m.speed;
-    m.y += Math.sin(m.angle) * m.speed;
+    // Explode on hitting the sky ceiling
+    if (m.y < -50) {
+      m.alive = false;
+      spawnExplosion(m.x, m.y, 20);
+      continue;
+    }
+
     // Update smoke trail
     m.trail.push({ x: m.x, y: m.y, age: 0 });
     for (const t of m.trail) t.age += dt;
     m.trail = m.trail.filter((t) => t.age < 0.5);
-    // Cull if off-screen
-    if (Math.abs(m.x - playerX) > viewHalfW * 4) m.alive = false;
+    // Cull if very far off-screen
+    if (Math.abs(m.x - playerX) > viewHalfW * 4) {
+      m.alive = false;
+      spawnExplosion(m.x, m.y, 15);
+    }
   }
 
   // ==================== BOMB UPDATE ====================
