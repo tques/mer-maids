@@ -136,18 +136,52 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
 
   // --- City buildings (abstract rectangles/towers on top of the platform) ---
   // Each building is defined by: ox (offset from center), w (width), h (height)
+  // Back layer buildings (drawn first, shorter, darker — depth effect)
+  const backBuildings = [
+    { ox: -260, w: 30, h: 28 },
+    { ox: -230, w: 24, h: 35 },
+    { ox: -195, w: 28, h: 32 },
+    { ox: -160, w: 22, h: 42 },
+    { ox: -125, w: 26, h: 38 },
+    { ox: -95, w: 20, h: 48 },
+    { ox: -65, w: 24, h: 44 },
+    { ox: -35, w: 22, h: 55 },
+    { ox: -10, w: 28, h: 60 },
+    { ox: 20, w: 24, h: 52 },
+    { ox: 50, w: 20, h: 46 },
+    { ox: 75, w: 26, h: 40 },
+    { ox: 105, w: 22, h: 50 },
+    { ox: 130, w: 28, h: 36 },
+    { ox: 160, w: 24, h: 42 },
+    { ox: 190, w: 20, h: 34 },
+    { ox: 220, w: 26, h: 30 },
+    { ox: 250, w: 22, h: 26 },
+  ];
+
+  // Front layer buildings (taller, more detailed, tightly packed)
   const buildings = [
-    { ox: -180, w: 28, h: 40 },
-    { ox: -130, w: 22, h: 55 },
-    { ox: -90, w: 30, h: 35 },
-    { ox: -40, w: 20, h: 65 },
-    { ox: 0, w: 35, h: 80 },    // Central tallest tower
-    { ox: 50, w: 24, h: 50 },
-    { ox: 100, w: 28, h: 45 },
-    { ox: 140, w: 20, h: 38 },
-    { ox: 190, w: 26, h: 30 },
-    { ox: -220, w: 18, h: 25 },
-    { ox: 230, w: 18, h: 22 },
+    { ox: -280, w: 22, h: 22 },
+    { ox: -258, w: 26, h: 30 },
+    { ox: -232, w: 20, h: 38 },
+    { ox: -210, w: 28, h: 32 },
+    { ox: -182, w: 24, h: 45 },
+    { ox: -155, w: 30, h: 50 },
+    { ox: -125, w: 22, h: 58 },
+    { ox: -100, w: 26, h: 48 },
+    { ox: -74, w: 20, h: 62 },
+    { ox: -50, w: 28, h: 70 },
+    { ox: -22, w: 24, h: 78 },
+    { ox: 5, w: 36, h: 90 },     // Central spire
+    { ox: 35, w: 24, h: 75 },
+    { ox: 60, w: 28, h: 65 },
+    { ox: 88, w: 22, h: 55 },
+    { ox: 112, w: 26, h: 60 },
+    { ox: 140, w: 24, h: 48 },
+    { ox: 165, w: 20, h: 52 },
+    { ox: 188, w: 28, h: 42 },
+    { ox: 215, w: 22, h: 35 },
+    { ox: 240, w: 26, h: 28 },
+    { ox: 265, w: 20, h: 24 },
   ];
 
   // --- Damage state calculations ---
