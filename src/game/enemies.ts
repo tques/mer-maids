@@ -285,8 +285,9 @@ export function updateEnemies(
   viewHalfW: number,
   waveDifficulty: number = 1,
   fleeing: boolean = false,
-) {
+): number {
   const waterY = getWaterSurfaceY(viewH);
+  let deflectScore = 0;
   gameTime += dt;
 
   // Difficulty ramps with both time and wave number
