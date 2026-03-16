@@ -1370,7 +1370,7 @@ const Index = () => {
       }
 
       // AMMO — cyan/yellow light strip
-      ly += 22;
+      ly += 24;
       ctx.font = "bold 10px monospace";
       const ammoLow = ammo <= AMMO_LOW_THRESHOLD;
       ctx.fillStyle = ammoLow ? "#ffcc00" : "rgba(180,190,200,0.7)";
