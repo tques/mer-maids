@@ -1344,7 +1344,7 @@ const Index = () => {
       };
 
       // LIVES — green round indicator lights
-      const labelX = lx + 42; // consistent alignment point for all indicators
+      const labelX = lx + 46; // consistent alignment point for all indicators
       ctx.font = "bold 10px monospace";
       ctx.fillStyle = "rgba(100,255,150,0.7)";
       ctx.textAlign = "right";
