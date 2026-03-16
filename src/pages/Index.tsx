@@ -1357,7 +1357,7 @@ const Index = () => {
       }
 
       // HP — amber diamond indicator lights
-      ly += 22;
+      ly += 24;
       ctx.font = "bold 10px monospace";
       ctx.fillStyle = "rgba(255,180,60,0.7)";
       ctx.textAlign = "right";
