@@ -1138,7 +1138,9 @@ const Index = () => {
 
       // ===== MECHA AERO HUD =====
       ctx.save();
-      const now = performance.now();
+      const hudNow = performance.now();
+      const ammo = ammoRef.current;
+      const fuel = fuelRef.current;
       const hudX = 12;
       const hudY = 12;
       const panelW = 230;
