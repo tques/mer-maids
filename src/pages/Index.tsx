@@ -1406,13 +1406,15 @@ const Index = () => {
       ctx.font = "bold 10px monospace";
       const fuelLow = fuel <= FUEL_LOW_THRESHOLD;
       ctx.fillStyle = fuelLow ? "#ff6060" : "rgba(0,180,255,0.7)";
-      ctx.fillText("FUEL", lx, ly);
+      ctx.textAlign = "right";
+      ctx.fillText("FUEL", labelX - 4, ly);
+      ctx.textAlign = "left";
 
       const tubeCount = 5;
       const tubeW = 14;
       const tubeH = 28;
       const tubeGap = 6;
-      const tubeStartX = lx + 48;
+      const tubeStartX = labelX + 2;
       const tubeStartY = ly - 22;
       const fuelFrac = fuel / MAX_FUEL;
       const fuelPerTube = 1 / tubeCount;
