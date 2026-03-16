@@ -234,32 +234,32 @@ export function drawWater(
   ctx.lineTo(x1, ch);  // Close at bottom-right
   ctx.closePath();
 
-  // Deep ocean gradient — light blue at surface, dark navy at bottom
+  // Tropical ocean gradient — vibrant turquoise to deep teal
   const grad = ctx.createLinearGradient(0, baseY - 10, 0, ch);
-  grad.addColorStop(0, "rgba(30, 110, 190, 0.50)");
-  grad.addColorStop(0.1, "rgba(20, 90, 170, 0.58)");
-  grad.addColorStop(0.3, "rgba(12, 65, 145, 0.68)");
-  grad.addColorStop(0.6, "rgba(6, 42, 115, 0.78)");
-  grad.addColorStop(1, "rgba(2, 18, 65, 0.88)");
+  grad.addColorStop(0, "rgba(40, 210, 200, 0.50)");
+  grad.addColorStop(0.08, "rgba(20, 185, 180, 0.55)");
+  grad.addColorStop(0.2, "rgba(10, 150, 160, 0.62)");
+  grad.addColorStop(0.4, "rgba(5, 110, 140, 0.72)");
+  grad.addColorStop(0.7, "rgba(2, 70, 110, 0.82)");
+  grad.addColorStop(1, "rgba(0, 30, 60, 0.90)");
   ctx.fillStyle = grad;
   ctx.fill();
 
-  // === CAUSTIC LIGHT PATCHES ===
-  // Animated light spots below the surface (like sunlight refracted through waves)
+  // === CAUSTIC LIGHT PATCHES (tropical bright) ===
   ctx.save();
   ctx.clip();
-  ctx.globalAlpha = 0.07;  // Very subtle
-  const causticSpacing = 250;
+  ctx.globalAlpha = 0.12;
+  const causticSpacing = 180;
   const causticCount = Math.ceil((x1 - x0) / causticSpacing) + 2;
   const causticStart = Math.floor(x0 / causticSpacing) * causticSpacing;
   for (let i = 0; i < causticCount; i++) {
     const cx = causticStart + i * causticSpacing + Math.sin(waveTime * 0.3 + i * 1.7) * 40;
     const cy = baseY + 25 + Math.sin(waveTime * 0.5 + i * 2.3) * 18;
-    const cr = 50 + Math.sin(waveTime * 0.8 + i) * 15;
+    const cr = 55 + Math.sin(waveTime * 0.8 + i) * 18;
     const causticGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr);
-    causticGrad.addColorStop(0, "rgba(120, 210, 255, 1)");
-    causticGrad.addColorStop(0.6, "rgba(80, 180, 240, 0.4)");
-    causticGrad.addColorStop(1, "rgba(80, 180, 240, 0)");
+    causticGrad.addColorStop(0, "rgba(100, 255, 230, 1)");
+    causticGrad.addColorStop(0.5, "rgba(60, 220, 200, 0.5)");
+    causticGrad.addColorStop(1, "rgba(40, 200, 180, 0)");
     ctx.fillStyle = causticGrad;
     ctx.fillRect(cx - cr, cy - cr, cr * 2, cr * 2);
   }
@@ -268,49 +268,64 @@ export function drawWater(
   // === WAVE SURFACE HIGHLIGHTS ===
   // Three layers of wave-following lines at different depths for a 3D feel
 
-  // Primary highlight (brightest, at surface)
+  // Primary highlight (brightest, at surface — warm golden)
   ctx.beginPath();
   for (let x = x0; x <= x1; x += 3) {
     const wy = getWaveY(x, baseY, cw);
     if (x === x0) ctx.moveTo(x, wy);
     else ctx.lineTo(x, wy);
   }
-  ctx.strokeStyle = "rgba(190, 235, 255, 0.55)";
+  ctx.strokeStyle = "rgba(220, 255, 240, 0.6)";
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // Secondary highlight (dimmer, slightly below surface)
+  // Secondary highlight (aqua shimmer)
   ctx.beginPath();
   for (let x = x0; x <= x1; x += 4) {
     const wy = getWaveY(x, baseY, cw) + 5;
     if (x === x0) ctx.moveTo(x, wy);
     else ctx.lineTo(x, wy);
   }
-  ctx.strokeStyle = "rgba(80, 160, 230, 0.2)";
+  ctx.strokeStyle = "rgba(80, 230, 210, 0.25)";
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
-  // Tertiary highlight (very faint, deeper)
+  // Tertiary highlight (deeper teal)
   ctx.beginPath();
   for (let x = x0; x <= x1; x += 5) {
     const wy = getWaveY(x, baseY, cw) + 12;
     if (x === x0) ctx.moveTo(x, wy);
     else ctx.lineTo(x, wy);
   }
-  ctx.strokeStyle = "rgba(60, 130, 200, 0.1)";
+  ctx.strokeStyle = "rgba(40, 180, 170, 0.12)";
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
+  // === SPARKLE PARTICLES ===
+  // Bright sparkles on the wave surface (tropical glitter)
+  for (let x = x0; x <= x1; x += 12) {
+    const wy = getWaveY(x, baseY, cw);
+    const sparkle = Math.sin(waveTime * 2 + x * 0.15) * Math.cos(waveTime * 1.3 + x * 0.08);
+    if (sparkle > 0.5) {
+      const intensity = (sparkle - 0.5) * 2;
+      ctx.globalAlpha = intensity * 0.8;
+      ctx.beginPath();
+      ctx.arc(x, wy - 1, 1.5 + intensity, 0, Math.PI * 2);
+      ctx.fillStyle = "#fffbe0";
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+
   // === FOAM / WHITE CAPS ===
-  // Small bright dots at wave peaks where the slope is steep
   for (let x = x0; x <= x1; x += 6) {
     const wy = getWaveY(x, baseY, cw);
-    const slope = getWaveY(x + 3, baseY, cw) - wy;  // Approximate slope
-    if (slope < -0.6) {  // Only on steep downward slopes (wave crests)
-      ctx.globalAlpha = Math.min(Math.abs(slope) * 0.35, 0.4);
+    const slope = getWaveY(x + 3, baseY, cw) - wy;
+    if (slope < -0.6) {
+      ctx.globalAlpha = Math.min(Math.abs(slope) * 0.4, 0.5);
       ctx.beginPath();
       ctx.arc(x, wy - 1, 2 + Math.abs(slope) * 1.5, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(230, 245, 255, 0.8)";
+      ctx.fillStyle = "rgba(240, 255, 250, 0.85)";
       ctx.fill();
     }
   }

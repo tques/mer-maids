@@ -272,43 +272,53 @@ export function fleeMinelayers() {
 // ==================== RENDERING ====================
 
 export function drawMinelayer(ctx: CanvasRenderingContext2D, viewH: number) {
-  // ---- Mine-layer planes (dark green/grey fast jets) ----
+  // ---- Minelayer planes (dark industrial, alien bombers) ----
   for (const p of planes) {
     if (!p.alive) continue;
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.scale(p.dir, 1);
 
-    // Shadow/glow
-    ctx.shadowColor = "rgba(50, 120, 50, 0.4)";
+    ctx.shadowColor = "rgba(200, 60, 0, 0.4)";
     ctx.shadowBlur = 8;
 
     const s = 14;
-    // Fuselage
+    // Dark industrial fuselage
     ctx.beginPath();
     ctx.moveTo(s * 1.3, 0);
-    ctx.lineTo(s * 0.3, -s * 0.4);
-    ctx.lineTo(-s * 0.9, -s * 0.35);
+    ctx.lineTo(s * 0.3, -s * 0.45);
+    ctx.lineTo(-s * 0.7, -s * 0.4);
+    ctx.lineTo(-s * 0.9, -s * 0.15);
     ctx.lineTo(-s * 0.7, 0);
-    ctx.lineTo(-s * 0.9, s * 0.35);
-    ctx.lineTo(s * 0.3, s * 0.4);
+    ctx.lineTo(-s * 0.9, s * 0.15);
+    ctx.lineTo(-s * 0.7, s * 0.4);
+    ctx.lineTo(s * 0.3, s * 0.45);
     ctx.closePath();
-    ctx.fillStyle = "#4a6741";
+    ctx.fillStyle = "#1e1e1e";
     ctx.fill();
-    ctx.strokeStyle = "#2d4027";
+    ctx.strokeStyle = "#444";
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Cockpit
+    // Panel lines
+    ctx.strokeStyle = "rgba(100, 100, 100, 0.3)";
+    ctx.lineWidth = 0.5;
     ctx.beginPath();
-    ctx.arc(s * 0.4, 0, s * 0.12, 0, Math.PI * 2);
-    ctx.fillStyle = "#8fbc8f";
+    ctx.moveTo(0, -s * 0.4);
+    ctx.lineTo(-s * 0.4, 0);
+    ctx.lineTo(0, s * 0.4);
+    ctx.stroke();
+
+    // Red sensor eye
+    ctx.beginPath();
+    ctx.arc(s * 0.5, 0, s * 0.1, 0, Math.PI * 2);
+    ctx.fillStyle = "#ff3300";
     ctx.fill();
 
-    // Engine glow
+    // Engine (red-orange)
     ctx.beginPath();
-    ctx.arc(-s * 0.8, 0, s * 0.1, 0, Math.PI * 2);
-    ctx.fillStyle = "#90ee90";
+    ctx.arc(-s * 0.8, 0, s * 0.08, 0, Math.PI * 2);
+    ctx.fillStyle = "#ff4500";
     ctx.globalAlpha = 0.5 + Math.sin(performance.now() * 0.015) * 0.3;
     ctx.fill();
     ctx.globalAlpha = 1;
@@ -317,7 +327,7 @@ export function drawMinelayer(ctx: CanvasRenderingContext2D, viewH: number) {
     ctx.restore();
   }
 
-  // ---- Floating mines (dark spheres with spikes) ----
+  // ---- Floating mines (dark robotic spheres with mechanical spikes) ----
   for (const m of mines) {
     if (!m.alive) continue;
     const r = MINE_SIZE * 0.5;
@@ -326,16 +336,20 @@ export function drawMinelayer(ctx: CanvasRenderingContext2D, viewH: number) {
     ctx.save();
     ctx.translate(m.x, m.y);
 
-    // Mine body (dark sphere)
+    // Mine body (dark industrial metal)
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fillStyle = "#2c2c2c";
+    const mineGrad = ctx.createRadialGradient(-r * 0.2, -r * 0.2, 0, 0, 0, r);
+    mineGrad.addColorStop(0, "#3a3a3a");
+    mineGrad.addColorStop(0.7, "#1a1a1a");
+    mineGrad.addColorStop(1, "#111");
+    ctx.fillStyle = mineGrad;
     ctx.fill();
     ctx.strokeStyle = "#555";
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Spikes (contact detonators)
+    // Mechanical spikes (contact detonators)
     const spikeCount = 8;
     for (let i = 0; i < spikeCount; i++) {
       const angle = (i / spikeCount) * Math.PI * 2;
@@ -346,26 +360,19 @@ export function drawMinelayer(ctx: CanvasRenderingContext2D, viewH: number) {
       ctx.beginPath();
       ctx.moveTo(sx, sy);
       ctx.lineTo(ex, ey);
-      ctx.strokeStyle = "#777";
+      ctx.strokeStyle = "#666";
       ctx.lineWidth = 2;
       ctx.stroke();
-      // Spike tip
       ctx.beginPath();
       ctx.arc(ex, ey, 1.5, 0, Math.PI * 2);
-      ctx.fillStyle = "#999";
+      ctx.fillStyle = "#888";
       ctx.fill();
     }
 
-    // Warning light (pulsing red)
+    // Warning light (pulsing red, robotic)
     ctx.beginPath();
     ctx.arc(0, -r * 0.3, 2.5, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 40, 40, ${pulse})`;
-    ctx.fill();
-
-    // Metallic highlight
-    ctx.beginPath();
-    ctx.arc(-r * 0.25, -r * 0.25, r * 0.25, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255,255,255,0.1)";
+    ctx.fillStyle = `rgba(255, 30, 10, ${pulse})`;
     ctx.fill();
 
     ctx.restore();

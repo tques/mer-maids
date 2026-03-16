@@ -875,15 +875,60 @@ const Index = () => {
       ctx.save();
       ctx.scale(ZOOM, ZOOM);
 
-      // Draw sky gradient (view space, no camera)
+      // Draw sky gradient (view space, no camera) — detailed sunset
       const skyGrad = ctx.createLinearGradient(0, 0, 0, viewH);
-      skyGrad.addColorStop(0, "#0a0a1a");
-      skyGrad.addColorStop(0.35, "#1a1a3e");
-      skyGrad.addColorStop(0.55, "#2d4a6f");
-      skyGrad.addColorStop(0.7, "#e8a838");
-      skyGrad.addColorStop(0.78, "#f7d794");
+      skyGrad.addColorStop(0, "#05061a");
+      skyGrad.addColorStop(0.15, "#0c1035");
+      skyGrad.addColorStop(0.30, "#1a1850");
+      skyGrad.addColorStop(0.45, "#3d2070");
+      skyGrad.addColorStop(0.55, "#8b3a62");
+      skyGrad.addColorStop(0.62, "#d45a3a");
+      skyGrad.addColorStop(0.68, "#f09030");
+      skyGrad.addColorStop(0.73, "#f7c864");
+      skyGrad.addColorStop(0.78, "#fff0c0");
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, viewW, viewH);
+
+      // Stars (upper portion of sky)
+      const starSeed = 42;
+      ctx.fillStyle = "#fff";
+      for (let i = 0; i < 120; i++) {
+        const sx = ((i * 137 + starSeed) % 1000) / 1000 * viewW;
+        const sy = ((i * 211 + starSeed * 3) % 1000) / 1000 * viewH * 0.45;
+        const sr = 0.4 + ((i * 73) % 100) / 100 * 1.2;
+        const twinkle = 0.4 + Math.sin(performance.now() * 0.001 + i * 1.7) * 0.3;
+        ctx.globalAlpha = twinkle;
+        ctx.beginPath();
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // Clouds (layered translucent ellipses near horizon)
+      const cloudData = [
+        { x: 0.1, y: 0.52, w: 120, h: 18, a: 0.12 },
+        { x: 0.25, y: 0.56, w: 180, h: 22, a: 0.1 },
+        { x: 0.45, y: 0.50, w: 200, h: 25, a: 0.15 },
+        { x: 0.6, y: 0.54, w: 160, h: 20, a: 0.11 },
+        { x: 0.78, y: 0.48, w: 140, h: 16, a: 0.13 },
+        { x: 0.9, y: 0.53, w: 170, h: 22, a: 0.09 },
+        { x: 0.15, y: 0.60, w: 100, h: 14, a: 0.08 },
+        { x: 0.55, y: 0.58, w: 130, h: 16, a: 0.07 },
+        { x: 0.35, y: 0.44, w: 90, h: 12, a: 0.06 },
+      ];
+      for (const c of cloudData) {
+        const cx = c.x * viewW;
+        const cy = c.y * viewH;
+        const drift = Math.sin(performance.now() * 0.0002 + c.x * 10) * 8;
+        const cloudGrad = ctx.createRadialGradient(cx + drift, cy, 0, cx + drift, cy, c.w * 0.6);
+        cloudGrad.addColorStop(0, `rgba(255, 200, 160, ${c.a})`);
+        cloudGrad.addColorStop(0.5, `rgba(230, 140, 100, ${c.a * 0.6})`);
+        cloudGrad.addColorStop(1, `rgba(180, 80, 60, 0)`);
+        ctx.fillStyle = cloudGrad;
+        ctx.beginPath();
+        ctx.ellipse(cx + drift, cy, c.w, c.h, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       // Apply camera translation (pixel-snapped to remove 1px seams at wrap boundaries)
       const drawCamX = Math.round(finalCamX * ZOOM) / ZOOM;
@@ -988,59 +1033,99 @@ const Index = () => {
 
           // Drop shadow (cheap, no shadowBlur)
 
-          // Mech arch/crescent shape — aquatic teal
+          // Frutiger Aero mech — glassy, bubbly, water-inspired
           const r = TRI_SIZE * 0.9;
           const bladesActive = playerHPRef.current >= PLAYER_MAX_HP;
+          const glassTime = performance.now() * 0.003;
+
+          // Main body — glossy crescent
           ctx.beginPath();
           ctx.arc(0, 0, r, -Math.PI * 0.55, Math.PI * 0.55, false);
           ctx.lineTo(r * 0.3, TRI_SIZE * 0.35);
           ctx.arc(0, 0, r * 0.45, Math.PI * 0.4, -Math.PI * 0.4, true);
           ctx.lineTo(r * Math.cos(Math.PI * 0.55), -r * Math.sin(Math.PI * 0.55));
           ctx.closePath();
-          ctx.fillStyle = isInvuln ? "#88ddff" : "#00b894";
+
+          // Glossy gradient fill
+          const bodyGrad = ctx.createLinearGradient(-r, -r, r * 0.5, r);
+          if (isInvuln) {
+            bodyGrad.addColorStop(0, "rgba(180, 240, 255, 0.95)");
+            bodyGrad.addColorStop(0.4, "rgba(100, 210, 240, 0.85)");
+            bodyGrad.addColorStop(1, "rgba(60, 180, 220, 0.75)");
+          } else {
+            bodyGrad.addColorStop(0, "rgba(80, 230, 200, 0.95)");
+            bodyGrad.addColorStop(0.3, "rgba(0, 210, 170, 0.85)");
+            bodyGrad.addColorStop(0.7, "rgba(0, 160, 130, 0.80)");
+            bodyGrad.addColorStop(1, "rgba(0, 120, 100, 0.70)");
+          }
+          ctx.fillStyle = bodyGrad;
           ctx.fill();
+
+          // Glass highlight — bright specular stripe
+          ctx.beginPath();
+          ctx.arc(0, 0, r * 0.88, -Math.PI * 0.48, -Math.PI * 0.1, false);
+          ctx.arc(0, 0, r * 0.7, -Math.PI * 0.1, -Math.PI * 0.48, true);
+          ctx.closePath();
+          ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+          ctx.fill();
+
           if (bladesActive) {
-            // Glowing aqua edge when blades are active
-            ctx.shadowColor = "rgba(100, 255, 235, 0.7)";
-            ctx.shadowBlur = 10;
-            ctx.strokeStyle = "rgba(100, 255, 235, 0.9)";
+            ctx.shadowColor = "rgba(100, 255, 235, 0.8)";
+            ctx.shadowBlur = 14;
+            ctx.strokeStyle = "rgba(150, 255, 245, 0.9)";
             ctx.lineWidth = 2;
             ctx.stroke();
             ctx.shadowColor = "transparent";
             ctx.shadowBlur = 0;
           } else {
-            ctx.strokeStyle = isInvuln ? "#66ccee" : "#00856a";
-            ctx.lineWidth = 1;
+            ctx.strokeStyle = isInvuln ? "rgba(140, 220, 255, 0.6)" : "rgba(0, 200, 160, 0.5)";
+            ctx.lineWidth = 1.5;
             ctx.stroke();
           }
-          // Visor / eye slit
+
+          // Visor — glowing aqua bubble
           ctx.beginPath();
-          ctx.arc(r * 0.35, 0, r * 0.12, 0, Math.PI * 2);
-          ctx.fillStyle = isInvuln ? "#aaeeff" : "#55efc4";
+          ctx.arc(r * 0.35, 0, r * 0.14, 0, Math.PI * 2);
+          const visorGrad = ctx.createRadialGradient(r * 0.32, -r * 0.03, 0, r * 0.35, 0, r * 0.14);
+          visorGrad.addColorStop(0, "rgba(200, 255, 250, 0.95)");
+          visorGrad.addColorStop(0.5, isInvuln ? "#88eeff" : "#40f0c8");
+          visorGrad.addColorStop(1, isInvuln ? "#55ccdd" : "#00c896");
+          ctx.fillStyle = visorGrad;
+          ctx.fill();
+          // Visor specular
+          ctx.beginPath();
+          ctx.arc(r * 0.31, -r * 0.04, r * 0.05, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
           ctx.fill();
 
-          // Ram blades — only at full HP
+          // Ram blades — glassy translucent wings
           if (playerHPRef.current >= PLAYER_MAX_HP) {
-            ctx.fillStyle = "rgba(100, 255, 235, 0.85)";
-            ctx.strokeStyle = "rgba(60, 220, 200, 0.9)";
-            ctx.lineWidth = 1;
+            const bladeAlpha = 0.7 + Math.sin(glassTime) * 0.15;
 
-            // Upper blade (wing sitting on top of arch)
+            // Upper blade
             ctx.beginPath();
             ctx.moveTo(r * 0.6, -r * 0.3);
             ctx.lineTo(-r * 0.15, -r * 0.55);
             ctx.lineTo(-r * 0.05, -r * 0.28);
             ctx.closePath();
+            const bladeGrad1 = ctx.createLinearGradient(r * 0.6, -r * 0.3, -r * 0.15, -r * 0.55);
+            bladeGrad1.addColorStop(0, `rgba(160, 255, 240, ${bladeAlpha})`);
+            bladeGrad1.addColorStop(1, `rgba(80, 230, 210, ${bladeAlpha * 0.5})`);
+            ctx.fillStyle = bladeGrad1;
             ctx.fill();
+            ctx.strokeStyle = "rgba(180, 255, 250, 0.6)";
+            ctx.lineWidth = 1;
             ctx.stroke();
 
-            // Lower blade (wing sitting on bottom of arch)
+            // Lower blade
             ctx.beginPath();
             ctx.moveTo(r * 0.6, r * 0.3);
             ctx.lineTo(-r * 0.15, r * 0.55);
             ctx.lineTo(-r * 0.05, r * 0.28);
             ctx.closePath();
+            ctx.fillStyle = bladeGrad1;
             ctx.fill();
+            ctx.strokeStyle = "rgba(180, 255, 250, 0.6)";
             ctx.stroke();
           }
 

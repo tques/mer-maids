@@ -744,48 +744,58 @@ export function checkRamCollisions(px: number, py: number, radius: number): numb
  * Called within a camera-translated context (world coordinates).
  */
 export function drawEnemies(ctx: CanvasRenderingContext2D) {
-  // ---- Pink Bombers ----
+  // ---- Alien Bombers (dark industrial, toxic green accents) ----
   for (const e of enemies) {
     if (!e.alive) continue;
     ctx.save();
     ctx.translate(e.x, e.y);
-    ctx.rotate(e.dir === 1 ? 0 : Math.PI); // Face direction of travel
+    ctx.rotate(e.dir === 1 ? 0 : Math.PI);
 
-    ctx.shadowColor = "rgba(232, 67, 147, 0.4)";
+    ctx.shadowColor = "rgba(100, 255, 50, 0.4)";
     ctx.shadowBlur = 10;
 
-    // Fuselage shape
     const s = ENEMY_SIZE;
+    // Angular alien fuselage
     ctx.beginPath();
     ctx.moveTo(s * 1.1, 0);
-    ctx.lineTo(s * 0.2, -s * 0.5);
-    ctx.lineTo(-s * 0.8, -s * 0.55);
-    ctx.lineTo(-s * 0.6, 0);
-    ctx.lineTo(-s * 0.8, s * 0.55);
-    ctx.lineTo(s * 0.2, s * 0.5);
+    ctx.lineTo(s * 0.3, -s * 0.5);
+    ctx.lineTo(-s * 0.6, -s * 0.6);
+    ctx.lineTo(-s * 0.9, -s * 0.3);
+    ctx.lineTo(-s * 0.7, 0);
+    ctx.lineTo(-s * 0.9, s * 0.3);
+    ctx.lineTo(-s * 0.6, s * 0.6);
+    ctx.lineTo(s * 0.3, s * 0.5);
     ctx.closePath();
-    ctx.fillStyle = "#e84393";
+    ctx.fillStyle = "#1a1a1a";
     ctx.fill();
-    ctx.strokeStyle = "#c0306e";
+    ctx.strokeStyle = "#3a3a3a";
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Wing stripes
-    ctx.fillStyle = "#d63384";
-    ctx.fillRect(-s * 0.5, -s * 0.45, s * 0.6, s * 0.15);
-    ctx.fillRect(-s * 0.5, s * 0.3, s * 0.6, s * 0.15);
-
-    // Cockpit
+    // Industrial panel lines
+    ctx.strokeStyle = "rgba(100, 100, 100, 0.4)";
+    ctx.lineWidth = 0.5;
     ctx.beginPath();
-    ctx.arc(s * 0.3, 0, s * 0.15, 0, Math.PI * 2);
-    ctx.fillStyle = "#fab1d0";
+    ctx.moveTo(s * 0.1, -s * 0.45);
+    ctx.lineTo(-s * 0.4, 0);
+    ctx.lineTo(s * 0.1, s * 0.45);
+    ctx.stroke();
+
+    // Toxic green eye
+    ctx.beginPath();
+    ctx.arc(s * 0.4, 0, s * 0.12, 0, Math.PI * 2);
+    ctx.fillStyle = "#40ff40";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(s * 0.4, 0, s * 0.05, 0, Math.PI * 2);
+    ctx.fillStyle = "#000";
     ctx.fill();
 
-    // Engine glow
+    // Engine exhaust (alien green)
     ctx.beginPath();
-    ctx.arc(-s * 0.7, 0, s * 0.12, 0, Math.PI * 2);
-    ctx.fillStyle = "#ff6b9d";
-    ctx.globalAlpha = 0.6 + Math.sin(performance.now() * 0.01) * 0.3;
+    ctx.arc(-s * 0.8, 0, s * 0.1, 0, Math.PI * 2);
+    ctx.fillStyle = "#60ff60";
+    ctx.globalAlpha = 0.5 + Math.sin(performance.now() * 0.015) * 0.3;
     ctx.fill();
     ctx.globalAlpha = 1;
 
@@ -793,60 +803,61 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.restore();
   }
 
-  // ---- Red/Orange Chasers ----
+  // ---- Alien Chasers (dark angular, red sensor, robotic) ----
   for (const c of chasers) {
     if (!c.alive) continue;
     ctx.save();
     ctx.translate(c.x, c.y);
-    ctx.rotate(c.angle); // Face direction of travel
+    ctx.rotate(c.angle);
 
-    ctx.shadowColor = "rgba(255, 90, 20, 0.4)";
+    ctx.shadowColor = "rgba(255, 40, 0, 0.5)";
     ctx.shadowBlur = 10;
 
-    // Angular fighter body
     const s = CHASER_SIZE;
+    // Robotic angular body
     ctx.beginPath();
     ctx.moveTo(s * 1.2, 0);
-    ctx.lineTo(s * 0.3, -s * 0.35);
-    ctx.lineTo(-s * 0.3, -s * 0.6);
-    ctx.lineTo(-s * 0.7, -s * 0.4);
-    ctx.lineTo(-s * 0.5, 0);
-    ctx.lineTo(-s * 0.7, s * 0.4);
-    ctx.lineTo(-s * 0.3, s * 0.6);
-    ctx.lineTo(s * 0.3, s * 0.35);
+    ctx.lineTo(s * 0.4, -s * 0.3);
+    ctx.lineTo(s * 0.1, -s * 0.55);
+    ctx.lineTo(-s * 0.5, -s * 0.5);
+    ctx.lineTo(-s * 0.7, -s * 0.2);
+    ctx.lineTo(-s * 0.6, 0);
+    ctx.lineTo(-s * 0.7, s * 0.2);
+    ctx.lineTo(-s * 0.5, s * 0.5);
+    ctx.lineTo(s * 0.1, s * 0.55);
+    ctx.lineTo(s * 0.4, s * 0.3);
     ctx.closePath();
-    ctx.fillStyle = "#e84118";
+    ctx.fillStyle = "#222222";
     ctx.fill();
-    ctx.strokeStyle = "#c23616";
+    ctx.strokeStyle = "#555";
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Wing triangles
-    ctx.fillStyle = "#b71510";
+    // Mechanical joint lines
+    ctx.strokeStyle = "rgba(150, 150, 150, 0.3)";
+    ctx.lineWidth = 0.5;
     ctx.beginPath();
-    ctx.moveTo(-s * 0.2, -s * 0.5);
-    ctx.lineTo(-s * 0.6, -s * 0.5);
-    ctx.lineTo(-s * 0.4, -s * 0.2);
-    ctx.closePath();
+    ctx.moveTo(s * 0.1, -s * 0.5);
+    ctx.lineTo(-s * 0.3, 0);
+    ctx.lineTo(s * 0.1, s * 0.5);
+    ctx.stroke();
+
+    // Red sensor eye
+    const eyePulse = 0.6 + Math.sin(performance.now() * 0.008 + c.x) * 0.4;
+    ctx.beginPath();
+    ctx.ellipse(s * 0.5, 0, s * 0.14, s * 0.08, 0, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 30, 10, ${eyePulse})`;
     ctx.fill();
     ctx.beginPath();
-    ctx.moveTo(-s * 0.2, s * 0.5);
-    ctx.lineTo(-s * 0.6, s * 0.5);
-    ctx.lineTo(-s * 0.4, s * 0.2);
-    ctx.closePath();
+    ctx.arc(s * 0.5, 0, s * 0.04, 0, Math.PI * 2);
+    ctx.fillStyle = "#fff";
     ctx.fill();
 
-    // Cockpit visor (orange)
+    // Twin engine exhausts (red-orange)
     ctx.beginPath();
-    ctx.ellipse(s * 0.4, 0, s * 0.18, s * 0.1, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#ffc048";
-    ctx.fill();
-
-    // Engine flame trails
-    ctx.beginPath();
-    ctx.arc(-s * 0.6, -s * 0.15, s * 0.08, 0, Math.PI * 2);
-    ctx.arc(-s * 0.6, s * 0.15, s * 0.08, 0, Math.PI * 2);
-    ctx.fillStyle = "#ff9f43";
+    ctx.arc(-s * 0.65, -s * 0.15, s * 0.07, 0, Math.PI * 2);
+    ctx.arc(-s * 0.65, s * 0.15, s * 0.07, 0, Math.PI * 2);
+    ctx.fillStyle = "#ff4500";
     ctx.globalAlpha = 0.5 + Math.sin(performance.now() * 0.012 + c.x) * 0.4;
     ctx.fill();
     ctx.globalAlpha = 1;

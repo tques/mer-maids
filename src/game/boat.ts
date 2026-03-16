@@ -91,9 +91,9 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
 
   // (shadow removed)
 
-  // --- Platform base — dark rounded rectangle ---
+  // --- Platform base — glassy translucent aqua ---
   ctx.beginPath();
-  const baseR = 20;  // Corner radius
+  const baseR = 20;
   ctx.moveTo(boat.x - hw + baseR, topY + hd);
   ctx.lineTo(boat.x + hw - baseR, topY + hd);
   ctx.quadraticCurveTo(boat.x + hw, topY + hd, boat.x + hw, topY + hd - baseR);
@@ -104,10 +104,14 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
   ctx.lineTo(boat.x - hw, topY + hd - baseR);
   ctx.quadraticCurveTo(boat.x - hw, topY + hd, boat.x - hw + baseR, topY + hd);
   ctx.closePath();
-  ctx.fillStyle = "#1a1f2e";  // Dark navy
+  const baseGrad = ctx.createLinearGradient(boat.x, topY, boat.x, topY + hd);
+  baseGrad.addColorStop(0, "rgba(20, 60, 80, 0.9)");
+  baseGrad.addColorStop(0.5, "rgba(10, 40, 60, 0.95)");
+  baseGrad.addColorStop(1, "rgba(5, 25, 45, 0.95)");
+  ctx.fillStyle = baseGrad;
   ctx.fill();
 
-  // --- Platform surface — lighter top edge ---
+  // --- Platform surface — glossy highlight ---
   ctx.beginPath();
   ctx.moveTo(boat.x - hw + baseR, topY);
   ctx.lineTo(boat.x + hw - baseR, topY);
@@ -115,15 +119,15 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
   ctx.lineTo(boat.x - hw + 5, topY + 5);
   ctx.quadraticCurveTo(boat.x - hw, topY, boat.x - hw + baseR, topY);
   ctx.closePath();
-  ctx.fillStyle = "#252b3a";
+  ctx.fillStyle = "rgba(100, 220, 210, 0.25)";
   ctx.fill();
 
-  // --- Horizontal lines on the hull (decorative) ---
-  ctx.strokeStyle = "#3a4560";
+  // --- Horizontal lines on the hull (aqua accent) ---
+  ctx.strokeStyle = "rgba(80, 200, 190, 0.15)";
   ctx.lineWidth = 1;
   for (let i = 1; i <= 3; i++) {
     const ly = topY + (hd * i) / 4;
-    const shrink = i * 6;  // Lines get shorter toward the bottom
+    const shrink = i * 6;
     ctx.beginPath();
     ctx.moveTo(boat.x - hw + 10 + shrink, ly);
     ctx.lineTo(boat.x + hw - 10 - shrink, ly);
@@ -154,20 +158,33 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
   const flickerRate = critical ? 80 : (exposed ? 120 : 200);
   const flickering = (damaged || exposed) && Math.sin(now / flickerRate) > 0;
 
-  // --- Draw each building ---
+  // --- Draw each building (futuristic glass towers) ---
   for (const b of buildings) {
     const bx = boat.x + b.ox;
     const by = topY - b.h;
 
-    // Building body color changes with damage state
-    ctx.fillStyle = exposed ? (critical ? "#0e0808" : "#121418") : (damaged ? (critical ? "#151020" : "#1a2030") : "#1e2538");
+    // Building body — glassy gradient
+    const bldGrad = ctx.createLinearGradient(bx - b.w / 2, by, bx + b.w / 2, by + b.h);
+    if (exposed) {
+      bldGrad.addColorStop(0, critical ? "rgba(30, 10, 10, 0.9)" : "rgba(15, 25, 35, 0.9)");
+      bldGrad.addColorStop(1, critical ? "rgba(20, 5, 5, 0.95)" : "rgba(10, 18, 28, 0.95)");
+    } else {
+      bldGrad.addColorStop(0, "rgba(30, 70, 90, 0.8)");
+      bldGrad.addColorStop(0.5, "rgba(20, 50, 70, 0.85)");
+      bldGrad.addColorStop(1, "rgba(15, 35, 55, 0.9)");
+    }
+    ctx.fillStyle = bldGrad;
     ctx.fillRect(bx - b.w / 2, by, b.w, b.h);
     
-    // Left edge highlight
-    ctx.fillStyle = exposed ? "#1a1a20" : (damaged ? "#1e2540" : "#2a3350");
+    // Glass reflection highlight (left edge)
+    ctx.fillStyle = exposed ? "rgba(40, 60, 80, 0.3)" : "rgba(120, 220, 210, 0.15)";
     ctx.fillRect(bx - b.w / 2, by, 3, b.h);
 
-    // Damage scars (horizontal lines on buildings when barrier is down)
+    // Top cap highlight
+    ctx.fillStyle = exposed ? "rgba(60, 40, 30, 0.3)" : "rgba(150, 240, 230, 0.12)";
+    ctx.fillRect(bx - b.w / 2, by, b.w, 2);
+
+    // Damage scars
     if (exposed) {
       ctx.fillStyle = "rgba(60, 30, 10, 0.3)";
       const scarCount = Math.ceil((1 - hpRatio) * 3);
@@ -177,18 +194,18 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
       }
     }
 
-    // Window lights — randomized grid of tiny colored squares
+    // Window lights — aqua/cyan for futuristic feel
     const lightChance = exposed ? 0.9 : (critical ? 0.85 : (damaged ? 0.55 : 0.3));
     const lightColor = exposed
-      ? (flickering ? "#cc4400" : "#220800")   // Emergency orange when exposed
+      ? (flickering ? "#cc4400" : "#220800")
       : (critical
-        ? (flickering ? "#aa3030" : "#331818") // Red warning when critical
-        : (damaged ? "#4a6a8a" : "#6a8aaa"));  // Normal blue-white
+        ? (flickering ? "#aa3030" : "#331818")
+        : (damaged ? "#4ab8c0" : "#80e8d8"));
 
     ctx.fillStyle = lightColor;
     for (let wy = by + 6; wy < topY - 4; wy += 8) {
       for (let wx = bx - b.w / 2 + 6; wx < bx + b.w / 2 - 3; wx += 6) {
-        if (Math.random() > lightChance) {  // Random windows are lit
+        if (Math.random() > lightChance) {
           ctx.fillRect(wx, wy, 2, 2);
         }
       }
@@ -215,26 +232,43 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
     const domeRadius = hw * 0.85;  // Slightly smaller than platform width
     const domeCenterY = topY;      // Dome base at platform top
 
-    // Dome color shifts from blue (healthy) to red (damaged)
-    const domeR = Math.round(40 + (1 - hpRatio) * 180);
-    const domeG = Math.round(120 + hpRatio * 80 - (1 - hpRatio) * 80);
-    const domeB = Math.round(200 * hpRatio + 40);
-    const domeAlphaBase = 0.12 + (1 - hpRatio) * 0.15;
+    // Dome color — aqua/teal shifting to red when damaged
+    const domeR = Math.round(30 + (1 - hpRatio) * 200);
+    const domeG = Math.round(200 * hpRatio + 40);
+    const domeB = Math.round(220 * hpRatio + 30);
+    const domeAlphaBase = 0.10 + (1 - hpRatio) * 0.15;
 
-    // Radial gradient — transparent center, visible edges
+    // Radial gradient — glassy transparent center, visible edges
     const domeGrad = ctx.createRadialGradient(
       boat.x, domeCenterY, domeRadius * 0.3,
       boat.x, domeCenterY, domeRadius
     );
-    domeGrad.addColorStop(0, `rgba(${domeR}, ${domeG}, ${domeB}, 0.02)`);
-    domeGrad.addColorStop(0.7, `rgba(${domeR}, ${domeG}, ${domeB}, ${domeAlphaBase * 0.5})`);
+    domeGrad.addColorStop(0, `rgba(${domeR}, ${domeG}, ${domeB}, 0.01)`);
+    domeGrad.addColorStop(0.6, `rgba(${domeR}, ${domeG}, ${domeB}, ${domeAlphaBase * 0.4})`);
+    domeGrad.addColorStop(0.85, `rgba(${domeR}, ${domeG}, ${domeB}, ${domeAlphaBase * 0.7})`);
     domeGrad.addColorStop(1, `rgba(${domeR}, ${domeG}, ${domeB}, ${domeAlphaBase})`);
+
+    // Specular highlight on dome
+    const specGrad = ctx.createRadialGradient(
+      boat.x - domeRadius * 0.3, domeCenterY - domeRadius * 0.5, 0,
+      boat.x - domeRadius * 0.3, domeCenterY - domeRadius * 0.5, domeRadius * 0.4
+    );
+    specGrad.addColorStop(0, "rgba(255, 255, 255, 0.08)");
+    specGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
 
     // Draw dome as upper half of circle
     ctx.beginPath();
     ctx.arc(boat.x, domeCenterY, domeRadius, Math.PI, 0);  // Upper semicircle
     ctx.closePath();
     ctx.fillStyle = domeGrad;
+    ctx.fill();
+
+    // Draw specular highlight
+    ctx.beginPath();
+    ctx.arc(boat.x, domeCenterY, domeRadius, Math.PI, 0);
+    ctx.closePath();
+    ctx.fillStyle = specGrad;
+    ctx.fill();
     ctx.fill();
 
     // Dome outline — gets brighter when damaged
