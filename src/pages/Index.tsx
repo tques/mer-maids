@@ -875,15 +875,60 @@ const Index = () => {
       ctx.save();
       ctx.scale(ZOOM, ZOOM);
 
-      // Draw sky gradient (view space, no camera)
+      // Draw sky gradient (view space, no camera) — detailed sunset
       const skyGrad = ctx.createLinearGradient(0, 0, 0, viewH);
-      skyGrad.addColorStop(0, "#0a0a1a");
-      skyGrad.addColorStop(0.35, "#1a1a3e");
-      skyGrad.addColorStop(0.55, "#2d4a6f");
-      skyGrad.addColorStop(0.7, "#e8a838");
-      skyGrad.addColorStop(0.78, "#f7d794");
+      skyGrad.addColorStop(0, "#05061a");
+      skyGrad.addColorStop(0.15, "#0c1035");
+      skyGrad.addColorStop(0.30, "#1a1850");
+      skyGrad.addColorStop(0.45, "#3d2070");
+      skyGrad.addColorStop(0.55, "#8b3a62");
+      skyGrad.addColorStop(0.62, "#d45a3a");
+      skyGrad.addColorStop(0.68, "#f09030");
+      skyGrad.addColorStop(0.73, "#f7c864");
+      skyGrad.addColorStop(0.78, "#fff0c0");
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, viewW, viewH);
+
+      // Stars (upper portion of sky)
+      const starSeed = 42;
+      ctx.fillStyle = "#fff";
+      for (let i = 0; i < 120; i++) {
+        const sx = ((i * 137 + starSeed) % 1000) / 1000 * viewW;
+        const sy = ((i * 211 + starSeed * 3) % 1000) / 1000 * viewH * 0.45;
+        const sr = 0.4 + ((i * 73) % 100) / 100 * 1.2;
+        const twinkle = 0.4 + Math.sin(performance.now() * 0.001 + i * 1.7) * 0.3;
+        ctx.globalAlpha = twinkle;
+        ctx.beginPath();
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // Clouds (layered translucent ellipses near horizon)
+      const cloudData = [
+        { x: 0.1, y: 0.52, w: 120, h: 18, a: 0.12 },
+        { x: 0.25, y: 0.56, w: 180, h: 22, a: 0.1 },
+        { x: 0.45, y: 0.50, w: 200, h: 25, a: 0.15 },
+        { x: 0.6, y: 0.54, w: 160, h: 20, a: 0.11 },
+        { x: 0.78, y: 0.48, w: 140, h: 16, a: 0.13 },
+        { x: 0.9, y: 0.53, w: 170, h: 22, a: 0.09 },
+        { x: 0.15, y: 0.60, w: 100, h: 14, a: 0.08 },
+        { x: 0.55, y: 0.58, w: 130, h: 16, a: 0.07 },
+        { x: 0.35, y: 0.44, w: 90, h: 12, a: 0.06 },
+      ];
+      for (const c of cloudData) {
+        const cx = c.x * viewW;
+        const cy = c.y * viewH;
+        const drift = Math.sin(performance.now() * 0.0002 + c.x * 10) * 8;
+        const cloudGrad = ctx.createRadialGradient(cx + drift, cy, 0, cx + drift, cy, c.w * 0.6);
+        cloudGrad.addColorStop(0, `rgba(255, 200, 160, ${c.a})`);
+        cloudGrad.addColorStop(0.5, `rgba(230, 140, 100, ${c.a * 0.6})`);
+        cloudGrad.addColorStop(1, `rgba(180, 80, 60, 0)`);
+        ctx.fillStyle = cloudGrad;
+        ctx.beginPath();
+        ctx.ellipse(cx + drift, cy, c.w, c.h, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       // Apply camera translation (pixel-snapped to remove 1px seams at wrap boundaries)
       const drawCamX = Math.round(finalCamX * ZOOM) / ZOOM;
