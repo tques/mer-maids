@@ -177,14 +177,14 @@ export function checkMissileHitsPlayer(px: number, py: number, radius: number): 
 /**
  * Deflect all active homing missiles.
  * Called when the player performs a barrel roll or boost.
- * Randomizes missile heading and shortens remaining lifetime.
+ * Missiles fly off wildly in a random direction, no longer tracking the player.
  */
 export function deflectMissiles() {
   for (const m of homingMissiles) {
-    if (!m.alive) continue;
+    if (!m.alive || m.deflected) continue;
     m.angle += (Math.random() - 0.5) * Math.PI * 1.5; // Wild random deflection
-    m.speed *= 0.6; // Slow them down
-    m.life = Math.min(m.life, 1.2); // Expire soon
+    m.speed = MISSILE_SPEED * (0.8 + Math.random() * 0.4); // Vary speed
+    m.deflected = true; // Stop homing permanently
   }
 }
 
