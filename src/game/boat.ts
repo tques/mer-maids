@@ -122,12 +122,12 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
   ctx.fillStyle = "rgba(100, 220, 210, 0.25)";
   ctx.fill();
 
-  // --- Horizontal lines on the hull (decorative) ---
-  ctx.strokeStyle = "#3a4560";
+  // --- Horizontal lines on the hull (aqua accent) ---
+  ctx.strokeStyle = "rgba(80, 200, 190, 0.15)";
   ctx.lineWidth = 1;
   for (let i = 1; i <= 3; i++) {
     const ly = topY + (hd * i) / 4;
-    const shrink = i * 6;  // Lines get shorter toward the bottom
+    const shrink = i * 6;
     ctx.beginPath();
     ctx.moveTo(boat.x - hw + 10 + shrink, ly);
     ctx.lineTo(boat.x + hw - 10 - shrink, ly);
