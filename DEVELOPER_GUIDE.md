@@ -169,6 +169,17 @@ This is the heart of the game. It contains:
 - `updateSubmarinesWithDamage()`: Handles spawning, movement, attack charging, and returns damage dealt.
 - `drawSubmarines()`: Renders menacing dark hull with crimson accents, pulsing red eye, and attack warning effects.
 
+### `src/game/minelayer.ts` — Mine-Layer Plane & Floating Mines
+
+- A fast plane that flies edge-to-edge dropping naval mines.
+- **Mines** have buoyancy — they sink initially then float on the water surface. Never despawn naturally.
+- Players can shoot mines (explosion + score) but touching one deals 1 damage.
+- Mines use a **dark industrial aesthetic** — rust-toned orbs with slow rotation, red danger glow, energy spikes with glowing tips, and a central robotic eye.
+- `updateMinelayer()`: Handles plane spawning, mine dropping, and mine physics.
+- `checkBulletHitsMines()`: Tests player bullets against floating mines.
+- `checkPlayerHitsMine()`: Tests player collision with mines.
+- `drawMinelayer()`: Renders the plane and all active mines.
+
 ### `src/game/pickups.ts` — Collectible Pickups
 
 All collectible items in one place:
