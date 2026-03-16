@@ -1144,7 +1144,7 @@ const Index = () => {
       const hudX = 12;
       const hudY = 12;
       const panelW = 280;
-      const panelH = 120;
+      const panelH = 134;
 
       // --- Helper: draw angled glassy panel ---
       const drawPanel = (x: number, y: number, w: number, h: number, cutTL = 12, cutBR = 12) => {
@@ -1391,8 +1391,8 @@ const Index = () => {
       for (let i = 0; i < ammoLights; i++) {
         const sx = stripX + i * (segW + segGap);
         const lit = i < litAmmo;
-        const sColor = ammoLow ? "#ffcc00" : "#00ccff";
-        const sGlow = ammoLow ? "#ff9900" : "#0088bb";
+        const sColor = ammoLow ? "#ffcc00" : "#c0c8d0";
+        const sGlow = ammoLow ? "#ff9900" : "#8890a0";
         drawStripSegment(sx, stripY, segW, segH, lit, sColor, sGlow, i === 0, i === ammoLights - 1);
       }
       ctx.font = "bold 9px monospace";
@@ -1400,7 +1400,7 @@ const Index = () => {
       ctx.fillText(`${ammo}`, stripX + stripTotalW + 6, ly);
 
       // FUEL — liquid-filled vertical tubes
-      ly += 20;
+      ly += 34;
       ctx.font = "bold 10px monospace";
       const fuelLow = fuel <= FUEL_LOW_THRESHOLD;
       ctx.fillStyle = fuelLow ? "#ff6060" : "rgba(0,180,255,0.7)";
@@ -1462,9 +1462,9 @@ const Index = () => {
             liqGrad.addColorStop(0.5, "rgba(255,120,40,0.9)");
             liqGrad.addColorStop(1, "rgba(200,50,30,0.8)");
           } else {
-            liqGrad.addColorStop(0, "rgba(0,140,220,0.75)");
-            liqGrad.addColorStop(0.5, "rgba(0,200,255,0.9)");
-            liqGrad.addColorStop(1, "rgba(0,100,180,0.75)");
+            liqGrad.addColorStop(0, "rgba(0,140,220,0.4)");
+            liqGrad.addColorStop(0.5, "rgba(0,200,255,0.5)");
+            liqGrad.addColorStop(1, "rgba(0,100,180,0.4)");
           }
 
           ctx.save();
