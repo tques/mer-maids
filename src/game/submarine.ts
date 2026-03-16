@@ -208,6 +208,12 @@ export function updateSubmarinesWithDamage(
       continue;
     }
 
+    // Rise toward target depth
+    if (sub.y > sub.targetY) {
+      sub.y -= SUB_RISE_SPEED;
+      if (sub.y < sub.targetY) sub.y = sub.targetY;
+    }
+
     if (!sub.attacking) {
       sub.x += sub.dir * sub.speed;
 
