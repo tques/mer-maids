@@ -245,22 +245,21 @@ export function drawWater(
   ctx.fillStyle = grad;
   ctx.fill();
 
-  // === CAUSTIC LIGHT PATCHES ===
-  // Animated light spots below the surface (like sunlight refracted through waves)
+  // === CAUSTIC LIGHT PATCHES (tropical bright) ===
   ctx.save();
   ctx.clip();
-  ctx.globalAlpha = 0.07;  // Very subtle
-  const causticSpacing = 250;
+  ctx.globalAlpha = 0.12;
+  const causticSpacing = 180;
   const causticCount = Math.ceil((x1 - x0) / causticSpacing) + 2;
   const causticStart = Math.floor(x0 / causticSpacing) * causticSpacing;
   for (let i = 0; i < causticCount; i++) {
     const cx = causticStart + i * causticSpacing + Math.sin(waveTime * 0.3 + i * 1.7) * 40;
     const cy = baseY + 25 + Math.sin(waveTime * 0.5 + i * 2.3) * 18;
-    const cr = 50 + Math.sin(waveTime * 0.8 + i) * 15;
+    const cr = 55 + Math.sin(waveTime * 0.8 + i) * 18;
     const causticGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr);
-    causticGrad.addColorStop(0, "rgba(120, 210, 255, 1)");
-    causticGrad.addColorStop(0.6, "rgba(80, 180, 240, 0.4)");
-    causticGrad.addColorStop(1, "rgba(80, 180, 240, 0)");
+    causticGrad.addColorStop(0, "rgba(100, 255, 230, 1)");
+    causticGrad.addColorStop(0.5, "rgba(60, 220, 200, 0.5)");
+    causticGrad.addColorStop(1, "rgba(40, 200, 180, 0)");
     ctx.fillStyle = causticGrad;
     ctx.fillRect(cx - cr, cy - cr, cr * 2, cr * 2);
   }
