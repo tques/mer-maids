@@ -136,58 +136,110 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
 
   // --- City buildings (abstract rectangles/towers on top of the platform) ---
   // Each building is defined by: ox (offset from center), w (width), h (height)
-  // Back layer buildings (drawn first, shorter, darker — depth effect)
-  const backBuildings = [
-    { ox: -260, w: 30, h: 28 },
-    { ox: -230, w: 24, h: 35 },
-    { ox: -195, w: 28, h: 32 },
-    { ox: -160, w: 22, h: 42 },
-    { ox: -125, w: 26, h: 38 },
-    { ox: -95, w: 20, h: 48 },
-    { ox: -65, w: 24, h: 44 },
-    { ox: -35, w: 22, h: 55 },
-    { ox: -10, w: 28, h: 60 },
-    { ox: 20, w: 24, h: 52 },
-    { ox: 50, w: 20, h: 46 },
-    { ox: 75, w: 26, h: 40 },
-    { ox: 105, w: 22, h: 50 },
-    { ox: 130, w: 28, h: 36 },
-    { ox: 160, w: 24, h: 42 },
-    { ox: 190, w: 20, h: 34 },
-    { ox: 220, w: 26, h: 30 },
-    { ox: 250, w: 22, h: 26 },
+  // style: 'rect' | 'dome' | 'spire' | 'stepped' | 'cylinder'
+  type BldStyle = 'rect' | 'dome' | 'spire' | 'stepped' | 'cylinder';
+  type BldDef = { ox: number; w: number; h: number; s: BldStyle };
+
+  const backBuildings: BldDef[] = [
+    { ox: -260, w: 30, h: 28, s: 'rect' },
+    { ox: -230, w: 24, h: 35, s: 'dome' },
+    { ox: -195, w: 28, h: 32, s: 'cylinder' },
+    { ox: -160, w: 22, h: 42, s: 'spire' },
+    { ox: -125, w: 26, h: 38, s: 'stepped' },
+    { ox: -95, w: 20, h: 48, s: 'dome' },
+    { ox: -65, w: 24, h: 44, s: 'rect' },
+    { ox: -35, w: 22, h: 55, s: 'spire' },
+    { ox: -10, w: 28, h: 60, s: 'cylinder' },
+    { ox: 20, w: 24, h: 52, s: 'stepped' },
+    { ox: 50, w: 20, h: 46, s: 'dome' },
+    { ox: 75, w: 26, h: 40, s: 'rect' },
+    { ox: 105, w: 22, h: 50, s: 'spire' },
+    { ox: 130, w: 28, h: 36, s: 'dome' },
+    { ox: 160, w: 24, h: 42, s: 'cylinder' },
+    { ox: 190, w: 20, h: 34, s: 'stepped' },
+    { ox: 220, w: 26, h: 30, s: 'rect' },
+    { ox: 250, w: 22, h: 26, s: 'dome' },
   ];
 
-  // Front layer buildings (taller, more detailed, tightly packed)
-  const buildings = [
-    { ox: -280, w: 22, h: 22 },
-    { ox: -258, w: 26, h: 30 },
-    { ox: -232, w: 20, h: 38 },
-    { ox: -210, w: 28, h: 32 },
-    { ox: -182, w: 24, h: 45 },
-    { ox: -155, w: 30, h: 50 },
-    { ox: -125, w: 22, h: 58 },
-    { ox: -100, w: 26, h: 48 },
-    { ox: -74, w: 20, h: 62 },
-    { ox: -50, w: 28, h: 70 },
-    { ox: -22, w: 24, h: 78 },
-    { ox: 5, w: 36, h: 90 },     // Central spire
-    { ox: 35, w: 24, h: 75 },
-    { ox: 60, w: 28, h: 65 },
-    { ox: 88, w: 22, h: 55 },
-    { ox: 112, w: 26, h: 60 },
-    { ox: 140, w: 24, h: 48 },
-    { ox: 165, w: 20, h: 52 },
-    { ox: 188, w: 28, h: 42 },
-    { ox: 215, w: 22, h: 35 },
-    { ox: 240, w: 26, h: 28 },
-    { ox: 265, w: 20, h: 24 },
+  const buildings: BldDef[] = [
+    { ox: -280, w: 22, h: 22, s: 'dome' },
+    { ox: -258, w: 26, h: 30, s: 'stepped' },
+    { ox: -232, w: 20, h: 38, s: 'spire' },
+    { ox: -210, w: 28, h: 32, s: 'cylinder' },
+    { ox: -182, w: 24, h: 45, s: 'rect' },
+    { ox: -155, w: 30, h: 50, s: 'dome' },
+    { ox: -125, w: 22, h: 58, s: 'spire' },
+    { ox: -100, w: 26, h: 48, s: 'stepped' },
+    { ox: -74, w: 20, h: 62, s: 'cylinder' },
+    { ox: -50, w: 28, h: 70, s: 'dome' },
+    { ox: -22, w: 24, h: 78, s: 'rect' },
+    { ox: 5, w: 36, h: 90, s: 'spire' },
+    { ox: 35, w: 24, h: 75, s: 'stepped' },
+    { ox: 60, w: 28, h: 65, s: 'dome' },
+    { ox: 88, w: 22, h: 55, s: 'cylinder' },
+    { ox: 112, w: 26, h: 60, s: 'rect' },
+    { ox: 140, w: 24, h: 48, s: 'spire' },
+    { ox: 165, w: 20, h: 52, s: 'dome' },
+    { ox: 188, w: 28, h: 42, s: 'stepped' },
+    { ox: 215, w: 22, h: 35, s: 'cylinder' },
+    { ox: 240, w: 26, h: 28, s: 'rect' },
+    { ox: 265, w: 20, h: 24, s: 'dome' },
   ];
+
+  // --- Shape helper: traces diverse building outlines ---
+  function traceBldShape(bx: number, by: number, w: number, h: number, s: BldStyle) {
+    const hw2 = w / 2;
+    ctx.beginPath();
+    switch (s) {
+      case 'dome':
+        ctx.moveTo(bx - hw2, by + h);
+        ctx.lineTo(bx - hw2, by + 10);
+        ctx.arc(bx, by + 10, hw2, Math.PI, 0);
+        ctx.lineTo(bx + hw2, by + h);
+        ctx.closePath();
+        break;
+      case 'spire':
+        ctx.moveTo(bx - hw2, by + h);
+        ctx.lineTo(bx - hw2, by + 14);
+        ctx.lineTo(bx - hw2 * 0.35, by + 10);
+        ctx.lineTo(bx, by);
+        ctx.lineTo(bx + hw2 * 0.35, by + 10);
+        ctx.lineTo(bx + hw2, by + 14);
+        ctx.lineTo(bx + hw2, by + h);
+        ctx.closePath();
+        break;
+      case 'stepped':
+        ctx.moveTo(bx - hw2, by + h);
+        ctx.lineTo(bx - hw2, by + h * 0.55);
+        ctx.lineTo(bx - hw2 * 0.6, by + h * 0.55);
+        ctx.lineTo(bx - hw2 * 0.6, by + h * 0.28);
+        ctx.lineTo(bx - hw2 * 0.25, by + h * 0.28);
+        ctx.lineTo(bx - hw2 * 0.25, by);
+        ctx.lineTo(bx + hw2 * 0.25, by);
+        ctx.lineTo(bx + hw2 * 0.25, by + h * 0.28);
+        ctx.lineTo(bx + hw2 * 0.6, by + h * 0.28);
+        ctx.lineTo(bx + hw2 * 0.6, by + h * 0.55);
+        ctx.lineTo(bx + hw2, by + h * 0.55);
+        ctx.lineTo(bx + hw2, by + h);
+        ctx.closePath();
+        break;
+      case 'cylinder':
+        ctx.moveTo(bx - hw2, by + h);
+        ctx.lineTo(bx - hw2, by + 7);
+        ctx.ellipse(bx, by + 7, hw2, 7, 0, Math.PI, 0);
+        ctx.lineTo(bx + hw2, by + h);
+        ctx.closePath();
+        break;
+      default: // 'rect'
+        ctx.rect(bx - hw2, by, w, h);
+        break;
+    }
+  }
 
   // --- Damage state calculations ---
-  const damaged = hpRatio < 1;        // Any damage taken
-  const critical = hpRatio <= 0.3;    // Very low HP
-  const exposed = !barrierUp;         // Barrier is down
+  const damaged = hpRatio < 1;
+  const critical = hpRatio <= 0.3;
+  const exposed = !barrierUp;
   const now = performance.now();
   const flickerRate = critical ? 80 : (exposed ? 120 : 200);
   const flickering = (damaged || exposed) && Math.sin(now / flickerRate) > 0;
@@ -195,7 +247,7 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
   // --- Draw back-layer buildings (darker, recessed for depth) ---
   for (const b of backBuildings) {
     const bx = boat.x + b.ox;
-    const by = topY - b.h + 4; // Slightly higher base = looks further back
+    const by = topY - b.h + 4;
     const bldGrad = ctx.createLinearGradient(bx - b.w / 2, by, bx + b.w / 2, by + b.h);
     if (exposed) {
       bldGrad.addColorStop(0, critical ? "rgba(20, 8, 8, 0.7)" : "rgba(10, 18, 28, 0.7)");
@@ -204,8 +256,9 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
       bldGrad.addColorStop(0, "rgba(18, 45, 60, 0.6)");
       bldGrad.addColorStop(1, "rgba(10, 30, 45, 0.7)");
     }
+    traceBldShape(bx, by, b.w, b.h - 4, b.s);
     ctx.fillStyle = bldGrad;
-    ctx.fillRect(bx - b.w / 2, by, b.w, b.h - 4);
+    ctx.fill();
     // Dim window lights
     ctx.fillStyle = exposed ? "rgba(120, 40, 10, 0.3)" : "rgba(60, 160, 140, 0.25)";
     for (let wy = by + 5; wy < topY - 2; wy += 7) {
@@ -230,16 +283,37 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
       bldGrad.addColorStop(0.5, "rgba(20, 50, 70, 0.85)");
       bldGrad.addColorStop(1, "rgba(15, 35, 55, 0.9)");
     }
+    traceBldShape(bx, by, b.w, b.h, b.s);
     ctx.fillStyle = bldGrad;
-    ctx.fillRect(bx - b.w / 2, by, b.w, b.h);
-    
+    ctx.fill();
+
     // Glass reflection highlight (left edge)
     ctx.fillStyle = exposed ? "rgba(40, 60, 80, 0.3)" : "rgba(120, 220, 210, 0.15)";
-    ctx.fillRect(bx - b.w / 2, by, 3, b.h);
+    ctx.fillRect(bx - b.w / 2, by + (b.s === 'spire' ? 14 : b.s === 'dome' || b.s === 'cylinder' ? 10 : 0), 3, b.h - (b.s === 'spire' ? 14 : b.s === 'dome' || b.s === 'cylinder' ? 10 : 0));
 
-    // Top cap highlight
-    ctx.fillStyle = exposed ? "rgba(60, 40, 30, 0.3)" : "rgba(150, 240, 230, 0.12)";
-    ctx.fillRect(bx - b.w / 2, by, b.w, 2);
+    // Top accent (antenna for spire, ring for dome/cylinder, line for rect/stepped)
+    if (b.s === 'spire') {
+      ctx.strokeStyle = exposed ? "rgba(255, 80, 40, 0.4)" : "rgba(120, 240, 220, 0.4)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx, by - 6);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(bx, by - 6, 2, 0, Math.PI * 2);
+      ctx.fillStyle = exposed ? "rgba(255, 60, 30, 0.6)" : "rgba(80, 255, 220, 0.5)";
+      ctx.fill();
+    } else if (b.s === 'dome' || b.s === 'cylinder') {
+      ctx.strokeStyle = exposed ? "rgba(200, 60, 30, 0.2)" : "rgba(100, 200, 190, 0.2)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      if (b.s === 'dome') ctx.arc(bx, by + 10, b.w / 2, Math.PI, 0);
+      else ctx.ellipse(bx, by + 7, b.w / 2, 7, 0, Math.PI, 0);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = exposed ? "rgba(60, 40, 30, 0.3)" : "rgba(150, 240, 230, 0.12)";
+      ctx.fillRect(bx - b.w / 2, by, b.w, 2);
+    }
 
     // Damage scars
     if (exposed) {
@@ -251,7 +325,7 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
       }
     }
 
-    // Window lights — aqua/cyan for futuristic feel
+    // Window lights
     const lightChance = exposed ? 0.9 : (critical ? 0.85 : (damaged ? 0.55 : 0.3));
     const lightColor = exposed
       ? (flickering ? "#cc4400" : "#220800")
@@ -260,7 +334,8 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
         : (damaged ? "#4ab8c0" : "#80e8d8"));
 
     ctx.fillStyle = lightColor;
-    for (let wy = by + 6; wy < topY - 4; wy += 8) {
+    const winStartY = by + (b.s === 'spire' ? 16 : b.s === 'dome' || b.s === 'cylinder' ? 12 : 6);
+    for (let wy = winStartY; wy < topY - 4; wy += 8) {
       for (let wx = bx - b.w / 2 + 6; wx < bx + b.w / 2 - 3; wx += 6) {
         if (Math.random() > lightChance) {
           ctx.fillRect(wx, wy, 2, 2);
