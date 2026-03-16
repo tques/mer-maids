@@ -912,26 +912,10 @@ const Index = () => {
       }
       ctx.globalAlpha = 1;
 
-      // Distant mountains / haze layer (0.08 parallax)
-      const mtParallax = 0.08;
-      const mtOffX = camCenter * mtParallax;
-      const mtBaseY = viewH * 0.62;
-      ctx.fillStyle = "rgba(30,15,40,0.4)";
-      ctx.beginPath();
-      ctx.moveTo(0, mtBaseY + 20);
-      for (let px = 0; px <= viewW; px += 3) {
-        const wx = px + mtOffX;
-        const h = Math.sin(wx * 0.003) * 25 + Math.sin(wx * 0.008 + 1) * 15 + Math.sin(wx * 0.02 + 3) * 8;
-        ctx.lineTo(px, mtBaseY - h);
-      }
-      ctx.lineTo(viewW, mtBaseY + 20);
-      ctx.closePath();
-      ctx.fill();
-
       // Mid-distance cloud wisps (0.15 parallax)
       const cloudParallax = 0.15;
       const cloudOffX = camCenter * cloudParallax;
-      const cloudTime = performance.now() * 0.00003;
+      const cloudTime = performance.now() * 0.000005;
       ctx.globalAlpha = 0.12;
       for (let i = 0; i < 8; i++) {
         const seed = i * 347 + 13;
