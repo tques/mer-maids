@@ -185,7 +185,8 @@ export function updateSubmarinesWithDamage(
       const depthOffset = SUB_DEPTH_MIN + Math.random() * (SUB_DEPTH_MAX - SUB_DEPTH_MIN);
       submarines.push({
         x: spawnX,
-        y: waterY + depthOffset,
+        y: waterY + SUB_SPAWN_DEPTH,
+        targetY: waterY + depthOffset,
         speed: SUB_SPEED + Math.random() * 0.2,
         dir: dir as 1 | -1,
         alive: true,
