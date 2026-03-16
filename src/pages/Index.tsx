@@ -1524,9 +1524,8 @@ const Index = () => {
         }
       }
 
-      ctx.font = "bold 9px monospace";
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.fillText(`${Math.ceil(fuel)}`, tubeStartX + tubeCount * (tubeW + tubeGap) + 4, ly);
+
+
 
       // Corner accents (mecha detail lines)
       ctx.strokeStyle = "rgba(0,220,255,0.2)";
