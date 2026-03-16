@@ -1144,7 +1144,7 @@ const Index = () => {
       const hudX = 12;
       const hudY = 12;
       const panelW = 280;
-      const panelH = 108;
+      const panelH = 120;
 
       // --- Helper: draw angled glassy panel ---
       const drawPanel = (x: number, y: number, w: number, h: number, cutTL = 12, cutBR = 12) => {
@@ -1399,18 +1399,130 @@ const Index = () => {
       ctx.fillStyle = "rgba(255,255,255,0.5)";
       ctx.fillText(`${ammo}`, stripX + stripTotalW + 6, ly);
 
-      // FUEL bar
-      ly += 18;
+      // FUEL — liquid-filled vertical tubes
+      ly += 20;
       ctx.font = "bold 10px monospace";
-      ctx.fillStyle = fuel <= FUEL_LOW_THRESHOLD ? "#74b9ff" : "rgba(0,220,255,0.6)";
+      const fuelLow = fuel <= FUEL_LOW_THRESHOLD;
+      ctx.fillStyle = fuelLow ? "#ff6060" : "rgba(0,180,255,0.7)";
       ctx.fillText("FUEL", lx, ly);
-      drawBar(lx + 46, ly - 9, 120, 10, fuel / MAX_FUEL,
-        fuel <= FUEL_LOW_THRESHOLD ? "#2060cc" : "#0984e3",
-        fuel <= FUEL_LOW_THRESHOLD ? "#74b9ff" : "#00e0ff",
-        fuel <= FUEL_LOW_THRESHOLD);
+
+      const tubeCount = 5;
+      const tubeW = 14;
+      const tubeH = 28;
+      const tubeGap = 6;
+      const tubeStartX = lx + 48;
+      const tubeStartY = ly - 22;
+      const fuelFrac = fuel / MAX_FUEL;
+      const fuelPerTube = 1 / tubeCount;
+      const t = performance.now() * 0.002;
+
+      for (let i = 0; i < tubeCount; i++) {
+        const tx = tubeStartX + i * (tubeW + tubeGap);
+        const ty = tubeStartY;
+
+        // Metal cap top
+        ctx.fillStyle = "rgba(80,85,95,0.95)";
+        ctx.fillRect(tx - 1, ty - 3, tubeW + 2, 5);
+        ctx.strokeStyle = "rgba(140,145,155,0.4)";
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(tx - 1, ty - 3, tubeW + 2, 5);
+
+        // Metal cap bottom
+        ctx.fillStyle = "rgba(80,85,95,0.95)";
+        ctx.fillRect(tx - 1, ty + tubeH - 2, tubeW + 2, 5);
+        ctx.strokeRect(tx - 1, ty + tubeH - 2, tubeW + 2, 5);
+
+        // Glass tube body
+        ctx.beginPath();
+        ctx.roundRect(tx, ty + 1, tubeW, tubeH - 2, 3);
+        ctx.fillStyle = "rgba(15,20,30,0.85)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(100,120,140,0.3)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Calculate fill for this tube
+        const tubeMin = i * fuelPerTube;
+        const tubeMax = (i + 1) * fuelPerTube;
+        let tubeFill = 0;
+        if (fuelFrac >= tubeMax) {
+          tubeFill = 1;
+        } else if (fuelFrac > tubeMin) {
+          tubeFill = (fuelFrac - tubeMin) / fuelPerTube;
+        }
+
+        if (tubeFill > 0) {
+          const fillH = (tubeH - 4) * tubeFill;
+          const fillY = ty + tubeH - 2 - fillH;
+
+          // Liquid fill with gradient
+          const liqGrad = ctx.createLinearGradient(tx, fillY, tx + tubeW, fillY + fillH);
+          if (fuelLow) {
+            liqGrad.addColorStop(0, "rgba(255,80,50,0.8)");
+            liqGrad.addColorStop(0.5, "rgba(255,120,40,0.9)");
+            liqGrad.addColorStop(1, "rgba(200,50,30,0.8)");
+          } else {
+            liqGrad.addColorStop(0, "rgba(0,140,220,0.75)");
+            liqGrad.addColorStop(0.5, "rgba(0,200,255,0.9)");
+            liqGrad.addColorStop(1, "rgba(0,100,180,0.75)");
+          }
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(tx + 1, ty + 2, tubeW - 2, tubeH - 4, 2);
+          ctx.clip();
+
+          ctx.fillStyle = liqGrad;
+          ctx.fillRect(tx + 1, fillY, tubeW - 2, fillH);
+
+          // Wobble meniscus at liquid surface
+          if (tubeFill < 1 && tubeFill > 0.02) {
+            const wave1 = Math.sin(t + i * 1.5) * 1.5;
+            const wave2 = Math.sin(t * 1.3 + i * 2) * 0.8;
+            ctx.beginPath();
+            ctx.moveTo(tx + 1, fillY);
+            ctx.quadraticCurveTo(tx + tubeW * 0.3, fillY + wave1, tx + tubeW * 0.5, fillY + wave2);
+            ctx.quadraticCurveTo(tx + tubeW * 0.7, fillY - wave1 * 0.5, tx + tubeW - 1, fillY);
+            ctx.lineTo(tx + tubeW - 1, fillY + 4);
+            ctx.lineTo(tx + 1, fillY + 4);
+            ctx.closePath();
+            ctx.fillStyle = fuelLow ? "rgba(255,160,80,0.4)" : "rgba(100,220,255,0.35)";
+            ctx.fill();
+          }
+
+          // Inner liquid glow
+          ctx.save();
+          ctx.shadowColor = fuelLow ? "#ff6030" : "#00bbff";
+          ctx.shadowBlur = 6;
+          ctx.beginPath();
+          ctx.fillStyle = "rgba(0,0,0,0)";
+          ctx.fillRect(tx + 3, fillY + 2, tubeW - 6, fillH - 4);
+          ctx.restore();
+
+          ctx.restore();
+        }
+
+        // Glass reflection streak
+        ctx.beginPath();
+        ctx.roundRect(tx + 2, ty + 3, 3, tubeH - 6, 1);
+        ctx.fillStyle = "rgba(255,255,255,0.12)";
+        ctx.fill();
+
+        // Tick marks on tube
+        for (let m = 1; m < 4; m++) {
+          const my = ty + (tubeH - 2) * (m / 4);
+          ctx.beginPath();
+          ctx.moveTo(tx + tubeW - 4, my);
+          ctx.lineTo(tx + tubeW - 1, my);
+          ctx.strokeStyle = "rgba(255,255,255,0.15)";
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+
       ctx.font = "bold 9px monospace";
       ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.fillText(`${Math.ceil(fuel)}`, lx + 170, ly);
+      ctx.fillText(`${Math.ceil(fuel)}`, tubeStartX + tubeCount * (tubeW + tubeGap) + 4, ly);
 
       // Corner accents (mecha detail lines)
       ctx.strokeStyle = "rgba(0,220,255,0.2)";
