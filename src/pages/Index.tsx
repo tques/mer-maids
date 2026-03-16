@@ -1360,9 +1360,11 @@ const Index = () => {
       ly += 22;
       ctx.font = "bold 10px monospace";
       ctx.fillStyle = "rgba(255,180,60,0.7)";
-      ctx.fillText("HP", lx, ly);
+      ctx.textAlign = "right";
+      ctx.fillText("HP", labelX - 4, ly);
+      ctx.textAlign = "left";
       for (let i = 0; i < PLAYER_MAX_HP; i++) {
-        const hcx = lx + 34 + i * 26;
+        const hcx = labelX + 4 + i * 26;
         const hcy = ly - 3;
         drawDiamondLight(hcx, hcy, 7, i < playerHPRef.current, "#ffb830", "#996600");
       }
