@@ -875,17 +875,19 @@ const Index = () => {
       ctx.save();
       ctx.scale(ZOOM, ZOOM);
 
-      // Draw sky gradient (view space, no camera) — detailed sunset
+      // Draw sky gradient (view space, no camera) — smooth sunset
       const skyGrad = ctx.createLinearGradient(0, 0, 0, viewH);
       skyGrad.addColorStop(0, "#05061a");
-      skyGrad.addColorStop(0.15, "#0c1035");
-      skyGrad.addColorStop(0.30, "#1a1850");
-      skyGrad.addColorStop(0.45, "#3d2070");
-      skyGrad.addColorStop(0.55, "#8b3a62");
-      skyGrad.addColorStop(0.62, "#d45a3a");
-      skyGrad.addColorStop(0.68, "#f09030");
-      skyGrad.addColorStop(0.73, "#f7c864");
-      skyGrad.addColorStop(0.78, "#fff0c0");
+      skyGrad.addColorStop(0.12, "#0c1035");
+      skyGrad.addColorStop(0.25, "#161545");
+      skyGrad.addColorStop(0.38, "#2d1a5e");
+      skyGrad.addColorStop(0.48, "#5a2868");
+      skyGrad.addColorStop(0.56, "#8b3a62");
+      skyGrad.addColorStop(0.63, "#c04e3e");
+      skyGrad.addColorStop(0.70, "#e07830");
+      skyGrad.addColorStop(0.76, "#f0a040");
+      skyGrad.addColorStop(0.82, "#f7c864");
+      skyGrad.addColorStop(0.88, "#fff0c0");
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, viewW, viewH);
 
@@ -1038,12 +1040,19 @@ const Index = () => {
           const bladesActive = playerHPRef.current >= PLAYER_MAX_HP;
           const glassTime = performance.now() * 0.003;
 
-          // Main body — glossy crescent
+          // Main body — symmetric glossy hull
           ctx.beginPath();
-          ctx.arc(0, 0, r, -Math.PI * 0.55, Math.PI * 0.55, false);
-          ctx.lineTo(r * 0.3, TRI_SIZE * 0.35);
-          ctx.arc(0, 0, r * 0.45, Math.PI * 0.4, -Math.PI * 0.4, true);
-          ctx.lineTo(r * Math.cos(Math.PI * 0.55), -r * Math.sin(Math.PI * 0.55));
+          // Nose tip
+          ctx.moveTo(r, 0);
+          // Upper arc from nose to tail
+          ctx.quadraticCurveTo(r * 0.7, -r * 0.55, -r * 0.5, -r * 0.45);
+          // Tail notch upper
+          ctx.lineTo(-r * 0.25, -r * 0.12);
+          // Tail notch lower (symmetric)
+          ctx.lineTo(-r * 0.25, r * 0.12);
+          // Lower arc from tail to nose
+          ctx.lineTo(-r * 0.5, r * 0.45);
+          ctx.quadraticCurveTo(r * 0.7, r * 0.55, r, 0);
           ctx.closePath();
 
           // Glossy gradient fill
@@ -1061,10 +1070,11 @@ const Index = () => {
           ctx.fillStyle = bodyGrad;
           ctx.fill();
 
-          // Glass highlight — bright specular stripe
+          // Glass highlight — symmetric specular stripe on upper hull
           ctx.beginPath();
-          ctx.arc(0, 0, r * 0.88, -Math.PI * 0.48, -Math.PI * 0.1, false);
-          ctx.arc(0, 0, r * 0.7, -Math.PI * 0.1, -Math.PI * 0.48, true);
+          ctx.moveTo(r * 0.75, -r * 0.1);
+          ctx.quadraticCurveTo(r * 0.4, -r * 0.4, -r * 0.3, -r * 0.32);
+          ctx.quadraticCurveTo(r * 0.3, -r * 0.28, r * 0.75, -r * 0.1);
           ctx.closePath();
           ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
           ctx.fill();
