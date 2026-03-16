@@ -89,14 +89,14 @@ The world wraps seamlessly — when the player crosses `x=3000`, they appear at 
 
 ## File-by-File Guide
 
-### `src/pages/Index.tsx` — Main Game Component (~1400 lines)
+### `src/pages/Index.tsx` — Main Game Component (~1700+ lines)
 
 This is the heart of the game. It contains:
 
-- **Constants** (lines 43-69): Tuning values for speed, gravity, ammo, fuel, etc.
-- **Refs** (lines 86-146): All mutable game state stored in React refs.
+- **Constants** (lines 43-100): Tuning values for speed, gravity, ammo, fuel, etc.
+- **Refs** (lines 100-160): All mutable game state stored in React refs.
 - **Input handling** (lines 190-258): Mouse, keyboard, and gamepad event listeners.
-- **Game loop** (lines 266-1078): The main `requestAnimationFrame` loop containing:
+- **Game loop** (lines 266-1140): The main `requestAnimationFrame` loop containing:
   - Input processing and aim calculation
   - Barrel roll mechanics
   - Physics (thrust, gravity, buoyancy, air drag)
@@ -104,7 +104,13 @@ This is the heart of the game. It contains:
   - Enemy/submarine/powerup updates
   - Collision detection
   - Canvas rendering (sky, water, entities, player, HUD)
-- **Menus** (lines 1182-1394): React JSX for start screen, pause menu, and game over screen.
+- **Player rendering** (~lines 1010-1140): Frutiger Aero mech with swept-back fighter jet ram wings.
+- **HUD rendering** (~lines 1140-1540): Analog instrument panel with unique indicator styles per stat:
+  - **Lives**: Green round bulb lights with metal bezels
+  - **HP**: Amber diamond/gem-shaped indicator lights
+  - **Ammo**: Silver light strip with colored glass panel segments
+  - **Fuel**: Vertical glass tubes with animated liquid fill, wobbling meniscus, tick marks, and glass reflections
+- **Menus** (lines 1580+): React JSX for start screen, pause menu, and game over screen.
 
 ### `src/game/water.ts` — Water System
 
