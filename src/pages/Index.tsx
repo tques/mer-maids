@@ -1380,7 +1380,7 @@ const Index = () => {
       const ammoLights = 12;
       const ammoFrac = ammo / MAX_AMMO;
       const litAmmo = Math.round(ammoFrac * ammoLights);
-      const stripX = labelX + 2;
+      const stripX = labelX + 6;
       const stripY = ly - 10;
       const segW = 12;
       const segH = 12;
