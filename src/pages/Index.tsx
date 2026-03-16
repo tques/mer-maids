@@ -1212,63 +1212,99 @@ const Index = () => {
       const lx = hudX + 10;
       let ly = hudY + 18;
 
-      // LIVES — diamond icons
+      // --- Helper: draw analog indicator light ---
+      const drawLight = (cx: number, cy: number, radius: number, powered: boolean, color: string, glowColor: string) => {
+        // Metal bezel ring
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius + 2, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(60,70,80,0.9)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(120,130,140,0.5)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        // Inner bezel shadow
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius + 0.5, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(0,0,0,0.4)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        // Bulb base (dark when off)
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        if (powered) {
+          const bulbGrad = ctx.createRadialGradient(cx - radius * 0.25, cy - radius * 0.25, 0, cx, cy, radius);
+          bulbGrad.addColorStop(0, "rgba(255,255,255,0.95)");
+          bulbGrad.addColorStop(0.3, color);
+          bulbGrad.addColorStop(1, glowColor);
+          ctx.fillStyle = bulbGrad;
+        } else {
+          const offGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+          offGrad.addColorStop(0, "rgba(40,45,50,0.9)");
+          offGrad.addColorStop(1, "rgba(25,28,32,0.95)");
+          ctx.fillStyle = offGrad;
+        }
+        ctx.fill();
+        // Glass specular highlight
+        ctx.beginPath();
+        ctx.ellipse(cx - radius * 0.2, cy - radius * 0.3, radius * 0.5, radius * 0.3, -0.3, 0, Math.PI * 2);
+        ctx.fillStyle = powered ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.06)";
+        ctx.fill();
+        // Outer glow when powered
+        if (powered) {
+          ctx.save();
+          ctx.shadowColor = glowColor;
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius * 0.5, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(0,0,0,0)";
+          ctx.fill();
+          ctx.restore();
+        }
+      };
+
+      // LIVES — indicator lights
       ctx.font = "bold 10px monospace";
       ctx.fillStyle = "rgba(0,220,255,0.6)";
       ctx.textAlign = "left";
       ctx.fillText("LIVES", lx, ly);
       for (let i = 0; i < PLAYER_LIVES; i++) {
-        const dx = lx + 48 + i * 20;
-        const dy = ly - 5;
-        ctx.save();
-        ctx.translate(dx, dy);
-        ctx.rotate(Math.PI / 4);
-        ctx.fillStyle = i < playerLivesRef.current ? "#00e0ff" : "rgba(255,255,255,0.1)";
-        ctx.fillRect(-5, -5, 10, 10);
-        if (i < playerLivesRef.current) {
-          ctx.fillStyle = "rgba(255,255,255,0.4)";
-          ctx.fillRect(-5, -5, 10, 5);
-        }
-        ctx.restore();
+        const lcx = lx + 52 + i * 24;
+        const lcy = ly - 4;
+        drawLight(lcx, lcy, 7, i < playerLivesRef.current, "#00e0ff", "#006888");
       }
 
-      // HP — segmented bar
-      ly += 20;
+      // HP — indicator lights
+      ly += 22;
       ctx.font = "bold 10px monospace";
       ctx.fillStyle = "rgba(0,220,255,0.6)";
       ctx.fillText("HP", lx, ly);
-      const hpBarX = lx + 28;
       for (let i = 0; i < PLAYER_MAX_HP; i++) {
-        const bx = hpBarX + i * 19;
-        const active = i < playerHPRef.current;
-        // Segment
-        ctx.fillStyle = active ? "#00e0ff" : "rgba(255,255,255,0.08)";
-        ctx.fillRect(bx, ly - 9, 15, 10);
-        if (active) {
-          // Glass highlight
-          ctx.fillStyle = "rgba(255,255,255,0.35)";
-          ctx.fillRect(bx, ly - 9, 15, 4);
-          // Glow
-          ctx.shadowColor = "#00e0ff";
-          ctx.shadowBlur = 4;
-          ctx.fillStyle = "rgba(0,224,255,0.15)";
-          ctx.fillRect(bx, ly - 9, 15, 10);
-          ctx.shadowBlur = 0;
-        }
+        const hcx = lx + 34 + i * 24;
+        const hcy = ly - 4;
+        const hpActive = i < playerHPRef.current;
+        drawLight(hcx, hcy, 7, hpActive, "#00e0ff", "#006888");
       }
 
-      // AMMO bar
+      // AMMO — row of indicator lights
       ly += 22;
       ctx.font = "bold 10px monospace";
-      ctx.fillStyle = ammo <= AMMO_LOW_THRESHOLD ? "#ffcc00" : "rgba(0,220,255,0.6)";
+      const ammoLow = ammo <= AMMO_LOW_THRESHOLD;
+      ctx.fillStyle = ammoLow ? "#ffcc00" : "rgba(0,220,255,0.6)";
       ctx.fillText("AMMO", lx, ly);
-      drawBar(lx + 46, ly - 9, 120, 10, ammo / MAX_AMMO,
-        ammo <= AMMO_LOW_THRESHOLD ? "#cc8800" : "#00b894",
-        ammo <= AMMO_LOW_THRESHOLD ? "#ffcc00" : "#00e0ff",
-        ammo <= AMMO_LOW_THRESHOLD);
+      const ammoLights = 10;
+      const ammoFrac = ammo / MAX_AMMO;
+      const litAmmo = Math.round(ammoFrac * ammoLights);
+      for (let i = 0; i < ammoLights; i++) {
+        const acx = lx + 50 + i * 15;
+        const acy = ly - 4;
+        const lit = i < litAmmo;
+        const aColor = ammoLow ? "#ffcc00" : "#00e0ff";
+        const aGlow = ammoLow ? "#886600" : "#006888";
+        drawLight(acx, acy, 5, lit, aColor, aGlow);
+      }
       ctx.font = "bold 9px monospace";
       ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.fillText(`${ammo}`, lx + 170, ly);
+      ctx.fillText(`${ammo}`, lx + 205, ly);
 
       // FUEL bar
       ly += 18;
