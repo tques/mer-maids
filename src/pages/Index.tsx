@@ -285,8 +285,12 @@ const Index = () => {
       if (key === "a" || key === "d") {
         e.preventDefault();
         setShowHint(false);
+
         const roll = rollRef.current;
-        if (!roll.active && fuelRef.current >= ROLL_FUEL_COST) {
+        const fuel = fuelRef.current;
+        console.log("Roll active:", roll.active, "Fuel current:", fuel); // Debugging logs
+
+        if (!roll.active && fuel >= ROLL_FUEL_COST) {
           fuelRef.current -= ROLL_FUEL_COST;
           const pos = posRef.current;
           const wm = getWorldMouse();
@@ -307,7 +311,12 @@ const Index = () => {
           roll.perpX = perpX;
           roll.perpY = perpY;
           roll.spinAngle = 0;
+
+          console.log("Starting roll:", roll); // Debugging logs
+
           deflectMissiles(); // Rolling throws off homing missiles
+        } else {
+          console.log("Roll not started due to conditions"); // Debugging logs
         }
       }
     };
