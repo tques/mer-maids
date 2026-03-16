@@ -502,8 +502,8 @@ export function drawAmmoDepots(ctx: CanvasRenderingContext2D, viewH: number) {
   ctx.fillStyle = "rgba(100, 220, 210, 0.2)";
   ctx.fill();
 
-  // ---- Hull lines ----
-  ctx.strokeStyle = "#3a4560";
+  // ---- Hull lines (aqua accent) ----
+  ctx.strokeStyle = "rgba(80, 200, 190, 0.12)";
   ctx.lineWidth = 0.5;
   for (let i = 1; i <= 2; i++) {
     const ly = topY + (hd * i) / 3;
