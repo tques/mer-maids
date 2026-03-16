@@ -978,17 +978,55 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.restore();
   }
 
-  // ---- Tumbling Bombs ----
+  // ---- Tumbling Bombs (dark industrial alien ordnance) ----
   for (const b of bombs) {
     if (!b.alive) continue;
     ctx.save();
     ctx.translate(b.x, b.y);
     ctx.rotate(b.rotation);
-    ctx.fillStyle = "#f0f0f0";
-    ctx.fillRect(-BOMB_SIZE / 2, -BOMB_SIZE / 2, BOMB_SIZE, BOMB_SIZE);
-    ctx.strokeStyle = "#cccccc";
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(-BOMB_SIZE / 2, -BOMB_SIZE / 2, BOMB_SIZE, BOMB_SIZE);
+
+    const bs = BOMB_SIZE * 0.5;
+
+    // Outer casing — dark hexagonal shape
+    ctx.beginPath();
+    ctx.moveTo(bs, 0);
+    for (let i = 1; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      ctx.lineTo(Math.cos(a) * bs, Math.sin(a) * bs);
+    }
+    ctx.closePath();
+    const bombGrad = ctx.createRadialGradient(-bs * 0.2, -bs * 0.2, 0, 0, 0, bs);
+    bombGrad.addColorStop(0, "#3a3a3a");
+    bombGrad.addColorStop(0.6, "#1e1e1e");
+    bombGrad.addColorStop(1, "#0a0a0a");
+    ctx.fillStyle = bombGrad;
+    ctx.fill();
+    ctx.strokeStyle = "#555";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Panel seam lines
+    ctx.strokeStyle = "rgba(120, 120, 120, 0.3)";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(-bs, 0);
+    ctx.lineTo(bs, 0);
+    ctx.moveTo(0, -bs);
+    ctx.lineTo(0, bs);
+    ctx.stroke();
+
+    // Pulsing toxic core
+    const bombPulse = 0.5 + Math.sin(performance.now() * 0.01 + b.x) * 0.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, bs * 0.3, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(80, 255, 60, ${bombPulse * 0.9})`;
+    ctx.fill();
+    // Core highlight
+    ctx.beginPath();
+    ctx.arc(0, 0, bs * 0.12, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(200, 255, 180, ${bombPulse})`;
+    ctx.fill();
+
     ctx.restore();
   }
 
