@@ -1364,7 +1364,7 @@ const Index = () => {
       ctx.fillText("HP", labelX - 4, ly);
       ctx.textAlign = "left";
       for (let i = 0; i < PLAYER_MAX_HP; i++) {
-        const hcx = labelX + 4 + i * 26;
+        const hcx = labelX + 8 + i * 26;
         const hcy = ly - 3;
         drawDiamondLight(hcx, hcy, 7, i < playerHPRef.current, "#ffb830", "#996600");
       }
