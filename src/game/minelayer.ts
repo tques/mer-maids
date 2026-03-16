@@ -327,52 +327,74 @@ export function drawMinelayer(ctx: CanvasRenderingContext2D, viewH: number) {
     ctx.restore();
   }
 
-  // ---- Floating mines (dark robotic spheres with mechanical spikes) ----
+  // ---- Floating mines (alien industrial orbs with energy spikes) ----
   for (const m of mines) {
     if (!m.alive) continue;
     const r = MINE_SIZE * 0.5;
     const pulse = 0.85 + Math.sin(performance.now() * 0.004 + m.x) * 0.15;
+    const slowSpin = performance.now() * 0.0008 + m.x;
 
     ctx.save();
     ctx.translate(m.x, m.y);
 
-    // Mine body (dark industrial metal)
+    // Outer danger glow
+    ctx.beginPath();
+    ctx.arc(0, 0, r + 4, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 40, 10, ${pulse * 0.12})`;
+    ctx.fill();
+
+    // Mine body — dark industrial metal with rust tones
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
-    const mineGrad = ctx.createRadialGradient(-r * 0.2, -r * 0.2, 0, 0, 0, r);
-    mineGrad.addColorStop(0, "#3a3a3a");
-    mineGrad.addColorStop(0.7, "#1a1a1a");
-    mineGrad.addColorStop(1, "#111");
+    const mineGrad = ctx.createRadialGradient(-r * 0.25, -r * 0.25, 0, 0, 0, r);
+    mineGrad.addColorStop(0, "#444");
+    mineGrad.addColorStop(0.4, "#2a2020");
+    mineGrad.addColorStop(0.8, "#1a1010");
+    mineGrad.addColorStop(1, "#0a0505");
     ctx.fillStyle = mineGrad;
     ctx.fill();
-    ctx.strokeStyle = "#555";
+    ctx.strokeStyle = "#5a3030";
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Mechanical spikes (contact detonators)
-    const spikeCount = 8;
+    // Rust-red band around equator
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 0.95, r * 0.2, slowSpin, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(180, 50, 30, ${pulse * 0.6})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Energy spikes (6 pointed, with glowing tips)
+    const spikeCount = 6;
     for (let i = 0; i < spikeCount; i++) {
-      const angle = (i / spikeCount) * Math.PI * 2;
-      const sx = Math.cos(angle) * r;
-      const sy = Math.sin(angle) * r;
-      const ex = Math.cos(angle) * (r + 5);
-      const ey = Math.sin(angle) * (r + 5);
+      const angle = (i / spikeCount) * Math.PI * 2 + slowSpin;
+      const baseX = Math.cos(angle) * r;
+      const baseY = Math.sin(angle) * r;
+      const tipX = Math.cos(angle) * (r + 7);
+      const tipY = Math.sin(angle) * (r + 7);
+      // Spike shaft
       ctx.beginPath();
-      ctx.moveTo(sx, sy);
-      ctx.lineTo(ex, ey);
+      ctx.moveTo(baseX, baseY);
+      ctx.lineTo(tipX, tipY);
       ctx.strokeStyle = "#666";
       ctx.lineWidth = 2;
       ctx.stroke();
+      // Glowing tip
       ctx.beginPath();
-      ctx.arc(ex, ey, 1.5, 0, Math.PI * 2);
-      ctx.fillStyle = "#888";
+      ctx.arc(tipX, tipY, 2, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 60, 20, ${pulse})`;
       ctx.fill();
     }
 
-    // Warning light (pulsing red, robotic)
+    // Central red eye
     ctx.beginPath();
-    ctx.arc(0, -r * 0.3, 2.5, 0, Math.PI * 2);
+    ctx.arc(0, 0, r * 0.25, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(255, 30, 10, ${pulse})`;
+    ctx.fill();
+    // Eye pupil
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.1, 0, Math.PI * 2);
+    ctx.fillStyle = "#fff";
     ctx.fill();
 
     ctx.restore();
