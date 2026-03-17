@@ -291,11 +291,34 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
     ctx.fillStyle = bldGrad;
     ctx.fill();
 
+    // Clip all detail overlays to building shape
+    ctx.save();
+    traceBldShape(bx, by, b.w, b.h, b.s);
+    ctx.clip();
+
     // Glass reflection highlight (left edge)
     ctx.fillStyle = exposed ? "rgba(40, 60, 80, 0.3)" : "rgba(120, 220, 210, 0.15)";
-    ctx.fillRect(bx - b.w / 2, by + (b.s === 'spire' ? 14 : b.s === 'dome' || b.s === 'cylinder' ? 10 : 0), 3, b.h - (b.s === 'spire' ? 14 : b.s === 'dome' || b.s === 'cylinder' ? 10 : 0));
+    ctx.fillRect(bx - b.w / 2, by, 3, b.h);
 
-    // Top accent (antenna for spire, ring for dome/cylinder, line for rect/stepped)
+    // Top accent line for rect/stepped
+    if (b.s === 'rect' || b.s === 'stepped') {
+      ctx.fillStyle = exposed ? "rgba(60, 40, 30, 0.3)" : "rgba(150, 240, 230, 0.12)";
+      ctx.fillRect(bx - b.w / 2, by, b.w, 2);
+    }
+
+    // Damage scars
+    if (exposed) {
+      ctx.fillStyle = "rgba(60, 30, 10, 0.3)";
+      const scarCount = Math.ceil((1 - hpRatio) * 3);
+      for (let si = 0; si < scarCount; si++) {
+        const sy = by + (b.h * (si + 1)) / (scarCount + 1);
+        ctx.fillRect(bx - b.w / 2, sy - 1, b.w, 2);
+      }
+    }
+
+    ctx.restore();
+
+    // Top accent (antenna for spire, ring for dome/cylinder) — drawn outside clip
     if (b.s === 'spire') {
       ctx.strokeStyle = exposed ? "rgba(255, 80, 40, 0.4)" : "rgba(120, 240, 220, 0.4)";
       ctx.lineWidth = 1;
@@ -314,19 +337,6 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
       if (b.s === 'dome') ctx.arc(bx, by + 10, b.w / 2, Math.PI, 0);
       else ctx.ellipse(bx, by + 7, b.w / 2, 7, 0, Math.PI, 0);
       ctx.stroke();
-    } else {
-      ctx.fillStyle = exposed ? "rgba(60, 40, 30, 0.3)" : "rgba(150, 240, 230, 0.12)";
-      ctx.fillRect(bx - b.w / 2, by, b.w, 2);
-    }
-
-    // Damage scars
-    if (exposed) {
-      ctx.fillStyle = "rgba(60, 30, 10, 0.3)";
-      const scarCount = Math.ceil((1 - hpRatio) * 3);
-      for (let si = 0; si < scarCount; si++) {
-        const sy = by + (b.h * (si + 1)) / (scarCount + 1);
-        ctx.fillRect(bx - b.w / 2, sy - 1, b.w, 2);
-      }
     }
 
     // Window lights — clipped to building shape
