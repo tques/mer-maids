@@ -259,13 +259,17 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
     traceBldShape(bx, by, b.w, b.h - 4, b.s);
     ctx.fillStyle = bldGrad;
     ctx.fill();
-    // Dim window lights
+    // Dim window lights — clipped to building shape
+    ctx.save();
+    traceBldShape(bx, by, b.w, b.h - 4, b.s);
+    ctx.clip();
     ctx.fillStyle = exposed ? "rgba(120, 40, 10, 0.3)" : "rgba(60, 160, 140, 0.25)";
     for (let wy = by + 5; wy < topY - 2; wy += 7) {
       for (let wx = bx - b.w / 2 + 4; wx < bx + b.w / 2 - 2; wx += 5) {
         if (Math.random() > 0.5) ctx.fillRect(wx, wy, 2, 2);
       }
     }
+    ctx.restore();
   }
 
   // --- Draw front-layer buildings (futuristic glass towers) ---
