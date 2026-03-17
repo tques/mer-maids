@@ -352,7 +352,78 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
     ctx.restore();
   }
 
-  // --- Smoke/fire particles when barrier is down ---
+  // --- Tall statue (central landmark) ---
+  {
+    const sx = boat.x + 5;  // Slightly off-center
+    const statueH = 110;
+    const baseY = topY;
+    const statueTop = baseY - statueH;
+
+    // Pedestal
+    ctx.fillStyle = exposed ? "rgba(40, 25, 20, 0.9)" : "rgba(25, 60, 75, 0.9)";
+    ctx.fillRect(sx - 8, baseY - 14, 16, 14);
+    ctx.fillRect(sx - 11, baseY - 4, 22, 4);
+
+    // Body — tall robed figure
+    ctx.beginPath();
+    ctx.moveTo(sx - 6, baseY - 14);
+    ctx.lineTo(sx - 5, statueTop + 30);
+    ctx.lineTo(sx - 3, statueTop + 18);
+    ctx.lineTo(sx, statueTop + 12);
+    ctx.lineTo(sx + 3, statueTop + 18);
+    ctx.lineTo(sx + 5, statueTop + 30);
+    ctx.lineTo(sx + 6, baseY - 14);
+    ctx.closePath();
+    const statueGrad = ctx.createLinearGradient(sx, statueTop, sx, baseY - 14);
+    statueGrad.addColorStop(0, exposed ? "rgba(60, 35, 25, 0.95)" : "rgba(40, 90, 100, 0.95)");
+    statueGrad.addColorStop(1, exposed ? "rgba(45, 25, 15, 0.95)" : "rgba(30, 70, 80, 0.95)");
+    ctx.fillStyle = statueGrad;
+    ctx.fill();
+
+    // Head
+    ctx.beginPath();
+    ctx.arc(sx, statueTop + 8, 5, 0, Math.PI * 2);
+    ctx.fillStyle = exposed ? "rgba(55, 30, 20, 0.95)" : "rgba(35, 85, 95, 0.95)";
+    ctx.fill();
+
+    // Raised arm holding a torch/trident
+    ctx.strokeStyle = exposed ? "rgba(55, 30, 20, 0.9)" : "rgba(35, 85, 95, 0.9)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(sx + 3, statueTop + 22);
+    ctx.lineTo(sx + 14, statueTop - 5);
+    ctx.stroke();
+
+    // Trident prongs
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(sx + 14, statueTop - 5);
+    ctx.lineTo(sx + 12, statueTop - 18);
+    ctx.moveTo(sx + 14, statueTop - 5);
+    ctx.lineTo(sx + 14, statueTop - 20);
+    ctx.moveTo(sx + 14, statueTop - 5);
+    ctx.lineTo(sx + 16, statueTop - 18);
+    ctx.stroke();
+
+    // Glowing trident tip
+    const glowPulse = 0.4 + Math.sin(now / 400) * 0.2;
+    ctx.beginPath();
+    ctx.arc(sx + 14, statueTop - 20, 4, 0, Math.PI * 2);
+    ctx.fillStyle = exposed
+      ? `rgba(255, 100, 40, ${glowPulse})`
+      : `rgba(80, 255, 220, ${glowPulse})`;
+    ctx.fill();
+
+    // Highlight edge
+    ctx.strokeStyle = exposed ? "rgba(80, 40, 25, 0.3)" : "rgba(100, 200, 190, 0.2)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(sx - 5, statueTop + 30);
+    ctx.lineTo(sx - 3, statueTop + 18);
+    ctx.lineTo(sx, statueTop + 12);
+    ctx.stroke();
+  }
+
   if (exposed) {
     ctx.globalAlpha = 0.3 + Math.sin(now / 200) * 0.1;
     for (let i = 0; i < 5; i++) {
