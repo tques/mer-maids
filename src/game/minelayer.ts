@@ -141,7 +141,7 @@ export function updateMinelayer(
     if (p.x < -100 || p.x > worldWidth + 100) p.alive = false;
   }
 
-  // ---- Update mines (buoyancy physics) ----
+  // ---- Update mines (buoyancy physics + platform clamping) ----
   for (const m of mines) {
     if (!m.alive) continue;
     if (!m.settled) {
@@ -164,6 +164,20 @@ export function updateMinelayer(
     } else {
       // Float on surface following waves
       m.y = getWaveY(m.x, waterY, worldWidth);
+    }
+
+    // Clamp mines below platforms — trap them underneath
+    if (platforms) {
+      for (const p of platforms) {
+        if (m.x > p.x - p.halfW && m.x < p.x + p.halfW) {
+          if (m.y < p.bottomY && m.y > p.topY - MINE_SIZE) {
+            // Mine is rising into platform bottom — trap it below
+            m.y = p.bottomY + 1;
+            m.vy = Math.max(m.vy, 0); // Stop upward motion
+            m.settled = false; // Keep it sinking/floating below
+          }
+        }
+      }
     }
   }
 
