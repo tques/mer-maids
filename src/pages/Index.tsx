@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import {
   getWaterSurfaceY,
+  getWaveY,
   isSubmerged,
   spawnSplash,
   updateParticles,
   drawWater,
   WATER_SPEED_FACTOR,
 } from "../game/water";
-import { createBoat, drawBoat, collideWithBoat, Boat } from "../game/boat";
+import { createBoat, drawBoat, collideWithBoat, getBoatTopY, Boat } from "../game/boat";
 import {
   updateEnemies,
   checkBulletCollisions,
