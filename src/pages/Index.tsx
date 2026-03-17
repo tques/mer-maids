@@ -734,7 +734,13 @@ const Index = () => {
           }
         }
         updateGunboats(dt, WORLD_WIDTH, viewH, pos.x, pos.y, viewW / 2, waveDiff, wave.enemiesFleeing, boatX, boatW);
-        updateMinelayer(dt, WORLD_WIDTH, viewH, waveDiff, wave.enemiesFleeing);
+        // Build platform rects for mine clamping
+        const mineBoatTopY = boatRef.current ? getBoatTopY(boatRef.current, viewH) : 0;
+        const minePlatforms = [
+          { x: boatX, halfW: boatW / 2, topY: mineBoatTopY, bottomY: mineBoatTopY + (boatRef.current?.hullDepth ?? 36) },
+          { x: WORLD_WIDTH - 80, halfW: 60, topY: getWaveY(WORLD_WIDTH - 80, getWaterSurfaceY(viewH)) - 22, bottomY: getWaveY(WORLD_WIDTH - 80, getWaterSurfaceY(viewH)) - 22 + 40 },
+        ];
+        updateMinelayer(dt, WORLD_WIDTH, viewH, waveDiff, wave.enemiesFleeing, minePlatforms);
         const result = checkBulletCollisions(bulletsRef.current);
         bulletsRef.current = result.remaining;
         scoreRef.current += result.score;

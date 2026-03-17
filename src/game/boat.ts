@@ -352,75 +352,176 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
     ctx.restore();
   }
 
-  // --- Tall statue (central landmark) ---
+  // --- Tall statue (right side of city — detailed human figure with trident) ---
   {
-    const sx = boat.x + 5;  // Slightly off-center
-    const statueH = 110;
+    const sx = boat.x + hw - 60;  // Right side of the city
+    const statueH = 120;
     const baseY = topY;
     const statueTop = baseY - statueH;
 
-    // Pedestal
+    // Tiered pedestal
     ctx.fillStyle = exposed ? "rgba(40, 25, 20, 0.9)" : "rgba(25, 60, 75, 0.9)";
-    ctx.fillRect(sx - 8, baseY - 14, 16, 14);
-    ctx.fillRect(sx - 11, baseY - 4, 22, 4);
+    ctx.fillRect(sx - 12, baseY - 6, 24, 6);
+    ctx.fillRect(sx - 10, baseY - 12, 20, 6);
+    ctx.fillRect(sx - 7, baseY - 18, 14, 6);
 
-    // Body — tall robed figure
+    const bodyColor = exposed ? "rgba(55, 30, 20, 0.95)" : "rgba(35, 80, 90, 0.95)";
+    const bodyColorDark = exposed ? "rgba(40, 20, 12, 0.95)" : "rgba(25, 60, 70, 0.95)";
+    const accentColor = exposed ? "rgba(80, 40, 25, 0.9)" : "rgba(60, 140, 150, 0.9)";
+
+    // Legs (two separate pillars for stance)
+    ctx.fillStyle = bodyColor;
+    // Left leg — slightly apart
     ctx.beginPath();
-    ctx.moveTo(sx - 6, baseY - 14);
-    ctx.lineTo(sx - 5, statueTop + 30);
-    ctx.lineTo(sx - 3, statueTop + 18);
-    ctx.lineTo(sx, statueTop + 12);
-    ctx.lineTo(sx + 3, statueTop + 18);
-    ctx.lineTo(sx + 5, statueTop + 30);
-    ctx.lineTo(sx + 6, baseY - 14);
+    ctx.moveTo(sx - 5, baseY - 18);
+    ctx.lineTo(sx - 6, baseY - 50);
+    ctx.lineTo(sx - 2, baseY - 50);
+    ctx.lineTo(sx - 1, baseY - 18);
     ctx.closePath();
-    const statueGrad = ctx.createLinearGradient(sx, statueTop, sx, baseY - 14);
-    statueGrad.addColorStop(0, exposed ? "rgba(60, 35, 25, 0.95)" : "rgba(40, 90, 100, 0.95)");
-    statueGrad.addColorStop(1, exposed ? "rgba(45, 25, 15, 0.95)" : "rgba(30, 70, 80, 0.95)");
-    ctx.fillStyle = statueGrad;
     ctx.fill();
-
-    // Head
+    // Right leg — slight step forward
     ctx.beginPath();
-    ctx.arc(sx, statueTop + 8, 5, 0, Math.PI * 2);
-    ctx.fillStyle = exposed ? "rgba(55, 30, 20, 0.95)" : "rgba(35, 85, 95, 0.95)";
+    ctx.moveTo(sx + 1, baseY - 18);
+    ctx.lineTo(sx + 2, baseY - 52);
+    ctx.lineTo(sx + 6, baseY - 52);
+    ctx.lineTo(sx + 5, baseY - 18);
+    ctx.closePath();
     ctx.fill();
 
-    // Raised arm holding a torch/trident
-    ctx.strokeStyle = exposed ? "rgba(55, 30, 20, 0.9)" : "rgba(35, 85, 95, 0.9)";
+    // Torso — wider, heroic proportions
+    ctx.beginPath();
+    ctx.moveTo(sx - 6, baseY - 50);
+    ctx.lineTo(sx - 8, baseY - 65);
+    ctx.quadraticCurveTo(sx - 10, baseY - 80, sx - 8, baseY - 85);
+    ctx.lineTo(sx + 8, baseY - 85);
+    ctx.quadraticCurveTo(sx + 10, baseY - 80, sx + 8, baseY - 65);
+    ctx.lineTo(sx + 6, baseY - 50);
+    ctx.closePath();
+    const torsoGrad = ctx.createLinearGradient(sx - 8, baseY - 85, sx + 8, baseY - 50);
+    torsoGrad.addColorStop(0, bodyColor);
+    torsoGrad.addColorStop(1, bodyColorDark);
+    ctx.fillStyle = torsoGrad;
+    ctx.fill();
+
+    // Belt / waist accent
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(sx - 7, baseY - 52, 14, 3);
+
+    // Neck
+    ctx.fillStyle = bodyColor;
+    ctx.fillRect(sx - 2, baseY - 90, 4, 5);
+
+    // Head — oval with subtle features
+    ctx.beginPath();
+    ctx.ellipse(sx, baseY - 95, 5, 6, 0, 0, Math.PI * 2);
+    ctx.fillStyle = bodyColor;
+    ctx.fill();
+
+    // Hair / helmet crest
+    ctx.beginPath();
+    ctx.ellipse(sx, baseY - 99, 5, 3, 0, Math.PI, 0);
+    ctx.fillStyle = bodyColorDark;
+    ctx.fill();
+
+    // Left arm — extended to the side, slightly down (resting)
+    ctx.strokeStyle = bodyColor;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(sx - 8, baseY - 82);
+    ctx.quadraticCurveTo(sx - 16, baseY - 75, sx - 14, baseY - 65);
+    ctx.stroke();
+    // Left hand
+    ctx.beginPath();
+    ctx.arc(sx - 14, baseY - 64, 2, 0, Math.PI * 2);
+    ctx.fillStyle = bodyColor;
+    ctx.fill();
+
+    // Right arm — raised high, holding trident
+    ctx.strokeStyle = bodyColor;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(sx + 8, baseY - 82);
+    ctx.quadraticCurveTo(sx + 14, baseY - 90, sx + 12, baseY - 100);
+    ctx.stroke();
+    // Right hand gripping trident shaft
+    ctx.beginPath();
+    ctx.arc(sx + 12, baseY - 100, 2, 0, Math.PI * 2);
+    ctx.fillStyle = bodyColor;
+    ctx.fill();
+
+    // Trident shaft
+    ctx.strokeStyle = accentColor;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(sx + 3, statueTop + 22);
-    ctx.lineTo(sx + 14, statueTop - 5);
+    ctx.moveTo(sx + 12, baseY - 65);
+    ctx.lineTo(sx + 12, statueTop - 15);
     ctx.stroke();
 
-    // Trident prongs
+    // Trident head — three prongs with barbs
     ctx.lineWidth = 1.5;
+    ctx.strokeStyle = accentColor;
+    // Center prong
     ctx.beginPath();
-    ctx.moveTo(sx + 14, statueTop - 5);
-    ctx.lineTo(sx + 12, statueTop - 18);
-    ctx.moveTo(sx + 14, statueTop - 5);
-    ctx.lineTo(sx + 14, statueTop - 20);
-    ctx.moveTo(sx + 14, statueTop - 5);
-    ctx.lineTo(sx + 16, statueTop - 18);
+    ctx.moveTo(sx + 12, statueTop - 15);
+    ctx.lineTo(sx + 12, statueTop - 28);
+    ctx.stroke();
+    // Left prong (curved outward)
+    ctx.beginPath();
+    ctx.moveTo(sx + 12, statueTop - 15);
+    ctx.quadraticCurveTo(sx + 8, statueTop - 22, sx + 7, statueTop - 26);
+    ctx.stroke();
+    // Right prong (curved outward)
+    ctx.beginPath();
+    ctx.moveTo(sx + 12, statueTop - 15);
+    ctx.quadraticCurveTo(sx + 16, statueTop - 22, sx + 17, statueTop - 26);
+    ctx.stroke();
+    // Prong tips (small points)
+    for (const tipX of [sx + 7, sx + 12, sx + 17]) {
+      ctx.beginPath();
+      ctx.arc(tipX, tipX === sx + 12 ? statueTop - 28 : statueTop - 26, 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = accentColor;
+      ctx.fill();
+    }
+
+    // Cross-bar on trident
+    ctx.beginPath();
+    ctx.moveTo(sx + 8, statueTop - 15);
+    ctx.lineTo(sx + 16, statueTop - 15);
     ctx.stroke();
 
     // Glowing trident tip
-    const glowPulse = 0.4 + Math.sin(now / 400) * 0.2;
+    const glowPulse = 0.5 + Math.sin(now / 400) * 0.25;
     ctx.beginPath();
-    ctx.arc(sx + 14, statueTop - 20, 4, 0, Math.PI * 2);
+    ctx.arc(sx + 12, statueTop - 28, 5, 0, Math.PI * 2);
     ctx.fillStyle = exposed
-      ? `rgba(255, 100, 40, ${glowPulse})`
-      : `rgba(80, 255, 220, ${glowPulse})`;
+      ? `rgba(255, 100, 40, ${glowPulse * 0.4})`
+      : `rgba(80, 255, 220, ${glowPulse * 0.4})`;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(sx + 12, statueTop - 28, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = exposed
+      ? `rgba(255, 140, 60, ${glowPulse})`
+      : `rgba(120, 255, 230, ${glowPulse})`;
     ctx.fill();
 
-    // Highlight edge
-    ctx.strokeStyle = exposed ? "rgba(80, 40, 25, 0.3)" : "rgba(100, 200, 190, 0.2)";
+    // Cape / flowing cloth from shoulders
+    ctx.beginPath();
+    ctx.moveTo(sx - 8, baseY - 84);
+    ctx.quadraticCurveTo(sx - 12, baseY - 70, sx - 10, baseY - 50);
+    ctx.quadraticCurveTo(sx - 14, baseY - 40, sx - 11, baseY - 30);
+    ctx.lineTo(sx - 6, baseY - 50);
+    ctx.closePath();
+    ctx.fillStyle = exposed ? "rgba(50, 25, 15, 0.6)" : "rgba(30, 70, 80, 0.5)";
+    ctx.fill();
+
+    // Highlight edge (left side light)
+    ctx.strokeStyle = exposed ? "rgba(80, 40, 25, 0.25)" : "rgba(100, 200, 190, 0.2)";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(sx - 5, statueTop + 30);
-    ctx.lineTo(sx - 3, statueTop + 18);
-    ctx.lineTo(sx, statueTop + 12);
+    ctx.moveTo(sx - 6, baseY - 50);
+    ctx.lineTo(sx - 8, baseY - 65);
+    ctx.quadraticCurveTo(sx - 10, baseY - 80, sx - 8, baseY - 85);
+    ctx.lineTo(sx - 2, baseY - 90);
     ctx.stroke();
   }
 
