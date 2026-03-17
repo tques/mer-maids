@@ -338,8 +338,6 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
       else ctx.ellipse(bx, by + 7, b.w / 2, 7, 0, Math.PI, 0);
       ctx.stroke();
     }
-      }
-    }
 
     // Window lights — clipped to building shape
     ctx.save();
