@@ -99,6 +99,7 @@ export function updateMinelayer(
   viewH: number,
   waveDifficulty: number,
   fleeing: boolean,
+  platforms?: { x: number; halfW: number; topY: number; bottomY: number }[],
 ) {
   const waterY = getWaterSurfaceY(viewH);
   gameTime += dt;
