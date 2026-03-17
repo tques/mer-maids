@@ -329,7 +329,10 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
       }
     }
 
-    // Window lights
+    // Window lights — clipped to building shape
+    ctx.save();
+    traceBldShape(bx, by, b.w, b.h, b.s);
+    ctx.clip();
     const lightChance = exposed ? 0.9 : (critical ? 0.85 : (damaged ? 0.55 : 0.3));
     const lightColor = exposed
       ? (flickering ? "#cc4400" : "#220800")
@@ -346,6 +349,7 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
         }
       }
     }
+    ctx.restore();
   }
 
   // --- Smoke/fire particles when barrier is down ---
