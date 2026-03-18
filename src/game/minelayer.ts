@@ -52,6 +52,8 @@ const FIRST_SPAWN_DELAY = 45;   // Seconds before first minelayer
 const SPAWN_INTERVAL_MIN = 50;
 const SPAWN_INTERVAL_MAX = 80;
 const KILL_SPAWN_PENALTY = 30;  // Extra seconds added to spawn timer on kill
+const MINE_MAX_COUNT = 40;      // Hard cap on total mines
+const MINE_OFFSCREEN_DESPAWN = 60; // Seconds before off-screen mines despawn
 
 // ==================== RESET & ACCESSORS ====================
 
