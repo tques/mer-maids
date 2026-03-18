@@ -751,8 +751,7 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.translate(e.x, e.y);
     ctx.rotate(e.dir === 1 ? 0 : Math.PI);
 
-    ctx.shadowColor = "rgba(100, 255, 50, 0.4)";
-    ctx.shadowBlur = 10;
+    // Cheap painted glow (no shadowBlur for performance)
 
     const s = ENEMY_SIZE;
     // Angular alien fuselage
