@@ -808,8 +808,7 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.translate(c.x, c.y);
     ctx.rotate(c.angle);
 
-    ctx.shadowColor = "rgba(255, 40, 0, 0.5)";
-    ctx.shadowBlur = 10;
+    // Cheap painted glow (no shadowBlur for performance)
 
     const s = CHASER_SIZE;
     // Robotic angular body
