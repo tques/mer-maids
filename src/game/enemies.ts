@@ -961,7 +961,7 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.fillStyle = `rgba(255, 200, 50, ${0.7 + Math.random() * 0.3})`;
     ctx.fill();
 
-    ctx.shadowColor = "transparent";
+
     ctx.restore();
 
     // Warning indicator ring around missile
