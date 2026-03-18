@@ -274,9 +274,11 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
     traceBldShape(bx, by, b.w, b.h - 4, b.s);
     ctx.clip();
     ctx.fillStyle = exposed ? "rgba(120, 40, 10, 0.3)" : "rgba(60, 160, 140, 0.25)";
+    let winSeed = b.ox * 1000 + 7;
     for (let wy = by + 5; wy < topY - 2; wy += 7) {
       for (let wx = bx - b.w / 2 + 4; wx < bx + b.w / 2 - 2; wx += 5) {
-        if (Math.random() > 0.5) ctx.fillRect(wx, wy, 2, 2);
+        winSeed++;
+        if (seededRand(winSeed) > 0.5) ctx.fillRect(wx, wy, 2, 2);
       }
     }
     ctx.restore();
