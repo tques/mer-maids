@@ -103,7 +103,7 @@ const BOMB_INTERVAL = 1.8; // Seconds between bomb drops from each bomber
 const BOMB_GRAVITY = 0.025; // Vertical acceleration of falling bombs
 const CHASER_SPEED = 3; // Base chaser movement speed
 const CHASER_BULLET_SPEED = 6; // Speed of chaser beam bullets
-const CHASER_SHOOT_INTERVAL = 1.2; // Seconds between chaser shots
+const CHASER_SHOOT_INTERVAL = 2.4; // Seconds between chaser shots (halved fire rate)
 const MISSILE_SPEED = 4; // Homing missile speed
 const MISSILE_TURN_RATE = 0.045; // How fast missiles can turn (radians/frame)
 // Missiles persist until they hit something — no lifetime limit
@@ -361,7 +361,7 @@ export function updateEnemies(
   }
 
   // ==================== CHASER SPAWNING ====================
-  const maxChasers = fleeing ? 0 : gameTime < 8 / waveDifficulty ? 0 : Math.min(1 + Math.floor(difficulty * 3), 8);
+  const maxChasers = fleeing ? 0 : gameTime < 8 / waveDifficulty ? 0 : Math.min(3 + Math.floor(difficulty * 9), 24);
   const chaserInterval = Math.max(12 - difficulty * 4, 2);
   chaserSpawnTimer -= dt;
   const aliveChasers = chasers.filter((c) => c.alive).length;
@@ -463,7 +463,7 @@ export function updateEnemies(
 
     // ---- Homing Missile Launch ----
     c.missileCooldown -= dt;
-    const missileInterval = Math.max(18 - waveDifficulty * 4, 5);
+    const missileInterval = Math.max((18 - waveDifficulty * 4) * 3, 15);
     if (c.missileCooldown <= 0 && playerVisible) {
       c.missileCooldown = missileInterval + Math.random() * 4;
       const mAngle = Math.atan2(playerY - c.y, playerX - c.x);
