@@ -463,7 +463,7 @@ export function updateEnemies(
 
     // ---- Homing Missile Launch ----
     c.missileCooldown -= dt;
-    const missileInterval = Math.max(18 - waveDifficulty * 4, 5);
+    const missileInterval = Math.max((18 - waveDifficulty * 4) * 3, 15);
     if (c.missileCooldown <= 0 && playerVisible) {
       c.missileCooldown = missileInterval + Math.random() * 4;
       const mAngle = Math.atan2(playerY - c.y, playerX - c.x);
