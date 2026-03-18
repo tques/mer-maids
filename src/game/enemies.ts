@@ -751,8 +751,7 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.translate(e.x, e.y);
     ctx.rotate(e.dir === 1 ? 0 : Math.PI);
 
-    ctx.shadowColor = "rgba(100, 255, 50, 0.4)";
-    ctx.shadowBlur = 10;
+    // Cheap painted glow (no shadowBlur for performance)
 
     const s = ENEMY_SIZE;
     // Angular alien fuselage
@@ -799,7 +798,6 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    ctx.shadowColor = "transparent";
     ctx.restore();
   }
 
@@ -810,8 +808,7 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.translate(c.x, c.y);
     ctx.rotate(c.angle);
 
-    ctx.shadowColor = "rgba(255, 40, 0, 0.5)";
-    ctx.shadowBlur = 10;
+    // Cheap painted glow (no shadowBlur for performance)
 
     const s = CHASER_SIZE;
     // Robotic angular body
@@ -862,7 +859,6 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    ctx.shadowColor = "transparent";
     ctx.restore();
   }
 
@@ -897,7 +893,7 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.closePath();
     ctx.fillStyle = "#ffe0b2";
     ctx.fill();
-    ctx.shadowColor = "transparent";
+    ctx.restore();
     ctx.restore();
   }
 
@@ -965,7 +961,7 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.fillStyle = `rgba(255, 200, 50, ${0.7 + Math.random() * 0.3})`;
     ctx.fill();
 
-    ctx.shadowColor = "transparent";
+
     ctx.restore();
 
     // Warning indicator ring around missile

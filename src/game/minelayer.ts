@@ -27,6 +27,7 @@ export interface Mine {
   vy: number;        // vertical velocity (sinking then floating)
   settled: boolean;   // true once floating on surface
   alive: boolean;
+  age: number;        // seconds since spawn (for despawn logic)
 }
 
 // ==================== MODULE STATE ====================
@@ -51,6 +52,8 @@ const FIRST_SPAWN_DELAY = 45;   // Seconds before first minelayer
 const SPAWN_INTERVAL_MIN = 50;
 const SPAWN_INTERVAL_MAX = 80;
 const KILL_SPAWN_PENALTY = 30;  // Extra seconds added to spawn timer on kill
+const MINE_MAX_COUNT = 40;      // Hard cap on total mines
+const MINE_OFFSCREEN_DESPAWN = 60; // Seconds before off-screen mines despawn
 
 // ==================== RESET & ACCESSORS ====================
 
@@ -129,21 +132,31 @@ export function updateMinelayer(
     p.dropCooldown -= dt;
     if (p.dropCooldown <= 0) {
       p.dropCooldown = DROP_INTERVAL + Math.random() * 0.4;
-      mines.push({
-        x: p.x,
-        y: p.y + 10,
-        vy: MINE_SINK_SPEED,
-        settled: false,
-        alive: true,
-      });
+      if (mines.length < MINE_MAX_COUNT) {
+        mines.push({
+          x: p.x,
+          y: p.y + 10,
+          vy: MINE_SINK_SPEED,
+          settled: false,
+          alive: true,
+          age: 0,
+        });
+      }
     }
     // Despawn when off the other side
     if (p.x < -100 || p.x > worldWidth + 100) p.alive = false;
   }
 
-  // ---- Update mines (buoyancy physics + platform clamping) ----
+  // ---- Update mines (buoyancy physics + platform clamping + despawn) ----
+  const playerX = worldWidth / 2; // approximate; mines far from action despawn
   for (const m of mines) {
     if (!m.alive) continue;
+    m.age += dt;
+    // Despawn old mines that are far off-screen
+    if (m.age > MINE_OFFSCREEN_DESPAWN && m.settled) {
+      m.alive = false;
+      continue;
+    }
     if (!m.settled) {
       const surfaceY = getWaveY(m.x, waterY, worldWidth);
       if (m.y < surfaceY) {
@@ -181,8 +194,9 @@ export function updateMinelayer(
     }
   }
 
-  // Cleanup dead planes (mines persist!)
+  // Cleanup dead planes and mines
   planes = planes.filter(p => p.alive);
+  mines = mines.filter(m => m.alive);
 }
 
 // ==================== COLLISION: PLAYER BULLETS vs MINES & PLANES ====================
@@ -294,8 +308,7 @@ export function drawMinelayer(ctx: CanvasRenderingContext2D, viewH: number) {
     ctx.translate(p.x, p.y);
     ctx.scale(p.dir, 1);
 
-    ctx.shadowColor = "rgba(200, 60, 0, 0.4)";
-    ctx.shadowBlur = 8;
+    // Cheap painted glow (no shadowBlur for performance)
 
     const s = 14;
     // Dark industrial fuselage
@@ -338,7 +351,6 @@ export function drawMinelayer(ctx: CanvasRenderingContext2D, viewH: number) {
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    ctx.shadowColor = "transparent";
     ctx.restore();
   }
 

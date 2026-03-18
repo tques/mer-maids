@@ -137,6 +137,16 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
   // --- City buildings (abstract rectangles/towers on top of the platform) ---
   // Each building is defined by: ox (offset from center), w (width), h (height)
   // style: 'rect' | 'dome' | 'spire' | 'stepped' | 'cylinder'
+  //
+  // Deterministic pseudo-random for window lights (avoids per-frame Math.random())
+  const seededRand = (seed: number) => {
+    let s = seed | 0;
+    s = ((s >>> 16) ^ s) * 0x45d9f3b;
+    s = ((s >>> 16) ^ s) * 0x45d9f3b;
+    s = (s >>> 16) ^ s;
+    return (s & 0xffff) / 0xffff;
+  };
+
   type BldStyle = 'rect' | 'dome' | 'spire' | 'stepped' | 'cylinder';
   type BldDef = { ox: number; w: number; h: number; s: BldStyle };
 
@@ -264,9 +274,11 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
     traceBldShape(bx, by, b.w, b.h - 4, b.s);
     ctx.clip();
     ctx.fillStyle = exposed ? "rgba(120, 40, 10, 0.3)" : "rgba(60, 160, 140, 0.25)";
+    let winSeed = b.ox * 1000 + 7;
     for (let wy = by + 5; wy < topY - 2; wy += 7) {
       for (let wx = bx - b.w / 2 + 4; wx < bx + b.w / 2 - 2; wx += 5) {
-        if (Math.random() > 0.5) ctx.fillRect(wx, wy, 2, 2);
+        winSeed++;
+        if (seededRand(winSeed) > 0.5) ctx.fillRect(wx, wy, 2, 2);
       }
     }
     ctx.restore();
@@ -352,9 +364,11 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
 
     ctx.fillStyle = lightColor;
     const winStartY = by + (b.s === 'spire' ? 16 : b.s === 'dome' || b.s === 'cylinder' ? 12 : 6);
+    let winSeed2 = b.ox * 2000 + 13;
     for (let wy = winStartY; wy < topY - 4; wy += 8) {
       for (let wx = bx - b.w / 2 + 6; wx < bx + b.w / 2 - 3; wx += 6) {
-        if (Math.random() > lightChance) {
+        winSeed2++;
+        if (seededRand(winSeed2) > lightChance) {
           ctx.fillRect(wx, wy, 2, 2);
         }
       }
