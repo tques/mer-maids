@@ -103,7 +103,7 @@ const BOMB_INTERVAL = 1.8; // Seconds between bomb drops from each bomber
 const BOMB_GRAVITY = 0.025; // Vertical acceleration of falling bombs
 const CHASER_SPEED = 3; // Base chaser movement speed
 const CHASER_BULLET_SPEED = 6; // Speed of chaser beam bullets
-const CHASER_SHOOT_INTERVAL = 1.2; // Seconds between chaser shots
+const CHASER_SHOOT_INTERVAL = 2.4; // Seconds between chaser shots (halved fire rate)
 const MISSILE_SPEED = 4; // Homing missile speed
 const MISSILE_TURN_RATE = 0.045; // How fast missiles can turn (radians/frame)
 // Missiles persist until they hit something — no lifetime limit
