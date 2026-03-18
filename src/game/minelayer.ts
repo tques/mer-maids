@@ -27,6 +27,7 @@ export interface Mine {
   vy: number;        // vertical velocity (sinking then floating)
   settled: boolean;   // true once floating on surface
   alive: boolean;
+  age: number;        // seconds since spawn (for despawn logic)
 }
 
 // ==================== MODULE STATE ====================
