@@ -132,13 +132,16 @@ export function updateMinelayer(
     p.dropCooldown -= dt;
     if (p.dropCooldown <= 0) {
       p.dropCooldown = DROP_INTERVAL + Math.random() * 0.4;
-      mines.push({
-        x: p.x,
-        y: p.y + 10,
-        vy: MINE_SINK_SPEED,
-        settled: false,
-        alive: true,
-      });
+      if (mines.length < MINE_MAX_COUNT) {
+        mines.push({
+          x: p.x,
+          y: p.y + 10,
+          vy: MINE_SINK_SPEED,
+          settled: false,
+          alive: true,
+          age: 0,
+        });
+      }
     }
     // Despawn when off the other side
     if (p.x < -100 || p.x > worldWidth + 100) p.alive = false;
