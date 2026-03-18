@@ -147,9 +147,16 @@ export function updateMinelayer(
     if (p.x < -100 || p.x > worldWidth + 100) p.alive = false;
   }
 
-  // ---- Update mines (buoyancy physics + platform clamping) ----
+  // ---- Update mines (buoyancy physics + platform clamping + despawn) ----
+  const playerX = worldWidth / 2; // approximate; mines far from action despawn
   for (const m of mines) {
     if (!m.alive) continue;
+    m.age += dt;
+    // Despawn old mines that are far off-screen
+    if (m.age > MINE_OFFSCREEN_DESPAWN && m.settled) {
+      m.alive = false;
+      continue;
+    }
     if (!m.settled) {
       const surfaceY = getWaveY(m.x, waterY, worldWidth);
       if (m.y < surfaceY) {
