@@ -364,9 +364,11 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
 
     ctx.fillStyle = lightColor;
     const winStartY = by + (b.s === 'spire' ? 16 : b.s === 'dome' || b.s === 'cylinder' ? 12 : 6);
+    let winSeed2 = b.ox * 2000 + 13;
     for (let wy = winStartY; wy < topY - 4; wy += 8) {
       for (let wx = bx - b.w / 2 + 6; wx < bx + b.w / 2 - 3; wx += 6) {
-        if (Math.random() > lightChance) {
+        winSeed2++;
+        if (seededRand(winSeed2) > lightChance) {
           ctx.fillRect(wx, wy, 2, 2);
         }
       }
