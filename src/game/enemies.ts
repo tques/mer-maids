@@ -798,7 +798,6 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    ctx.shadowColor = "transparent";
     ctx.restore();
   }
 
