@@ -302,9 +302,7 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
     const hw = SUB_WIDTH / 2;
     const hh = SUB_HEIGHT / 2;
 
-    // Alien red glow
-    ctx.shadowColor = sub.attacking ? "rgba(255, 20, 0, 0.8)" : "rgba(200, 40, 20, 0.4)";
-    ctx.shadowBlur = 14;
+    // Cheap painted glow (no shadowBlur for performance)
 
     // ---- Main hull (industrial dark metal) ----
     ctx.beginPath();
