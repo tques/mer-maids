@@ -137,6 +137,16 @@ export function drawBoat(ctx: CanvasRenderingContext2D, boat: Boat, viewH: numbe
   // --- City buildings (abstract rectangles/towers on top of the platform) ---
   // Each building is defined by: ox (offset from center), w (width), h (height)
   // style: 'rect' | 'dome' | 'spire' | 'stepped' | 'cylinder'
+  //
+  // Deterministic pseudo-random for window lights (avoids per-frame Math.random())
+  const seededRand = (seed: number) => {
+    let s = seed | 0;
+    s = ((s >>> 16) ^ s) * 0x45d9f3b;
+    s = ((s >>> 16) ^ s) * 0x45d9f3b;
+    s = (s >>> 16) ^ s;
+    return (s & 0xffff) / 0xffff;
+  };
+
   type BldStyle = 'rect' | 'dome' | 'spire' | 'stepped' | 'cylinder';
   type BldDef = { ox: number; w: number; h: number; s: BldStyle };
 
