@@ -894,7 +894,6 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
     ctx.fillStyle = "#ffe0b2";
     ctx.fill();
     ctx.restore();
-    ctx.restore();
   }
 
   // ---- Homing Missiles (very visible with warning ring) ----
