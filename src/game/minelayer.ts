@@ -308,8 +308,7 @@ export function drawMinelayer(ctx: CanvasRenderingContext2D, viewH: number) {
     ctx.translate(p.x, p.y);
     ctx.scale(p.dir, 1);
 
-    ctx.shadowColor = "rgba(200, 60, 0, 0.4)";
-    ctx.shadowBlur = 8;
+    // Cheap painted glow (no shadowBlur for performance)
 
     const s = 14;
     // Dark industrial fuselage
