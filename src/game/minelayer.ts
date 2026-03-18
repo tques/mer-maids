@@ -194,8 +194,9 @@ export function updateMinelayer(
     }
   }
 
-  // Cleanup dead planes (mines persist!)
+  // Cleanup dead planes and mines
   planes = planes.filter(p => p.alive);
+  mines = mines.filter(m => m.alive);
 }
 
 // ==================== COLLISION: PLAYER BULLETS vs MINES & PLANES ====================
