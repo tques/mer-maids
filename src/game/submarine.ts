@@ -412,8 +412,6 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
     ctx.fillRect(tubeX - 1, -hh * 0.5, 2, 3);
     ctx.fillRect(tubeX - 1, hh * 0.5 - 3, 2, 3);
 
-    ctx.shadowColor = "transparent";
-
     // ---- Attack warning effects ----
     if (sub.attacking) {
       // Flashing red outline

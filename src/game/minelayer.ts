@@ -351,7 +351,6 @@ export function drawMinelayer(ctx: CanvasRenderingContext2D, viewH: number) {
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    ctx.shadowColor = "transparent";
     ctx.restore();
   }
 
