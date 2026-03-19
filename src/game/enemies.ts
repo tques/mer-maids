@@ -67,6 +67,7 @@ let bombs: Bomb[] = [];
 let bomberSpawnTimer = 0;
 let chaserSpawnTimer = 3;
 let gameTime = 0;
+let lastBomberSpawnTime = -999999;
 
 // Current target city for bombers (index into cities array)
 let bomberTargetCityIndex = 0;
@@ -92,6 +93,7 @@ export function resetEnemies() {
   bomberSpawnTimer = 0;
   chaserSpawnTimer = 8;
   gameTime = 0;
+  lastBomberSpawnTime = -999999;
 }
 
 /** Set which city index bombers should target (called on wave change) */
@@ -101,6 +103,11 @@ export function setBomberTargetCity(index: number) {
 
 export function getBomberTargetCityIndex() {
   return bomberTargetCityIndex;
+}
+
+/** Returns performance.now() timestamp of the last bomber spawn, or -999999 if none this wave */
+export function getLastBomberSpawnTime() {
+  return lastBomberSpawnTime;
 }
 
 export function getEnemies() {
@@ -247,6 +254,7 @@ export function updateEnemies(
         bombCooldown: 0.5 + Math.random(),
         alive: true,
       });
+      lastBomberSpawnTime = performance.now();
     }
   }
 
