@@ -671,17 +671,29 @@ export function checkRamCollisions(px: number, py: number, radius: number): numb
  * Draws all air enemies, their projectiles, explosions, and score popups.
  * Called within a camera-translated context (world coordinates).
  *
+ * @param ctx - Canvas rendering context (already translated by world offset)
+ * @param visibleStartX - Left edge of the visible world window (for this copy)
+ * @param visibleEndX   - Right edge of the visible world window (for this copy)
+ *
+ * The visible range is used to cull entities to the copy of the world they
+ * actually belong to. Without this, enemies drawn in a wrapping world render
+ * loop would appear as ghost copies in adjacent world copies — visible but
+ * not hittable, since collision uses un-offset world coordinates.
+ *
  * PERF: performance.now() is called ONCE here and stored as `drawNow`.
  * All per-entity animated values (engine pulse, eye pulse, bomb core, etc.)
  * use drawNow instead of calling performance.now() inside each loop iteration.
  */
-export function drawEnemies(ctx: CanvasRenderingContext2D) {
+export function drawEnemies(ctx: CanvasRenderingContext2D, visibleStartX?: number, visibleEndX?: number) {
   // PERF: Single performance.now() call for the entire draw pass
   const drawNow = performance.now();
+  const hasRange = visibleStartX !== undefined && visibleEndX !== undefined;
+  const margin = 40; // px beyond visible edge to still draw (for large sprites near boundary)
 
   // ---- Alien Bombers (dark industrial, toxic green accents) ----
   for (const e of enemies) {
     if (!e.alive) continue;
+    if (hasRange && (e.x < visibleStartX! - margin || e.x > visibleEndX! + margin)) continue;
     ctx.save();
     ctx.translate(e.x, e.y);
     ctx.rotate(e.dir === 1 ? 0 : Math.PI);
@@ -734,6 +746,7 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
   // ---- Alien Chasers (dark angular, red sensor, robotic) ----
   for (const c of chasers) {
     if (!c.alive) continue;
+    if (hasRange && (c.x < visibleStartX! - margin || c.x > visibleEndX! + margin)) continue;
     ctx.save();
     ctx.translate(c.x, c.y);
     ctx.rotate(c.angle);
@@ -791,6 +804,7 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
   // ---- Chaser Beam Bullets ----
   for (const cb of chaserBullets) {
     if (!cb.alive) continue;
+    if (hasRange && (cb.x < visibleStartX! - margin || cb.x > visibleEndX! + margin)) continue;
     const bAngle = Math.atan2(cb.dy, cb.dx);
     ctx.save();
     ctx.translate(cb.x, cb.y);
@@ -823,6 +837,7 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
   // ---- Homing Missiles (very visible with warning ring) ----
   for (const m of homingMissiles) {
     if (!m.alive) continue;
+    if (hasRange && (m.x < visibleStartX! - margin || m.x > visibleEndX! + margin)) continue;
 
     // Smoke trail
     for (const t of m.trail) {
@@ -895,6 +910,7 @@ export function drawEnemies(ctx: CanvasRenderingContext2D) {
   // ---- Tumbling Bombs (dark industrial alien ordnance) ----
   for (const b of bombs) {
     if (!b.alive) continue;
+    if (hasRange && (b.x < visibleStartX! - margin || b.x > visibleEndX! + margin)) continue;
     ctx.save();
     ctx.translate(b.x, b.y);
     ctx.rotate(b.rotation);
