@@ -30,6 +30,7 @@ import {
   checkBulletHitsSubmarine,
   drawSubmarines,
   fleeSubmarines,
+  getSubmarines,
 } from "../game/submarine";
 import {
   resetPickups,
@@ -1421,11 +1422,24 @@ const Index = () => {
       const bomberTarget = bomberTargetRef.current;
       const cityColors = ["#ff7f50", "#00dcff", "#a0ff80"]; // distinct color per city
 
+      // Check for subs near Haven (index 1, the center city)
+      const HAVEN_INDEX = 1;
+      const activeSubs = getSubmarines().filter((s) => s.alive);
+      const havenCity = cities[HAVEN_INDEX];
+      const subNearHaven = havenCity
+        ? activeSubs.some((s) => Math.abs(s.x - havenCity.x) < havenCity.width * 1.5)
+        : false;
+
+      // Slow blink — ~2s period, visible ~75% of the time (not frantic)
+      const slowBlink = Math.sin(hudNow * 0.0025) > -0.5;
+
       for (let ci = 0; ci < cities.length; ci++) {
         const city = cities[ci];
         const cHp = cityHPs[ci];
         if (!cHp) continue;
         const isTarget = ci === bomberTarget;
+        const isHaven = ci === HAVEN_INDEX;
+        const hasSub = isHaven && subNearHaven;
         const barrierUp = cHp.hp > 3;
         const py2 = cityPanelY;
 
@@ -1438,10 +1452,17 @@ const Index = () => {
         ctx.fillStyle = rGrad;
         ctx.fill();
 
-        // Border — pulsing red if targeted by bombers
-        if (isTarget) {
-          const pulse = 0.4 + Math.sin(hudNow * 0.008) * 0.3;
-          ctx.strokeStyle = `rgba(255,80,40,${pulse})`;
+        // Border — slow pulse: red for bombers, yellow for subs, alternating if both
+        const borderPulse = 0.4 + Math.sin(hudNow * 0.004) * 0.2;
+        if (isTarget && hasSub) {
+          const alt = Math.sin(hudNow * 0.004) > 0;
+          ctx.strokeStyle = alt ? `rgba(255,80,40,${borderPulse})` : `rgba(255,210,40,${borderPulse})`;
+          ctx.lineWidth = 2;
+        } else if (isTarget) {
+          ctx.strokeStyle = `rgba(255,80,40,${borderPulse})`;
+          ctx.lineWidth = 2;
+        } else if (hasSub) {
+          ctx.strokeStyle = `rgba(255,210,40,${borderPulse})`;
           ctx.lineWidth = 2;
         } else {
           const cityBorderColors = ["255,127,80", "0,220,255", "160,255,128"];
@@ -1450,16 +1471,26 @@ const Index = () => {
         }
         ctx.stroke();
 
-        // City name + target indicator
+        // City name
         ctx.font = "bold 10px monospace";
         ctx.textAlign = "left";
         ctx.fillStyle = cityColors[ci];
         ctx.fillText(city.name, cityPanelX + 8, py2 + 16);
 
-        if (isTarget) {
-          ctx.fillStyle = `rgba(255,80,40,${0.7 + Math.sin(hudNow * 0.01) * 0.3})`;
-          ctx.font = "bold 9px monospace";
-          ctx.fillText("▼ UNDER ATTACK", cityPanelX + 90, py2 + 16);
+        // Threat indicators — slow blink, different colors, stacked if both present
+        if (slowBlink) {
+          let indicatorX = cityPanelX + 90;
+          if (isTarget) {
+            ctx.fillStyle = "rgba(255,80,40,0.85)";
+            ctx.font = "bold 9px monospace";
+            ctx.fillText("▼ BOMBERS", indicatorX, py2 + 16);
+            indicatorX += 68;
+          }
+          if (hasSub) {
+            ctx.fillStyle = "rgba(255,210,40,0.85)";
+            ctx.font = "bold 9px monospace";
+            ctx.fillText("▼ SUB", indicatorX, py2 + 16);
+          }
         }
 
         // HP pips
@@ -1494,13 +1525,13 @@ const Index = () => {
         cityPanelY += cityPanelH + cityPanelGap;
       }
 
-      // Bomber target indicator below city panels
+      // Bomber target indicator below city panels — slow steady glow, no blink
       ctx.save();
       const targetIndicatorY = cityPanelY + 4;
       ctx.font = "bold 9px monospace";
       ctx.textAlign = "center";
-      const bombFlash = 0.6 + Math.sin(hudNow * 0.009) * 0.3;
-      ctx.fillStyle = `rgba(255,120,40,${bombFlash})`;
+      const bombGlow = 0.5 + Math.sin(hudNow * 0.004) * 0.15;
+      ctx.fillStyle = `rgba(255,120,40,${bombGlow})`;
       ctx.fillText(`BOMBERS → ${cities[bomberTarget]?.name ?? ""}`, cityPanelX + cityPanelW / 2, targetIndicatorY);
       ctx.restore();
 
