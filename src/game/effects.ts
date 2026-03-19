@@ -11,6 +11,10 @@
  *
  * Both effect types are purely visual — they don't affect gameplay.
  * Any module can spawn effects via spawnExplosion().
+ *
+ * PERFORMANCE OPTIMIZATIONS (vs original):
+ * - updateEffects uses in-place reverse-splice instead of Array.filter so no
+ *   new array is allocated every frame, reducing GC pressure.
  */
 
 // ==================== INTERFACES ====================
@@ -19,18 +23,18 @@
 export interface Explosion {
   x: number;
   y: number;
-  life: number;      // Remaining life (1.0 → 0.0)
-  maxLife: number;    // Total lifetime in seconds
-  radius: number;     // Current visual radius
-  maxRadius: number;  // Maximum size
+  life: number; // Remaining life (1.0 → 0.0)
+  maxLife: number; // Total lifetime in seconds
+  radius: number; // Current visual radius
+  maxRadius: number; // Maximum size
 }
 
 /** Floating score text that appears when enemies are destroyed */
 export interface ScorePopup {
   x: number;
   y: number;
-  value: number;  // Score amount to display (e.g. 150)
-  life: number;   // Remaining life (1.0 → 0.0)
+  value: number; // Score amount to display (e.g. 150)
+  life: number; // Remaining life (1.0 → 0.0)
 }
 
 // ==================== MODULE STATE ====================
@@ -47,10 +51,14 @@ export function resetEffects() {
 }
 
 /** Get the current list of active explosions */
-export function getExplosions() { return explosions; }
+export function getExplosions() {
+  return explosions;
+}
 
 /** Get the current list of active score popups */
-export function getScorePopups() { return scorePopups; }
+export function getScorePopups() {
+  return scorePopups;
+}
 
 // ==================== SPAWNING ====================
 
@@ -88,23 +96,26 @@ export function spawnExplosion(x: number, y: number, size = 30, scoreValue?: num
  * Score popups float upward and fade out.
  *
  * @param dt - Delta time in seconds
+ *
+ * PERF: Uses in-place reverse-splice instead of Array.filter to avoid
+ * allocating a new array every frame and triggering GC.
  */
 export function updateEffects(dt: number) {
   // ---- Explosions: expand and fade ----
-  for (const ex of explosions) {
+  for (let i = explosions.length - 1; i >= 0; i--) {
+    const ex = explosions[i];
     ex.life -= dt / ex.maxLife;
     ex.radius += (ex.maxRadius - ex.radius) * 0.15; // Ease toward max size
+    if (ex.life <= 0) explosions.splice(i, 1);
   }
 
   // ---- Score popups: float up and fade ----
-  for (const sp of scorePopups) {
+  for (let i = scorePopups.length - 1; i >= 0; i--) {
+    const sp = scorePopups[i];
     sp.life -= dt * 1.2;
     sp.y -= 0.8; // Float upward
+    if (sp.life <= 0) scorePopups.splice(i, 1);
   }
-
-  // ---- Cleanup dead effects ----
-  explosions = explosions.filter(ex => ex.life > 0);
-  scorePopups = scorePopups.filter(sp => sp.life > 0);
 }
 
 // ==================== RENDERING ====================
