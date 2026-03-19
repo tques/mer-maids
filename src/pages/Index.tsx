@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-const muzzleFlashRef = useRef(0);
 import {
   getWaterSurfaceY,
   getWaveY,
@@ -174,6 +173,7 @@ const Index = () => {
   const fpsLastTimeRef = useRef(performance.now());
   const fpsDisplayRef = useRef(0);
   const lastFrameTimeRef = useRef(performance.now());
+  const muzzleFlashRef = useRef(0); // ms remaining on current muzzle flash
 
   // Helper: convert screen mouse to world coords
   const getWorldMouse = useCallback(() => {
