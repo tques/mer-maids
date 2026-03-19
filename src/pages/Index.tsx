@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+const muzzleFlashRef = useRef(0);
 import {
   getWaterSurfaceY,
   getWaveY,
@@ -654,6 +655,7 @@ const Index = () => {
       // Continuous fire (ammo gated) — mouse right-click or gamepad buttons
       if ((rightMouseRef.current || gp.fire) && ammoRef.current > 0) {
         shootCooldownRef.current -= frameDelta;
+        if (muzzleFlashRef.current > 0) muzzleFlashRef.current -= frameDelta;
         if (shootCooldownRef.current <= 0) {
           shootCooldownRef.current = SHOOT_INTERVAL;
           ammoRef.current -= 1;
@@ -665,6 +667,7 @@ const Index = () => {
             dy: Math.sin(fireAngle) * BULLET_SPEED,
             id: bulletIdRef.current++,
           });
+          muzzleFlashRef.current = 80;
         }
       }
 
@@ -738,8 +741,18 @@ const Index = () => {
         // Build platform rects for mine clamping
         const mineBoatTopY = boatRef.current ? getBoatTopY(boatRef.current, viewH) : 0;
         const minePlatforms = [
-          { x: boatX, halfW: boatW / 2, topY: mineBoatTopY, bottomY: mineBoatTopY + (boatRef.current?.hullDepth ?? 36) },
-          { x: WORLD_WIDTH - 80, halfW: 60, topY: getWaveY(WORLD_WIDTH - 80, getWaterSurfaceY(viewH)) - 22, bottomY: getWaveY(WORLD_WIDTH - 80, getWaterSurfaceY(viewH)) - 22 + 40 },
+          {
+            x: boatX,
+            halfW: boatW / 2,
+            topY: mineBoatTopY,
+            bottomY: mineBoatTopY + (boatRef.current?.hullDepth ?? 36),
+          },
+          {
+            x: WORLD_WIDTH - 80,
+            halfW: 60,
+            topY: getWaveY(WORLD_WIDTH - 80, getWaterSurfaceY(viewH)) - 22,
+            bottomY: getWaveY(WORLD_WIDTH - 80, getWaterSurfaceY(viewH)) - 22 + 40,
+          },
         ];
         updateMinelayer(dt, WORLD_WIDTH, viewH, waveDiff, wave.enemiesFleeing, minePlatforms);
         const result = checkBulletCollisions(bulletsRef.current);
