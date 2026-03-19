@@ -42,8 +42,8 @@ let subSpawnTimer = 15; // Countdown to first submarine spawn
 
 const SUB_WIDTH = 50; // Visual width of submarine
 const SUB_HEIGHT = 16; // Visual height of submarine
-const SUB_SPEED = 0.6; // Base horizontal speed (very slow, menacing)
-const SUB_ATTACK_TIME = 2.0; // Seconds to charge before detonation
+const SUB_SPEED = 0.35; // Slowed down (was 0.6) — player has more time to intercept
+const SUB_ATTACK_TIME = 4.5; // Longer charge time (was 2.0) — more warning before detonation
 const SUB_DEPTH_MIN = 50; // Minimum depth below water surface
 const SUB_DEPTH_MAX = 140; // Maximum depth (deeper subs require deeper dives)
 const SUB_SPAWN_DEPTH = 350; // Spawn far below screen, then rise
@@ -96,7 +96,7 @@ export function updateSubmarines(
         x: spawnX,
         y: waterY + SUB_SPAWN_DEPTH,
         targetY: waterY + depthOffset,
-        speed: SUB_SPEED + Math.random() * 0.2,
+        speed: SUB_SPEED + Math.random() * 0.1,
         dir: dir as 1 | -1,
         alive: true,
         attacking: false,
@@ -188,7 +188,7 @@ export function updateSubmarinesWithDamage(
         x: spawnX,
         y: waterY + SUB_SPAWN_DEPTH,
         targetY: waterY + depthOffset,
-        speed: SUB_SPEED + Math.random() * 0.2,
+        speed: SUB_SPEED + Math.random() * 0.1,
         dir: dir as 1 | -1,
         alive: true,
         attacking: false,
@@ -282,15 +282,6 @@ export function checkBulletHitsSubmarine(bullets: { x: number; y: number; dx: nu
 /**
  * Draws all submarines with their menacing visual design.
  * Called within a camera-translated context (world coordinates).
- *
- * Visual elements:
- * - Dark gunmetal hull with crimson stripe
- * - Angular conning tower with sensor mast
- * - Armored ram nose
- * - Pulsing red "eye" porthole
- * - Jagged tail fins
- * - Torpedo tube markings
- * - Attack warning flash and rising red bubbles when charging
  */
 export function drawSubmarines(ctx: CanvasRenderingContext2D) {
   for (const sub of submarines) {
@@ -301,8 +292,6 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
 
     const hw = SUB_WIDTH / 2;
     const hh = SUB_HEIGHT / 2;
-
-    // Cheap painted glow (no shadowBlur for performance)
 
     // ---- Main hull (industrial dark metal) ----
     ctx.beginPath();
