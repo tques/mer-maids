@@ -173,7 +173,6 @@ const Index = () => {
   const fpsLastTimeRef = useRef(performance.now());
   const fpsDisplayRef = useRef(0);
   const lastFrameTimeRef = useRef(performance.now());
-  const muzzleFlashRef = useRef(0); // ms remaining on current muzzle flash
 
   // Helper: convert screen mouse to world coords
   const getWorldMouse = useCallback(() => {
@@ -655,7 +654,6 @@ const Index = () => {
       // Continuous fire (ammo gated) — mouse right-click or gamepad buttons
       if ((rightMouseRef.current || gp.fire) && ammoRef.current > 0) {
         shootCooldownRef.current -= frameDelta;
-        if (muzzleFlashRef.current > 0) muzzleFlashRef.current -= frameDelta;
         if (shootCooldownRef.current <= 0) {
           shootCooldownRef.current = SHOOT_INTERVAL;
           ammoRef.current -= 1;
@@ -667,7 +665,6 @@ const Index = () => {
             dy: Math.sin(fireAngle) * BULLET_SPEED,
             id: bulletIdRef.current++,
           });
-          muzzleFlashRef.current = 80;
         }
       }
 
@@ -741,18 +738,8 @@ const Index = () => {
         // Build platform rects for mine clamping
         const mineBoatTopY = boatRef.current ? getBoatTopY(boatRef.current, viewH) : 0;
         const minePlatforms = [
-          {
-            x: boatX,
-            halfW: boatW / 2,
-            topY: mineBoatTopY,
-            bottomY: mineBoatTopY + (boatRef.current?.hullDepth ?? 36),
-          },
-          {
-            x: WORLD_WIDTH - 80,
-            halfW: 60,
-            topY: getWaveY(WORLD_WIDTH - 80, getWaterSurfaceY(viewH)) - 22,
-            bottomY: getWaveY(WORLD_WIDTH - 80, getWaterSurfaceY(viewH)) - 22 + 40,
-          },
+          { x: boatX, halfW: boatW / 2, topY: mineBoatTopY, bottomY: mineBoatTopY + (boatRef.current?.hullDepth ?? 36) },
+          { x: WORLD_WIDTH - 80, halfW: 60, topY: getWaveY(WORLD_WIDTH - 80, getWaterSurfaceY(viewH)) - 22, bottomY: getWaveY(WORLD_WIDTH - 80, getWaterSurfaceY(viewH)) - 22 + 40 },
         ];
         updateMinelayer(dt, WORLD_WIDTH, viewH, waveDiff, wave.enemiesFleeing, minePlatforms);
         const result = checkBulletCollisions(bulletsRef.current);
@@ -1070,7 +1057,7 @@ const Index = () => {
 
         // Ammo pickups (drawn by pickups.ts alongside health/repair)
 
-        // Haro Mech
+        // Player triangle
         const isInvuln = invulnRef.current > 0;
         const showPlayer = !isInvuln || Math.floor(performance.now() / 80) % 2 === 0;
         if (showPlayer) {
@@ -1092,361 +1079,120 @@ const Index = () => {
             ctx.scale(1, scaleY);
           }
 
+          // Drop shadow (cheap, no shadowBlur)
+
+          // Frutiger Aero mech — glassy, bubbly, water-inspired
           const r = TRI_SIZE * 0.9;
           const bladesActive = playerHPRef.current >= PLAYER_MAX_HP;
           const glassTime = performance.now() * 0.003;
-          const muzzleFlash = muzzleFlashRef.current > 0;
 
-          // Colours (shift to blue when invuln)
-          const bodyMain = isInvuln ? "rgba(110,190,255,0.95)" : "rgba(40,210,175,0.95)";
-          const bodyMid = isInvuln ? "rgba(55,150,230,0.85)" : "rgba(10,185,148,0.85)";
-          const bodyDark = isInvuln ? "rgba(20,110,190,0.75)" : "rgba(0,140,110,0.72)";
-          const rimColor = isInvuln ? "rgba(130,210,255,0.8)" : "rgba(50,230,200,0.75)";
-          const armColor = isInvuln ? "#3898d8" : "#18b898";
-          const armStroke = isInvuln ? "rgba(130,210,255,0.55)" : "rgba(80,240,200,0.5)";
-          const jointFill = isInvuln ? "#2880c0" : "#10a888";
-          const jointRim = isInvuln ? "rgba(130,210,255,0.9)" : "rgba(60,230,200,0.9)";
-
-          // Ram blades (drawn behind body when active)
-          if (bladesActive) {
-            const bladeAlpha = 0.78 + Math.sin(glassTime) * 0.14;
-            const drawBlade = (sign: number) => {
-              ctx.beginPath();
-              ctx.moveTo(-r * 0.05, sign * r * 0.95);
-              ctx.lineTo(-r * 0.9, sign * r * 1.8);
-              ctx.lineTo(-r * 0.75, sign * r * 1.45);
-              ctx.lineTo(-r * 0.1, sign * r * 0.95);
-              ctx.closePath();
-              const bg = ctx.createLinearGradient(0, sign * r * 0.95, -r * 0.9, sign * r * 1.8);
-              bg.addColorStop(0, `rgba(160,255,240,${bladeAlpha})`);
-              bg.addColorStop(0.6, `rgba(90,235,215,${bladeAlpha * 0.65})`);
-              bg.addColorStop(1, `rgba(50,200,185,${bladeAlpha * 0.28})`);
-              ctx.fillStyle = bg;
-              ctx.fill();
-              ctx.strokeStyle = `rgba(190,255,248,${bladeAlpha * 0.75})`;
-              ctx.lineWidth = 1;
-              ctx.stroke();
-              ctx.beginPath();
-              ctx.moveTo(-r * 0.08, sign * r * 0.97);
-              ctx.lineTo(-r * 0.7, sign * r * 1.6);
-              ctx.strokeStyle = `rgba(255,255,255,${bladeAlpha * 0.28})`;
-              ctx.lineWidth = 0.8;
-              ctx.stroke();
-            };
-            drawBlade(-1);
-            drawBlade(1);
-          }
-
-          // Jet pack (back of mech)
-          ctx.save();
-          ctx.translate(-r * 0.9, 0);
+          // Main body — symmetric glossy hull
           ctx.beginPath();
-          ctx.roundRect(-r * 0.28, -r * 0.58, r * 0.55, r * 0.65, r * 0.1);
-          ctx.fillStyle = "#1a2e3e";
-          ctx.fill();
-          ctx.strokeStyle = "#3a6880";
-          ctx.lineWidth = 0.8;
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.moveTo(-r * 0.28, -r * 0.3);
-          ctx.lineTo(-r * 0.55, -r * 0.18);
-          ctx.lineTo(-r * 0.55, r * 0.08);
-          ctx.lineTo(-r * 0.28, r * 0.0);
+          // Nose tip
+          ctx.moveTo(r, 0);
+          // Upper arc from nose to tail
+          ctx.quadraticCurveTo(r * 0.7, -r * 0.55, -r * 0.5, -r * 0.45);
+          // Tail notch upper
+          ctx.lineTo(-r * 0.25, -r * 0.12);
+          // Tail notch lower (symmetric)
+          ctx.lineTo(-r * 0.25, r * 0.12);
+          // Lower arc from tail to nose
+          ctx.lineTo(-r * 0.5, r * 0.45);
+          ctx.quadraticCurveTo(r * 0.7, r * 0.55, r, 0);
           ctx.closePath();
-          ctx.fillStyle = "#112030";
-          ctx.fill();
-          ctx.strokeStyle = "#3a6878";
-          ctx.lineWidth = 0.7;
-          ctx.stroke();
-          for (let g = -0.42; g <= 0.0; g += 0.14) {
-            ctx.beginPath();
-            ctx.moveTo(-r * 0.26, r * g);
-            ctx.lineTo(r * 0.24, r * g);
-            ctx.strokeStyle = "rgba(60,155,175,0.55)";
-            ctx.lineWidth = 0.6;
-            ctx.stroke();
-          }
-          ctx.fillStyle = "rgba(55,160,180,0.65)";
-          ctx.fillRect(-r * 0.22, r * 0.1, r * 0.14, r * 0.09);
-          ctx.fillRect(-r * 0.04, r * 0.1, r * 0.14, r * 0.09);
-          ctx.restore();
 
-          // Sphere body
-          const bodyGrad = ctx.createRadialGradient(r * -0.12, r * -0.22, r * 0.04, r * 0.0, r * 0.0, r * 1.0);
-          bodyGrad.addColorStop(0, bodyMain);
-          bodyGrad.addColorStop(0.42, bodyMid);
-          bodyGrad.addColorStop(1, bodyDark);
-          ctx.beginPath();
-          ctx.arc(0, 0, r, 0, Math.PI * 2);
+          // Glossy gradient fill
+          const bodyGrad = ctx.createLinearGradient(-r, -r, r * 0.5, r);
+          if (isInvuln) {
+            bodyGrad.addColorStop(0, "rgba(180, 240, 255, 0.95)");
+            bodyGrad.addColorStop(0.4, "rgba(100, 210, 240, 0.85)");
+            bodyGrad.addColorStop(1, "rgba(60, 180, 220, 0.75)");
+          } else {
+            bodyGrad.addColorStop(0, "rgba(80, 230, 200, 0.95)");
+            bodyGrad.addColorStop(0.3, "rgba(0, 210, 170, 0.85)");
+            bodyGrad.addColorStop(0.7, "rgba(0, 160, 130, 0.80)");
+            bodyGrad.addColorStop(1, "rgba(0, 120, 100, 0.70)");
+          }
           ctx.fillStyle = bodyGrad;
           ctx.fill();
 
-          // Panel seam lines
+          // Glass highlight — symmetric specular stripe on upper hull
           ctx.beginPath();
-          ctx.ellipse(0, 0, r, r * 0.35, 0, 0, Math.PI * 2);
-          ctx.strokeStyle = rimColor;
-          ctx.lineWidth = 0.6;
-          ctx.globalAlpha = 0.35;
-          ctx.stroke();
-          ctx.globalAlpha = 1;
-          ctx.beginPath();
-          ctx.ellipse(0, 0, r * 0.35, r, 0, 0, Math.PI * 2);
-          ctx.strokeStyle = rimColor;
-          ctx.lineWidth = 0.6;
-          ctx.globalAlpha = 0.25;
-          ctx.stroke();
-          ctx.globalAlpha = 1;
-
-          // Outer rim
-          ctx.beginPath();
-          ctx.arc(0, 0, r, 0, Math.PI * 2);
-          ctx.strokeStyle = bladesActive ? "rgba(160,255,240,0.9)" : rimColor;
-          ctx.lineWidth = bladesActive ? 1.8 : 1.2;
-          ctx.stroke();
-
-          // Specular highlight arc
-          ctx.beginPath();
-          ctx.arc(r * -0.25, r * -0.35, r * 0.42, -0.4, 0.9);
-          ctx.strokeStyle = "rgba(210,255,248,0.38)";
-          ctx.lineWidth = 2.2;
-          ctx.stroke();
-
-          // Eye socket (hexagonal red ring) + visor
-          const eyeX = r * 0.48;
-          const eyeHexR = r * 0.28;
-          const visorR = r * 0.185;
-          ctx.beginPath();
-          for (let i = 0; i < 6; i++) {
-            const a = (i / 6) * Math.PI * 2 - Math.PI / 6;
-            const hx = eyeX + Math.cos(a) * eyeHexR;
-            const hy = Math.sin(a) * eyeHexR;
-            if (i === 0) ctx.moveTo(hx, hy);
-            else ctx.lineTo(hx, hy);
-          }
+          ctx.moveTo(r * 0.75, -r * 0.1);
+          ctx.quadraticCurveTo(r * 0.4, -r * 0.4, -r * 0.3, -r * 0.32);
+          ctx.quadraticCurveTo(r * 0.3, -r * 0.28, r * 0.75, -r * 0.1);
           ctx.closePath();
-          ctx.fillStyle = isInvuln ? "#882020" : "#cc1818";
+          ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
           ctx.fill();
-          ctx.strokeStyle = isInvuln ? "rgba(255,160,160,0.7)" : "#ff4040";
-          ctx.lineWidth = 0.9;
-          ctx.stroke();
-          const visorGrad = ctx.createRadialGradient(eyeX - visorR * 0.32, -visorR * 0.3, 0, eyeX, 0, visorR);
-          visorGrad.addColorStop(0, isInvuln ? "rgba(210,240,255,0.98)" : "rgba(195,255,248,0.98)");
-          visorGrad.addColorStop(0.5, isInvuln ? "#60c8ff" : "#20e8c0");
-          visorGrad.addColorStop(1, isInvuln ? "#1070bb" : "#008060");
+
+          if (bladesActive) {
+            ctx.shadowColor = "rgba(100, 255, 235, 0.8)";
+            ctx.shadowBlur = 14;
+            ctx.strokeStyle = "rgba(150, 255, 245, 0.9)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.shadowColor = "transparent";
+            ctx.shadowBlur = 0;
+          } else {
+            ctx.strokeStyle = isInvuln ? "rgba(140, 220, 255, 0.6)" : "rgba(0, 200, 160, 0.5)";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+
+          // Visor — glowing aqua bubble
           ctx.beginPath();
-          ctx.arc(eyeX, 0, visorR, 0, Math.PI * 2);
+          ctx.arc(r * 0.35, 0, r * 0.14, 0, Math.PI * 2);
+          const visorGrad = ctx.createRadialGradient(r * 0.32, -r * 0.03, 0, r * 0.35, 0, r * 0.14);
+          visorGrad.addColorStop(0, "rgba(200, 255, 250, 0.95)");
+          visorGrad.addColorStop(0.5, isInvuln ? "#88eeff" : "#40f0c8");
+          visorGrad.addColorStop(1, isInvuln ? "#55ccdd" : "#00c896");
           ctx.fillStyle = visorGrad;
           ctx.fill();
+          // Visor specular
           ctx.beginPath();
-          ctx.arc(eyeX - visorR * 0.28, -visorR * 0.28, visorR * 0.28, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(255,255,255,0.62)";
+          ctx.arc(r * 0.31, -r * 0.04, r * 0.05, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
           ctx.fill();
 
-          // Gun turret on top of sphere
-          ctx.beginPath();
-          ctx.ellipse(r * 0.08, -r * 0.92, r * 0.28, r * 0.1, 0, 0, Math.PI * 2);
-          ctx.fillStyle = "#1a3040";
-          ctx.fill();
-          ctx.strokeStyle = "#3a6878";
-          ctx.lineWidth = 0.8;
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.roundRect(-r * 0.14, -r * 1.26, r * 0.56, r * 0.36, r * 0.08);
-          ctx.fillStyle = "#0e2030";
-          ctx.fill();
-          ctx.strokeStyle = muzzleFlash ? "rgba(255,220,80,0.9)" : "#3a6878";
-          ctx.lineWidth = muzzleFlash ? 1.2 : 0.9;
-          ctx.stroke();
-          // Rotation dial
-          ctx.beginPath();
-          ctx.arc(r * 0.08, -r * 1.08, r * 0.1, 0, Math.PI * 2);
-          ctx.fillStyle = "#0a1820";
-          ctx.fill();
-          ctx.strokeStyle = "#3a8898";
-          ctx.lineWidth = 0.7;
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.arc(r * 0.08, -r * 1.08, r * 0.045, 0, Math.PI * 2);
-          ctx.fillStyle = isInvuln ? "#60b8ff" : "#3ad8b8";
-          ctx.fill();
-          // Scope block
-          ctx.beginPath();
-          ctx.roundRect(r * 0.06, -r * 1.36, r * 0.24, r * 0.13, r * 0.04);
-          ctx.fillStyle = "#1a3848";
-          ctx.fill();
-          ctx.strokeStyle = "#3a7888";
-          ctx.lineWidth = 0.6;
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.arc(r * 0.24, -r * 1.295, r * 0.05, 0, Math.PI * 2);
-          ctx.fillStyle = isInvuln ? "rgba(100,180,255,0.8)" : "rgba(40,220,180,0.8)";
-          ctx.fill();
+          // Ram blades — swept-back fighter jet wings (symmetric)
+          if (playerHPRef.current >= PLAYER_MAX_HP) {
+            const bladeAlpha = 0.7 + Math.sin(glassTime) * 0.15;
 
-          // Twin gun barrels
-          const barrelAngle = -0.32;
-          const barrelBaseX = r * 0.14;
-          const barrelBaseY = -r * 1.28;
-          const barrelLen = r * 2.2;
-
-          // Barrel 1 (upper)
-          ctx.save();
-          ctx.translate(barrelBaseX, barrelBaseY - r * 0.07);
-          ctx.rotate(barrelAngle);
-          ctx.beginPath();
-          ctx.roundRect(0, -r * 0.075, barrelLen, r * 0.1, r * 0.04);
-          ctx.fillStyle = "#1e3848";
-          ctx.fill();
-          ctx.strokeStyle = muzzleFlash ? "rgba(255,220,80,0.7)" : "#2a5060";
-          ctx.lineWidth = 0.7;
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.arc(barrelLen, 0, r * 0.065, 0, Math.PI * 2);
-          ctx.fillStyle = "#0a1820";
-          ctx.fill();
-          ctx.strokeStyle = muzzleFlash ? "rgba(255,220,80,0.9)" : "#3a7888";
-          ctx.lineWidth = 0.7;
-          ctx.stroke();
-          if (muzzleFlash) {
-            const fa = Math.min(muzzleFlashRef.current / 80, 1);
-            ctx.beginPath();
-            ctx.arc(barrelLen, 0, r * 0.22 * fa, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255,230,80,${fa * 0.85})`;
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(barrelLen, 0, r * 0.1 * fa, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255,255,200,${fa})`;
-            ctx.fill();
-          }
-          ctx.restore();
-
-          // Barrel 2 (lower)
-          ctx.save();
-          ctx.translate(barrelBaseX, barrelBaseY + r * 0.07);
-          ctx.rotate(barrelAngle);
-          ctx.beginPath();
-          ctx.roundRect(0, -r * 0.065, barrelLen * 0.92, r * 0.088, r * 0.035);
-          ctx.fillStyle = "#1a3040";
-          ctx.fill();
-          ctx.strokeStyle = muzzleFlash ? "rgba(255,220,80,0.6)" : "#2a5060";
-          ctx.lineWidth = 0.6;
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.arc(barrelLen * 0.92, 0, r * 0.055, 0, Math.PI * 2);
-          ctx.fillStyle = "#0a1820";
-          ctx.fill();
-          ctx.strokeStyle = muzzleFlash ? "rgba(255,220,80,0.8)" : "#3a7888";
-          ctx.lineWidth = 0.6;
-          ctx.stroke();
-          if (muzzleFlash) {
-            const fa = Math.min(muzzleFlashRef.current / 80, 1);
-            ctx.beginPath();
-            ctx.arc(barrelLen * 0.92, 0, r * 0.18 * fa, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255,220,60,${fa * 0.75})`;
-            ctx.fill();
-          }
-          ctx.restore();
-
-          // Arm drawing helper
-          const drawArm = (
-            sx: number,
-            sy: number,
-            ex: number,
-            ey: number,
-            wx: number,
-            wy: number,
-            clawFlip: number,
-          ) => {
-            ctx.lineCap = "round";
-            // Upper arm
-            ctx.beginPath();
-            ctx.moveTo(sx, sy);
-            ctx.lineTo(ex, ey);
-            ctx.strokeStyle = armColor;
-            ctx.lineWidth = r * 0.4;
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(sx, sy);
-            ctx.lineTo(ex, ey);
-            ctx.strokeStyle = armStroke;
-            ctx.lineWidth = r * 0.12;
-            ctx.stroke();
-            // Shoulder joint
-            ctx.beginPath();
-            ctx.arc(sx, sy, r * 0.22, 0, Math.PI * 2);
-            ctx.fillStyle = jointFill;
-            ctx.fill();
-            ctx.strokeStyle = jointRim;
-            ctx.lineWidth = 0.9;
-            ctx.stroke();
-            // Elbow joint
-            ctx.beginPath();
-            ctx.arc(ex, ey, r * 0.2, 0, Math.PI * 2);
-            ctx.fillStyle = jointFill;
-            ctx.fill();
-            ctx.strokeStyle = jointRim;
-            ctx.lineWidth = 0.9;
-            ctx.stroke();
-            // Forearm
-            ctx.beginPath();
-            ctx.moveTo(ex, ey);
-            ctx.lineTo(wx, wy);
-            ctx.strokeStyle = armColor;
-            ctx.lineWidth = r * 0.34;
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(ex, ey);
-            ctx.lineTo(wx, wy);
-            ctx.strokeStyle = armStroke;
-            ctx.lineWidth = r * 0.1;
-            ctx.stroke();
-            // Wrist joint
-            ctx.beginPath();
-            ctx.arc(wx, wy, r * 0.18, 0, Math.PI * 2);
-            ctx.fillStyle = jointFill;
-            ctx.fill();
-            ctx.strokeStyle = jointRim;
-            ctx.lineWidth = 0.9;
-            ctx.stroke();
-            // Claw palm
-            ctx.beginPath();
-            ctx.roundRect(wx - r * 0.14, wy, r * 0.3, r * 0.22, r * 0.07);
-            ctx.fillStyle = jointFill;
-            ctx.fill();
-            ctx.strokeStyle = jointRim;
-            ctx.lineWidth = 0.8;
-            ctx.stroke();
-            // Three fingers
-            const fingerOffsets = [-r * 0.1, 0, r * 0.1];
-            const fingerTips = [
-              { dx: -r * 0.18 * clawFlip, dy: r * 0.32 },
-              { dx: 0, dy: r * 0.36 },
-              { dx: r * 0.18 * clawFlip, dy: r * 0.32 },
-            ];
-            for (let fi = 0; fi < 3; fi++) {
-              const fx = wx + fingerOffsets[fi];
-              const fy = wy + r * 0.22;
+            // Wing shape helper — draws one swept-back delta wing
+            const drawWing = (sign: number) => {
               ctx.beginPath();
-              ctx.moveTo(fx, fy);
-              ctx.lineTo(fx + fingerTips[fi].dx, fy + fingerTips[fi].dy);
-              ctx.strokeStyle = armColor;
-              ctx.lineWidth = r * 0.25;
-              ctx.lineCap = "round";
-              ctx.stroke();
-              ctx.beginPath();
-              ctx.arc(fx + fingerTips[fi].dx, fy + fingerTips[fi].dy, r * 0.075, 0, Math.PI * 2);
-              ctx.fillStyle = jointFill;
+              // Leading edge root (near fuselage)
+              ctx.moveTo(r * 0.3, sign * r * 0.18);
+              // Wing tip (swept back and out)
+              ctx.lineTo(-r * 0.55, sign * r * 0.7);
+              // Trailing edge tip
+              ctx.lineTo(-r * 0.45, sign * r * 0.55);
+              // Trailing edge root
+              ctx.lineTo(-r * 0.1, sign * r * 0.18);
+              ctx.closePath();
+
+              const wGrad = ctx.createLinearGradient(r * 0.3, sign * r * 0.18, -r * 0.55, sign * r * 0.7);
+              wGrad.addColorStop(0, `rgba(160, 255, 240, ${bladeAlpha})`);
+              wGrad.addColorStop(0.6, `rgba(100, 240, 220, ${bladeAlpha * 0.7})`);
+              wGrad.addColorStop(1, `rgba(60, 210, 200, ${bladeAlpha * 0.35})`);
+              ctx.fillStyle = wGrad;
               ctx.fill();
-              ctx.strokeStyle = jointRim;
-              ctx.lineWidth = 0.7;
+              ctx.strokeStyle = "rgba(180, 255, 250, 0.6)";
+              ctx.lineWidth = 1;
               ctx.stroke();
-            }
-          };
 
-          // Left arm
-          drawArm(-r * 0.7, -r * 0.22, -r * 1.25, -r * 0.08, -r * 1.42, r * 0.38, 1);
+              // Wing highlight stripe
+              ctx.beginPath();
+              ctx.moveTo(r * 0.2, sign * r * 0.2);
+              ctx.lineTo(-r * 0.35, sign * r * 0.52);
+              ctx.strokeStyle = `rgba(255, 255, 255, ${bladeAlpha * 0.3})`;
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            };
 
-          // Right arm
-          drawArm(r * 0.72, -r * 0.18, r * 1.22, -r * 0.05, r * 1.38, r * 0.35, -1);
+            drawWing(-1); // Upper wing
+            drawWing(1); // Lower wing
+          }
 
           ctx.shadowColor = "transparent";
           ctx.restore();
