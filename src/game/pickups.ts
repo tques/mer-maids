@@ -165,26 +165,25 @@ function launchCrateFromDepot(viewH: number, worldWidth: number, playerX: number
   const waveY = getWaveY(depot.x, surfY);
   const cannonY = waveY - 22 - 18;
 
-  // Aim toward player X, clamped so the crate doesn't overshoot wildly.
-  // We use the parabolic flight time to work out a good vx.
-  // Flight time to apex ≈ CANNON_LAUNCH_VY / CANNON_GRAVITY, total flight ≈ 2× that.
+  // Aim toward player X across the full flight: ballistic arc + parachute descent.
+  // Time to apex = |CANNON_LAUNCH_VY| / CANNON_GRAVITY = 480/200 = 2.4s
+  // Apex height above cannon ≈ CANNON_LAUNCH_VY² / (2 * CANNON_GRAVITY) ≈ 576px
+  // Parachute descends at PARACHUTE_SPEED from apex to surface:
+  //   parachute time ≈ apexHeight / PARACHUTE_SPEED ≈ 576/35 ≈ 16.5s
+  // Total flight ≈ 2.4 + 16.5 = ~19s — vx spread over this covers the full map.
   const timeToApex = Math.abs(CANNON_LAUNCH_VY) / CANNON_GRAVITY;
-  const totalFlightTime = timeToApex * 2; // rough estimate including parachute is separate
+  const apexHeight = (CANNON_LAUNCH_VY * CANNON_LAUNCH_VY) / (2 * CANNON_GRAVITY);
+  const parachuteTime = apexHeight / PARACHUTE_SPEED;
+  const totalFlightTime = timeToApex + parachuteTime;
 
-  // Clamp target so we don't launch into the ground immediately
   const halfWorld = worldWidth / 2;
   let delta = playerX - depot.x;
-  // Wrap to shortest path
   if (delta > halfWorld) delta -= worldWidth;
   if (delta < -halfWorld) delta += worldWidth;
-  // Clamp: don't try to reach more than 60% of world width
-  const maxRange = worldWidth * 0.6;
-  delta = Math.max(-maxRange, Math.min(maxRange, delta));
 
-  // vx needed to cover that distance during ballistic phase
-  const desiredVx = delta / totalFlightTime;
-  // Clamp vx to a reasonable range
-  const vx = Math.max(-180, Math.min(180, desiredVx));
+  // vx to cover the full distance over the total flight.
+  // No hard clamp — the long parachute phase means even large distances need modest vx.
+  const vx = delta / totalFlightTime;
 
   const targetY = surfY - PARACHUTE_TARGET_ABOVE_SURFACE; // = surfY (lands on water)
 
@@ -236,12 +235,12 @@ export function updateAmmoCrate(
       if (ammoCrate.vy > 0) {
         ammoCrate.phase = "parachuting";
         ammoCrate.vy = PARACHUTE_SPEED;
-        ammoCrate.vx *= 0.3;
+        // Keep vx unchanged — the horizontal aim was calculated for the full flight
       }
     } else if (ammoCrate.phase === "parachuting") {
       ammoCrate.y += ammoCrate.vy * dt;
       ammoCrate.x += ammoCrate.vx * dt;
-      ammoCrate.vx *= 0.98;
+      // No vx friction — horizontal velocity was calculated to land near the player
 
       // Land when reaching the water surface Y at the crate's current X
       const waveAtCrate = getWaveY(ammoCrate.x, surfY, worldWidth);
