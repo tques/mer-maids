@@ -614,8 +614,10 @@ const Index = () => {
           resetSubmarines();
           resetGunboats();
           resetPickups(WORLD_WIDTH);
-          // Pick new random bomber target city
-          const newTarget = Math.floor(Math.random() * NUM_CITIES);
+          // Pick new random bomber target city (avoid repeating the same one)
+          const prev = bomberTargetRef.current;
+          let newTarget = Math.floor(Math.random() * (NUM_CITIES - 1));
+          if (newTarget >= prev) newTarget++;
           setBomberTargetCity(newTarget);
           bomberTargetRef.current = newTarget;
         }
