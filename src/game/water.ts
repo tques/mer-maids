@@ -5,7 +5,6 @@
  * - Wave surface calculation (layered sine waves for natural look)
  * - Underwater detection for physics switching
  * - Splash particle effects (entry/exit water)
- * - Ripple ring effects
  * - Full ocean rendering with gradient, caustics, foam, and highlights
  *
  * The water surface divides the screen into air (above) and ocean (below).
@@ -50,24 +49,11 @@ export interface Splash {
   color: string; // CSS color string
 }
 
-/**
- * An expanding ring on the water surface.
- * Created alongside splashes for visual impact.
- */
-export interface Ripple {
-  x: number; // Center X position
-  y: number; // Center Y position (at water surface)
-  radius: number; // Current radius (grows over time)
-  maxRadius: number; // Maximum radius before fading
-  life: number; // Remaining life (1.0 → 0.0)
-}
-
 // ==================== MODULE STATE ====================
 // These are module-level variables (not React state) for performance.
 // They persist across frames and are updated every tick.
 
 let splashes: Splash[] = []; // Active splash particles
-let ripples: Ripple[] = []; // Active ripple rings
 let waveTime = 0; // Accumulated wave animation time
 
 // ==================== GRADIENT CACHE ====================
@@ -178,11 +164,6 @@ export function spawnSplash(x: number, y: number, vy: number, entering: boolean)
       color: colors[Math.floor(Math.random() * colors.length)],
     });
   }
-
-  // Spawn 3 concentric ripple rings
-  ripples.push({ x, y, radius: 4, maxRadius: 50 + Math.abs(vy) * 10, life: 1 });
-  ripples.push({ x: x - 15, y, radius: 2, maxRadius: 30 + Math.abs(vy) * 5, life: 0.8 });
-  ripples.push({ x: x + 15, y, radius: 2, maxRadius: 30 + Math.abs(vy) * 5, life: 0.8 });
 }
 
 // ==================== PHYSICS UPDATE ====================
@@ -210,14 +191,6 @@ export function updateParticles(dt: number) {
     s.vx *= 0.99; // Slight air resistance
     s.life -= dt / s.maxLife; // Fade out over lifetime
     if (s.life <= 0) splashes.splice(i, 1);
-  }
-
-  // Update ripple rings — expand and fade
-  for (let i = ripples.length - 1; i >= 0; i--) {
-    const r = ripples[i];
-    r.life -= dt * 2.0;
-    r.radius += (r.maxRadius - r.radius) * 0.06; // Ease toward max radius
-    if (r.life <= 0) ripples.splice(i, 1);
   }
 }
 
@@ -391,27 +364,6 @@ export function drawWater(
   ctx.globalAlpha = 1;
 
   ctx.restore(); // Restore from clip
-
-  // === RIPPLE RINGS ===
-  // Expanding elliptical rings on the water surface
-  for (const r of ripples) {
-    if (r.x < x0 - r.maxRadius || r.x > x1 + r.maxRadius) continue; // Cull off-screen
-    ctx.save();
-    ctx.globalAlpha = r.life * 0.5;
-    // Outer ring (elliptical for perspective)
-    ctx.beginPath();
-    ctx.ellipse(r.x, r.y, r.radius, r.radius * 0.25, 0, 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(180, 230, 255, 0.8)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    // Inner ring
-    ctx.beginPath();
-    ctx.ellipse(r.x, r.y, r.radius * 0.6, r.radius * 0.15, 0, 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(220, 240, 255, 0.5)";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.restore();
-  }
 
   // === SPLASH PARTICLES ===
   // Individual water droplets from splashes
