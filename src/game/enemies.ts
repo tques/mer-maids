@@ -25,9 +25,13 @@
  * - updateEnemies cleanup uses in-place reverse-splice instead of
  *   Array.filter for all five entity arrays, avoiding per-frame allocation.
  * - Missile smoke trail cleanup also uses in-place splice.
+ *
+ * BUG FIXES:
+ * - Missiles now explode on contact with the wave surface (getWaveY check)
+ *   rather than passing through into the water.
  */
 
-import { getWaterSurfaceY } from "./water";
+import { getWaterSurfaceY, getWaveY } from "./water";
 import { spawnExplosion, updateEffects, drawEffects, resetEffects } from "./effects";
 import { checkMissileHitsMineOrPlane } from "./minelayer";
 // Re-export effects for backward compatibility
@@ -99,7 +103,7 @@ let homingMissiles: HomingMissile[] = [];
 let bombs: Bomb[] = [];
 
 let bomberSpawnTimer = 0; // Countdown to next bomber spawn
-let chaserSpawnTimer = 3; // Countdown to next chaser spawn
+let chaserSpawnTimer = 1; // Countdown to next chaser spawn
 let gameTime = 0; // Total elapsed game time (for difficulty ramping)
 
 // ==================== CONSTANTS ====================
@@ -352,14 +356,14 @@ export function updateEnemies(
 
   // ==================== CHASER SPAWNING ====================
   const maxChasers = fleeing ? 0 : gameTime < 8 / waveDifficulty ? 0 : Math.min(3 + Math.floor(difficulty * 9), 24);
-  const chaserInterval = Math.max(12 - difficulty * 4, 2);
+  const chaserInterval = Math.max(6 - difficulty * 2, 1.5);
   chaserSpawnTimer -= dt;
   let aliveChaserCount = 0;
   for (const c of chasers) {
     if (c.alive) aliveChaserCount++;
   }
   if (chaserSpawnTimer <= 0 && aliveChaserCount < maxChasers) {
-    chaserSpawnTimer = chaserInterval + Math.random() * 3;
+    chaserSpawnTimer = chaserInterval + Math.random() * 1.5;
     const fromLeft = Math.random() > 0.5;
     const spawnX = fromLeft
       ? playerX - viewHalfW - 200 - Math.random() * 300
@@ -464,6 +468,14 @@ export function updateEnemies(
 
     if (m.y > viewH + 20) {
       m.alive = false;
+      continue;
+    }
+
+    // Missiles cannot enter water — explode on contact with the wave surface
+    const waveAtMissile = getWaveY(m.x, waterY);
+    if (m.y >= waveAtMissile) {
+      m.alive = false;
+      spawnExplosion(m.x, waveAtMissile, 25);
       continue;
     }
 
