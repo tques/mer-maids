@@ -142,7 +142,7 @@ export function drawBoat(
     { ox: 232, w: 26, h: 30, s: "rect" },
   ] as const).map((b) => ({ ...b, ox: b.ox * scale, w: b.w * scale, h: b.h * scale }));
 
-  const buildings: BldDef[] = [
+  const buildings: BldDef[] = ([
     { ox: -270, w: 22, h: 22, s: "dome" },
     { ox: -248, w: 26, h: 30, s: "stepped" },
     { ox: -222, w: 20, h: 38, s: "spire" },
@@ -164,7 +164,7 @@ export function drawBoat(
     { ox: 198, w: 28, h: 42, s: "stepped" },
     { ox: 225, w: 22, h: 35, s: "cylinder" },
     { ox: 248, w: 26, h: 28, s: "rect" },
-  ].map((b) => ({ ...b, ox: b.ox * scale, w: b.w * scale, h: b.h * scale }));
+  ] as const).map((b) => ({ ...b, ox: b.ox * scale, w: b.w * scale, h: b.h * scale }));
 
   function traceBldShape(bx: number, by: number, w: number, h: number, s: BldStyle) {
     const hw2 = w / 2;
