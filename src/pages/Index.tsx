@@ -618,6 +618,9 @@ const Index = () => {
           bomberTargetRef.current = newTarget;
         }
 
+        // Guard: cities not yet initialized
+        if (cities.length < 3) return;
+
         // Update enemies — pass all cities
         const citySimpleList = cities.map((c) => ({ x: c.x, width: c.width }));
         const deflectScore = updateEnemies(
@@ -633,20 +636,20 @@ const Index = () => {
         );
         if (deflectScore > 0) scoreRef.current += deflectScore;
 
+        const centerCity = cities[1];
         const subDmg = updateSubmarinesWithDamage(
           dt,
           viewH,
-          cities[1].x,
-          cities[1].width,
+          centerCity.x,
+          centerCity.width,
           pos.x,
           viewW / 2,
           waveDiff,
           wave.enemiesFleeing,
-          gameStartedRef.current ? performance.now() / 1000 : 0,
+          performance.now() / 1000,
         );
         if (subDmg > 0) {
           shake(0, 1);
-          // Subs target center city
           cityHPs[1].hp = Math.max(cityHPs[1].hp - subDmg, 0);
           if (cityHPs[1].hp <= 0) {
             gameOverRef.current = true;
@@ -655,8 +658,6 @@ const Index = () => {
           }
         }
 
-        // Update gunboats targeting nearest city
-        const primaryCity = cities[1];
         updateGunboats(
           dt,
           WORLD_WIDTH,
@@ -666,35 +667,21 @@ const Index = () => {
           viewW / 2,
           waveDiff,
           wave.enemiesFleeing,
-          primaryCity.x,
-          primaryCity.width,
+          centerCity.x,
+          centerCity.width,
         );
 
-        const mineBoatTopY = cities[1] ? getBoatTopY(cities[1], viewH) : 0;
+        const waterY2 = getWaterSurfaceY(viewH);
         const minePlatforms = [
-          {
-            x: cities[0].x,
-            halfW: cities[0].width / 2,
-            topY: getBoatTopY(cities[0], viewH),
-            bottomY: getBoatTopY(cities[0], viewH) + 36,
-          },
-          {
-            x: cities[1].x,
-            halfW: cities[1].width / 2,
-            topY: getBoatTopY(cities[1], viewH),
-            bottomY: getBoatTopY(cities[1], viewH) + 36,
-          },
-          {
-            x: cities[2].x,
-            halfW: cities[2].width / 2,
-            topY: getBoatTopY(cities[2], viewH),
-            bottomY: getBoatTopY(cities[2], viewH) + 36,
-          },
+          ...cities.map((c) => {
+            const ty = getBoatTopY(c, viewH);
+            return { x: c.x, halfW: c.width / 2, topY: ty, bottomY: ty + 36 };
+          }),
           {
             x: WORLD_WIDTH - 80,
             halfW: 60,
-            topY: getWaveY(WORLD_WIDTH - 80, getWaterSurfaceY(viewH)) - 22,
-            bottomY: getWaveY(WORLD_WIDTH - 80, getWaterSurfaceY(viewH)) - 22 + 40,
+            topY: getWaveY(WORLD_WIDTH - 80, waterY2) - 22,
+            bottomY: getWaveY(WORLD_WIDTH - 80, waterY2) + 18,
           },
         ];
         updateMinelayer(dt, WORLD_WIDTH, viewH, waveDiff, wave.enemiesFleeing, minePlatforms);
@@ -818,7 +805,8 @@ const Index = () => {
         }
 
         const waveElapsed = waveRef.current.waveTimer;
-        if (waveElapsed > 30) checkScoreRewards(scoreRef.current, cities[1].x, cities[1].width, viewH);
+        if (waveElapsed > 30 && cities.length >= 2)
+          checkScoreRewards(scoreRef.current, cities[1].x, cities[1].width, viewH);
         updatePowerups();
         const pickedUp = checkPowerupPickup(pos.x, pos.y, TRI_SIZE);
         if (pickedUp === "health") playerHPRef.current = Math.min(playerHPRef.current + 1, PLAYER_MAX_HP);
@@ -921,6 +909,7 @@ const Index = () => {
         for (let ci = 0; ci < cities.length; ci++) {
           const city = cities[ci];
           const cHp = cityHPs[ci];
+          if (!cHp) continue;
           const barrierUp = cHp.hp > 3;
           drawBoat(ctx, city, viewH, cHp.hp / SHIP_MAX_HP, barrierUp);
         }
@@ -1435,6 +1424,7 @@ const Index = () => {
       for (let ci = 0; ci < cities.length; ci++) {
         const city = cities[ci];
         const cHp = cityHPs[ci];
+        if (!cHp) continue;
         const isTarget = ci === bomberTarget;
         const barrierUp = cHp.hp > 3;
         const py2 = cityPanelY;
@@ -1454,11 +1444,8 @@ const Index = () => {
           ctx.strokeStyle = `rgba(255,80,40,${pulse})`;
           ctx.lineWidth = 2;
         } else {
-          ctx.strokeStyle = `rgba(${cityColors[ci]
-            .replace("#", "")
-            .match(/../g)!
-            .map((h) => parseInt(h, 16))
-            .join(",")},0.3)`;
+          const cityBorderColors = ["255,127,80", "0,220,255", "160,255,128"];
+          ctx.strokeStyle = `rgba(${cityBorderColors[ci] ?? "255,255,255"},0.3)`;
           ctx.lineWidth = 1;
         }
         ctx.stroke();
