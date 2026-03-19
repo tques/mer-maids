@@ -1519,6 +1519,113 @@ const Index = () => {
       ctx.restore();
 
       drawWaveHUD(ctx, waveRef.current, cw);
+      // ---- NAVIGATION COMPASS HUD (center-top, below wave indicator) ----
+      {
+        const NAV_W = 220;
+        const NAV_H = 28;
+        const navX = cw / 2 - NAV_W / 2;
+        const navY = 56;
+        const cityWorldX = WORLD_WIDTH / 2;
+        const depotWorldX = WORLD_WIDTH - 80;
+
+        // Panel background
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(navX, navY, NAV_W, NAV_H, 6);
+        ctx.fillStyle = "rgba(0,20,40,0.65)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(0,220,255,0.18)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Horizontal track line
+        const lineY = navY + NAV_H / 2;
+        const lineX0 = navX + 14;
+        const lineX1 = navX + NAV_W - 14;
+        const lineW = lineX1 - lineX0;
+        ctx.beginPath();
+        ctx.moveTo(lineX0, lineY);
+        ctx.lineTo(lineX1, lineY);
+        ctx.strokeStyle = "rgba(0,180,220,0.35)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Map world X → nav track X. Player always at center. World wraps.
+        const halfWorld = WORLD_WIDTH / 2;
+        const navScale = lineW / (WORLD_WIDTH * 0.6); // visible range = 60% of world width
+        const getNavX = (worldX: number) => {
+          let delta = worldX - pos.x;
+          if (delta > halfWorld) delta -= WORLD_WIDTH;
+          if (delta < -halfWorld) delta += WORLD_WIDTH;
+          return lineX0 + lineW / 2 + delta * navScale;
+        };
+
+        // Player dot (always at center)
+        const playerNavX = lineX0 + lineW / 2;
+        ctx.beginPath();
+        ctx.arc(playerNavX, lineY, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#00e5cc";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(0,220,200,0.5)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Helper: draw a city tick or depot X marker on the track
+        const drawNavMarker = (
+          worldX: number,
+          color: string,
+          labelText: string,
+          markerType: "tick" | "x",
+          labelAbove: boolean,
+        ) => {
+          const nx = getNavX(worldX);
+          const inRange = nx >= lineX0 - 1 && nx <= lineX1 + 1;
+          if (inRange) {
+            const cx = Math.max(lineX0 + 3, Math.min(lineX1 - 3, nx));
+            if (markerType === "tick") {
+              // Vertical bar for city
+              ctx.beginPath();
+              ctx.moveTo(cx, lineY - 7);
+              ctx.lineTo(cx, lineY + 7);
+              ctx.strokeStyle = color;
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+            } else {
+              // X shape for depot
+              const xs = 4;
+              ctx.beginPath();
+              ctx.moveTo(cx - xs, lineY - xs);
+              ctx.lineTo(cx + xs, lineY + xs);
+              ctx.moveTo(cx + xs, lineY - xs);
+              ctx.lineTo(cx - xs, lineY + xs);
+              ctx.strokeStyle = color;
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+            }
+            ctx.font = "bold 7px monospace";
+            ctx.textAlign = "center";
+            ctx.fillStyle = color;
+            // City label above the line, depot label below
+            ctx.fillText(labelText, cx, labelAbove ? navY + 8 : navY + NAV_H - 3);
+          } else {
+            // Off-screen: directional arrow at track edge
+            const arrowDir = nx < lineX0 ? -1 : 1;
+            const arrowTip = arrowDir < 0 ? lineX0 + 3 : lineX1 - 3;
+            ctx.beginPath();
+            ctx.moveTo(arrowTip, lineY - 4);
+            ctx.lineTo(arrowTip + arrowDir * 5, lineY);
+            ctx.lineTo(arrowTip, lineY + 4);
+            ctx.strokeStyle = color + "99";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+        };
+
+        drawNavMarker(cityWorldX, "#74b9ff", "CITY", "tick", true);
+        drawNavMarker(depotWorldX, "#f0c830", "DEPOT", "x", false);
+
+        ctx.restore();
+      }
 
       if (showFpsRef.current) {
         ctx.fillStyle = "rgba(0,0,0,0.5)";
