@@ -23,6 +23,7 @@ import {
   fleeAllEnemies,
   setBomberTargetCity,
   getBomberTargetCityIndex,
+  getLastBomberSpawnTime,
 } from "../game/enemies";
 import {
   resetSubmarines,
@@ -1422,7 +1423,7 @@ const Index = () => {
       const bomberTarget = bomberTargetRef.current;
       const cityColors = ["#ff7f50", "#00dcff", "#a0ff80"]; // distinct color per city
 
-      // Check for subs near Haven (index 1, the center city)
+      // Sub detection near Haven (index 1)
       const HAVEN_INDEX = 1;
       const activeSubs = getSubmarines().filter((s) => s.alive);
       const havenCity = cities[HAVEN_INDEX];
@@ -1430,8 +1431,13 @@ const Index = () => {
         ? activeSubs.some((s) => Math.abs(s.x - havenCity.x) < havenCity.width * 1.5)
         : false;
 
-      // Slow blink — ~2s period, visible ~75% of the time (not frantic)
-      const slowBlink = Math.sin(hudNow * 0.0025) > -0.5;
+      // Bomber spawn flash: bright fast blink for 3s after a bomber spawns, then off
+      const msSinceSpawn = hudNow - getLastBomberSpawnTime();
+      const spawnFlashActive = msSinceSpawn < 3000;
+      const spawnFlash = spawnFlashActive && Math.sin(hudNow * 0.012) > 0;
+
+      // Sub warning: slow blink (~2s period)
+      const subBlink = Math.sin(hudNow * 0.0025) > -0.5;
 
       for (let ci = 0; ci < cities.length; ci++) {
         const city = cities[ci];
@@ -1452,9 +1458,10 @@ const Index = () => {
         ctx.fillStyle = rGrad;
         ctx.fill();
 
-        // Border — slow pulse: red for bombers, yellow for subs, alternating if both
+        // Border color
         const borderPulse = 0.4 + Math.sin(hudNow * 0.004) * 0.2;
         if (isTarget && hasSub) {
+          // Both threats: alternate between red and yellow
           const alt = Math.sin(hudNow * 0.004) > 0;
           ctx.strokeStyle = alt ? `rgba(255,80,40,${borderPulse})` : `rgba(255,210,40,${borderPulse})`;
           ctx.lineWidth = 2;
@@ -1477,20 +1484,30 @@ const Index = () => {
         ctx.fillStyle = cityColors[ci];
         ctx.fillText(city.name, cityPanelX + 8, py2 + 16);
 
-        // Threat indicators — slow blink, different colors, stacked if both present
-        if (slowBlink) {
-          let indicatorX = cityPanelX + 90;
-          if (isTarget) {
-            ctx.fillStyle = "rgba(255,80,40,0.85)";
-            ctx.font = "bold 9px monospace";
-            ctx.fillText("▼ BOMBERS", indicatorX, py2 + 16);
-            indicatorX += 68;
+        // Threat indicators
+        let indicatorX = cityPanelX + 90;
+
+        // Bomber indicator: solid steady glow when this city is targeted;
+        // flashes brightly for 3s after a new bomber spawns
+        if (isTarget) {
+          if (spawnFlashActive) {
+            // Bright flash on spawn
+            ctx.fillStyle = spawnFlash ? "rgba(255,100,50,1.0)" : "rgba(255,80,40,0.35)";
+          } else {
+            // Steady dim glow when no recent spawn
+            const steadyGlow = 0.55 + Math.sin(hudNow * 0.003) * 0.1;
+            ctx.fillStyle = `rgba(255,80,40,${steadyGlow})`;
           }
-          if (hasSub) {
-            ctx.fillStyle = "rgba(255,210,40,0.85)";
-            ctx.font = "bold 9px monospace";
-            ctx.fillText("▼ SUB", indicatorX, py2 + 16);
-          }
+          ctx.font = "bold 9px monospace";
+          ctx.fillText("▼ BOMBERS", indicatorX, py2 + 16);
+          indicatorX += 68;
+        }
+
+        // Sub indicator: slow blink when sub is near Haven
+        if (hasSub && subBlink) {
+          ctx.fillStyle = "rgba(255,210,40,0.85)";
+          ctx.font = "bold 9px monospace";
+          ctx.fillText("▼ SUB", indicatorX, py2 + 16);
         }
 
         // HP pips
@@ -1499,7 +1516,6 @@ const Index = () => {
         ctx.fillStyle = barrierUp ? "rgba(0,220,255,0.6)" : "#ff6666";
         ctx.fillText(pipLabel, cityPanelX + 8, py2 + 32);
 
-        const pipSize = 3;
         const pipSpacing = 14;
         const pipStartX = cityPanelX + 75;
         for (let i = 0; i < SHIP_MAX_HP; i++) {
@@ -1525,13 +1541,17 @@ const Index = () => {
         cityPanelY += cityPanelH + cityPanelGap;
       }
 
-      // Bomber target indicator below city panels — slow steady glow, no blink
+      // Bomber target indicator below city panels — steady glow, flashes on spawn
       ctx.save();
       const targetIndicatorY = cityPanelY + 4;
       ctx.font = "bold 9px monospace";
       ctx.textAlign = "center";
-      const bombGlow = 0.5 + Math.sin(hudNow * 0.004) * 0.15;
-      ctx.fillStyle = `rgba(255,120,40,${bombGlow})`;
+      if (spawnFlashActive) {
+        ctx.fillStyle = spawnFlash ? "rgba(255,120,40,1.0)" : "rgba(255,120,40,0.3)";
+      } else {
+        const steadyGlow = 0.5 + Math.sin(hudNow * 0.003) * 0.1;
+        ctx.fillStyle = `rgba(255,120,40,${steadyGlow})`;
+      }
       ctx.fillText(`BOMBERS → ${cities[bomberTarget]?.name ?? ""}`, cityPanelX + cityPanelW / 2, targetIndicatorY);
       ctx.restore();
 
