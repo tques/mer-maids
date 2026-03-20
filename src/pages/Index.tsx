@@ -33,7 +33,6 @@ import {
   fleeSubmarines,
   getSubmarines,
   setSubmarineTargetCity,
-  getSubmarineTargetCityIndex,
 } from "../game/submarine";
 import {
   resetPickups,
@@ -45,11 +44,9 @@ import {
   updateAmmoCrate,
   updateAmmoDrop,
   drawAmmoCrateAlert,
-  getAmmoCrateAlert,
   collideWithDepot,
   MAX_AMMO,
   AMMO_LOW_THRESHOLD,
-  AMMO_BOX_SIZE,
 } from "../game/pickups";
 import {
   createWaveState,
@@ -94,7 +91,6 @@ const SHIP_MAX_HP = 10;
 const PLAYER_LIVES = 3;
 const INVULN_DURATION = 1500;
 const BULLET_SPEED = 8;
-const BULLET_RADIUS = 5;
 const ROLL_DISTANCE = 60;
 const ROLL_FUEL_COST = 5;
 const ROLL_DURATION = 300;
@@ -1124,37 +1120,6 @@ const Index = () => {
         ctx.lineTo(x, y + h);
         ctx.lineTo(x, y + cutTL);
         ctx.closePath();
-      };
-
-      const drawBar = (
-        x: number,
-        y: number,
-        w: number,
-        h: number,
-        fill: number,
-        color1: string,
-        color2: string,
-        low: boolean,
-      ) => {
-        ctx.fillStyle = "rgba(0,0,0,0.5)";
-        ctx.fillRect(x, y, w, h);
-        const barW = Math.max(0, fill * w);
-        if (barW > 0) {
-          const grad = ctx.createLinearGradient(x, y, x + barW, y);
-          grad.addColorStop(0, color1);
-          grad.addColorStop(1, color2);
-          ctx.fillStyle = grad;
-          ctx.fillRect(x, y, barW, h);
-          ctx.fillStyle = "rgba(255,255,255,0.25)";
-          ctx.fillRect(x, y, barW, h * 0.35);
-        }
-        ctx.strokeStyle = "rgba(255,255,255,0.1)";
-        ctx.lineWidth = 0.5;
-        ctx.strokeRect(x, y, w, h);
-        if (low) {
-          ctx.fillStyle = `rgba(255,80,80,${0.15 + Math.sin(hudNow * 0.006) * 0.1})`;
-          ctx.fillRect(x, y, w, h);
-        }
       };
 
       // LEFT PANEL: Player status
