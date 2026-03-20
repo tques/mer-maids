@@ -508,11 +508,6 @@ const Index = () => {
           vel.y += (targetVy - vel.y) * scaledLerp;
         }
         if (!submerged) vel.y += THRUST_GRAVITY * dtScale;
-        if (submerged) {
-          const surfaceY = getWaterSurfaceY(viewH);
-          const depth = pos.y - surfaceY;
-          vel.y -= BUOYANCY * Math.min(depth / 40, 1) * dtScale;
-        }
         if (isBoosting && !submerged) {
           pos.x += (Math.random() - 0.5) * 2.4 * dtScale;
           pos.y += (Math.random() - 0.5) * 2.4 * dtScale;
@@ -585,9 +580,25 @@ const Index = () => {
         }
       }
 
+      const bulletPlatforms = [
+        ...citiesRef.current.map((c) => {
+          const ty = getBoatTopY(c, viewH);
+          return { x: c.x, halfW: c.width / 2, topY: ty, bottomY: ty + 36 };
+        }),
+        (() => {
+          const depotWY = getWaveY(WORLD_WIDTH - 80, getWaterSurfaceY(viewH));
+          return { x: WORLD_WIDTH - 80, halfW: 60, topY: depotWY - 22, bottomY: depotWY + 18 };
+        })(),
+      ];
       bulletsRef.current = bulletsRef.current.filter((b) => {
         b.x += b.dx * dtScale;
         b.y += b.dy * dtScale;
+        // Destroy bullets that hit platforms
+        for (const p of bulletPlatforms) {
+          if (b.x > p.x - p.halfW && b.x < p.x + p.halfW && b.y > p.topY && b.y < p.bottomY) {
+            return false;
+          }
+        }
         return b.y > -10 && b.y < viewH + 10 && Math.abs(b.x - pos.x) < viewW * 1.5;
       });
 
