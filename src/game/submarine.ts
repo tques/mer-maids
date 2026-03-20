@@ -176,10 +176,10 @@ export function updateSubmarinesWithDamage(
   // ---- Spawning (same logic as above) ----
   if (!fleeing && gameTime > 20 / waveDifficulty) {
     subSpawnTimer -= dt;
-    const maxSubs = Math.min(1 + Math.floor(waveDifficulty * 0.5), 3);
+    const maxSubs = 1;
     const aliveSubs = submarines.filter((s) => s.alive).length;
     if (subSpawnTimer <= 0 && aliveSubs < maxSubs) {
-      subSpawnTimer = Math.max(18 - waveDifficulty * 3, 8) + Math.random() * 6;
+      subSpawnTimer = Math.max(35 - waveDifficulty * 2, 20) + Math.random() * 10;
       const fromLeft = Math.random() > 0.5;
       const dir = fromLeft ? 1 : -1;
       const spawnX = fromLeft ? boatX - hw - 600 - Math.random() * 400 : boatX + hw + 600 + Math.random() * 400;
