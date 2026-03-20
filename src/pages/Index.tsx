@@ -1589,7 +1589,7 @@ const Index = () => {
         const NAV_W = 260;
         const NAV_H = 28;
         const navX = cw / 2 - NAV_W / 2;
-        const navY = 56;
+        const navY = 72;
         const depotWorldX = WORLD_WIDTH - 80;
         const cityColors2 = ["#ff7f50", "#00dcff", "#a0ff80"];
 
@@ -1730,8 +1730,8 @@ const Index = () => {
 
         ctx.restore();
 
-        // Ammo crate alert — centered just below the compass
-        drawAmmoCrateAlert(ctx, cw / 2, navY + NAV_H + 14);
+        // Ammo crate alert — centered just above the compass
+        drawAmmoCrateAlert(ctx, cw / 2, navY - 4);
       }
 
       if (showFpsRef.current) {
