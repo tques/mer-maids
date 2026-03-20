@@ -508,11 +508,6 @@ const Index = () => {
           vel.y += (targetVy - vel.y) * scaledLerp;
         }
         if (!submerged) vel.y += THRUST_GRAVITY * dtScale;
-        if (submerged) {
-          const surfaceY = getWaterSurfaceY(viewH);
-          const depth = pos.y - surfaceY;
-          vel.y -= BUOYANCY * Math.min(depth / 40, 1) * dtScale;
-        }
         if (isBoosting && !submerged) {
           pos.x += (Math.random() - 0.5) * 2.4 * dtScale;
           pos.y += (Math.random() - 0.5) * 2.4 * dtScale;
