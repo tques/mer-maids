@@ -828,8 +828,16 @@ const Index = () => {
         }
 
         const waveElapsed = waveRef.current.waveTimer;
-        if (waveElapsed > 30 && cities.length >= 2)
-          checkScoreRewards(scoreRef.current, cities[1].x, cities[1].width, viewH);
+        if (waveElapsed > 30 && cities.length > 0) {
+          // Find nearest city to player
+          let nearestCity = cities[0];
+          let nearestDist = Math.abs(pos.x - cities[0].x);
+          for (let i = 1; i < cities.length; i++) {
+            const d = Math.abs(pos.x - cities[i].x);
+            if (d < nearestDist) { nearestDist = d; nearestCity = cities[i]; }
+          }
+          checkScoreRewards(scoreRef.current, nearestCity.x, nearestCity.width, viewH);
+        }
         updatePowerups();
         const pickedUp = checkPowerupPickup(pos.x, pos.y, TRI_SIZE);
         if (pickedUp === "health") playerHPRef.current = Math.min(playerHPRef.current + 1, PLAYER_MAX_HP);
