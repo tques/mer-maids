@@ -44,6 +44,7 @@ import {
   updateAmmoCrate,
   updateAmmoDrop,
   drawAmmoCrateAlert,
+  getAmmoCrate,
   collideWithDepot,
   MAX_AMMO,
   AMMO_LOW_THRESHOLD,
@@ -1726,6 +1727,65 @@ const Index = () => {
           ctx.globalAlpha = clamped ? 0.6 : 1;
           ctx.fillText("DEPOT", cx, navY + NAV_H - 3);
           ctx.globalAlpha = 1;
+        }
+
+        // Ammo crate marker
+        {
+          const crate = getAmmoCrate();
+          if (crate) {
+            const { x: cx, clamped } = getNavX(crate.x);
+            const isParachuting = crate.phase === "parachuting";
+            const isLanded = crate.phase === "landed";
+            const cratePulse = 0.6 + Math.sin(hudNow * 0.012) * 0.4;
+
+            // Draw a small crate box icon on the line
+            const bs = 4;
+            ctx.globalAlpha = clamped ? 0.7 : cratePulse;
+            ctx.fillStyle = "#f0c830";
+            ctx.fillRect(cx - bs, lineY - bs, bs * 2, bs * 2);
+            ctx.strokeStyle = "#c8a020";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(cx - bs, lineY - bs, bs * 2, bs * 2);
+
+            // Parachute arc above the box when in flight
+            if (isParachuting) {
+              ctx.beginPath();
+              ctx.arc(cx, lineY - bs - 4, 4, Math.PI, 0);
+              ctx.strokeStyle = "#f0c830";
+              ctx.lineWidth = 1;
+              ctx.stroke();
+              // Lines from chute to box
+              ctx.beginPath();
+              ctx.moveTo(cx - 4, lineY - bs - 4);
+              ctx.lineTo(cx - bs, lineY - bs);
+              ctx.moveTo(cx + 4, lineY - bs - 4);
+              ctx.lineTo(cx + bs, lineY - bs);
+              ctx.stroke();
+            }
+
+            ctx.globalAlpha = 1;
+
+            // Clamp arrow
+            if (clamped) {
+              const dir = cx <= lineX0 + EDGE_PAD ? -1 : 1;
+              ctx.beginPath();
+              ctx.moveTo(cx + dir * 5, lineY - 3);
+              ctx.lineTo(cx + dir * 8, lineY);
+              ctx.lineTo(cx + dir * 5, lineY + 3);
+              ctx.strokeStyle = "#f0c830";
+              ctx.lineWidth = 1.5;
+              ctx.globalAlpha = 0.7;
+              ctx.stroke();
+              ctx.globalAlpha = 1;
+            }
+
+            ctx.font = "bold 7px monospace";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#f0c830";
+            ctx.globalAlpha = clamped ? 0.6 : 1;
+            ctx.fillText(isLanded ? "AMMO" : "AMMO↓", cx, navY + 8);
+            ctx.globalAlpha = 1;
+          }
         }
 
         ctx.restore();
