@@ -195,8 +195,7 @@ export function updateGunboats(
   viewHalfW: number,
   waveDifficulty: number,
   fleeing: boolean,
-  cityX: number = worldWidth / 2,
-  cityW: number = 400,
+  platforms: { x: number; halfW: number }[] = [],
 ) {
   const waterY = getWaterSurfaceY(viewH);
 
@@ -244,25 +243,14 @@ export function updateGunboats(
     // Reverse at world edges occasionally
     if (Math.random() < 0.001) g.dir *= -1;
 
-    // Reverse direction near platforms (city and depot)
-    const DEPOT_X = worldWidth - 80;
-    const DEPOT_HW = 60;
-    const CITY_HW = cityW / 2;
+    // Reverse direction near any platform (cities and depot)
     const PLATFORM_MARGIN = 80;
-
-    // Near city — if inside the exclusion zone, reverse
-    const cityLeft = cityX - CITY_HW - PLATFORM_MARGIN;
-    const cityRight = cityX + CITY_HW + PLATFORM_MARGIN;
-    if (g.x > cityLeft && g.x < cityRight) {
-      // Push away from city center
-      g.dir = g.x < cityX ? -1 : 1;
-    }
-
-    // Near depot — if inside the exclusion zone, reverse
-    const depotLeft = DEPOT_X - DEPOT_HW - PLATFORM_MARGIN;
-    const depotRight = DEPOT_X + DEPOT_HW + PLATFORM_MARGIN;
-    if (g.x > depotLeft && g.x < depotRight) {
-      g.dir = g.x < DEPOT_X ? -1 : 1;
+    for (const p of platforms) {
+      const left = p.x - p.halfW - PLATFORM_MARGIN;
+      const right = p.x + p.halfW + PLATFORM_MARGIN;
+      if (g.x > left && g.x < right) {
+        g.dir = g.x < p.x ? -1 : 1;
+      }
     }
 
     // ---- Shooting (180° lower hemisphere toward player) ----

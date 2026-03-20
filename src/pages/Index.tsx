@@ -662,6 +662,10 @@ const Index = () => {
           }
         }
 
+        const gunboatPlatforms = [
+          ...cities.map((c) => ({ x: c.x, halfW: c.width / 2 })),
+          { x: WORLD_WIDTH - 80, halfW: 60 },
+        ];
         updateGunboats(
           dt,
           WORLD_WIDTH,
@@ -671,8 +675,7 @@ const Index = () => {
           viewW / 2,
           waveDiff,
           wave.enemiesFleeing,
-          centerCity.x,
-          centerCity.width,
+          gunboatPlatforms,
         );
 
         const waterY2 = getWaterSurfaceY(viewH);
@@ -726,9 +729,11 @@ const Index = () => {
       if (gameStartedRef.current) {
         if (invulnRef.current > 0) invulnRef.current -= frameDelta;
         else {
-          const playerHits = checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
+          const isBoosting = boostRef.current.active;
+          // While boosting, normal bullets pass through the player
+          const playerHits = isBoosting ? 0 : checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
           const missileHits = checkMissileHitsPlayer(pos.x, pos.y, TRI_SIZE);
-          const gunboatHits = checkGunboatBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
+          const gunboatHits = isBoosting ? 0 : checkGunboatBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
           const mineHits = checkMineHitsPlayer(pos.x, pos.y, TRI_SIZE);
           const totalHits = playerHits + gunboatHits + mineHits + missileHits * 2;
           if (totalHits > 0) {
