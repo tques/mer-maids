@@ -681,12 +681,15 @@ export function drawAmmoCrateAlert(ctx: CanvasRenderingContext2D, hudX: number, 
   if (ammoCrate && ammoCrateAlert > 0) {
     const flash = Math.sin(performance.now() / 200) > 0;
     if (flash) {
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.font = "bold 10px monospace";
       ctx.fillStyle = "#f0c830";
       ctx.fillText("▼ AMMO CRATE LAUNCHED ▼", hudX, hudY);
+      ctx.restore();
     }
   }
 }
-
 // ==================== DEPOT COLLISION ====================
 
 export function collideWithDepot(
