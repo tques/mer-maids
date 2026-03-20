@@ -22,7 +22,6 @@ import {
   resetEnemies,
   fleeAllEnemies,
   setBomberTargetCity,
-  getBomberTargetCityIndex,
   getLastBomberSpawnTime,
 } from "../game/enemies";
 import {
