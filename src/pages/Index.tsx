@@ -662,6 +662,10 @@ const Index = () => {
           }
         }
 
+        const gunboatPlatforms = [
+          ...cities.map((c) => ({ x: c.x, halfW: c.width / 2 })),
+          { x: WORLD_WIDTH - 80, halfW: 60 },
+        ];
         updateGunboats(
           dt,
           WORLD_WIDTH,
@@ -671,8 +675,7 @@ const Index = () => {
           viewW / 2,
           waveDiff,
           wave.enemiesFleeing,
-          centerCity.x,
-          centerCity.width,
+          gunboatPlatforms,
         );
 
         const waterY2 = getWaterSurfaceY(viewH);
