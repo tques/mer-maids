@@ -1422,8 +1422,6 @@ const Index = () => {
       ctx.stroke();
       ctx.restore();
 
-      drawAmmoCrateAlert(ctx, hudX + 10, hudY + panelH + 8);
-
       // ---- CITY STATUS PANELS (right side, stacked) ----
       const cityPanelW = 220;
       const cityPanelH = 52;
@@ -1731,6 +1729,9 @@ const Index = () => {
         }
 
         ctx.restore();
+
+        // Ammo crate alert — centered just below the compass
+        drawAmmoCrateAlert(ctx, cw / 2, navY + NAV_H + 14);
       }
 
       if (showFpsRef.current) {
