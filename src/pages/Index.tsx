@@ -32,6 +32,8 @@ import {
   drawSubmarines,
   fleeSubmarines,
   getSubmarines,
+  setSubmarineTargetCity,
+  getSubmarineTargetCityIndex,
 } from "../game/submarine";
 import {
   resetPickups,
@@ -118,6 +120,16 @@ interface CityState {
   maxHp: number;
 }
 
+/**
+ * Pick a random city index that is different from the excluded index.
+ * Works for any NUM_CITIES >= 2.
+ */
+function pickDifferentCity(excludeIndex: number): number {
+  let pick = Math.floor(Math.random() * (NUM_CITIES - 1));
+  if (pick >= excludeIndex) pick++;
+  return pick;
+}
+
 const Index = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -184,8 +196,9 @@ const Index = () => {
   const fpsDisplayRef = useRef(0);
   const lastFrameTimeRef = useRef(performance.now());
 
-  // Bomber target city index (for HUD display)
+  // Bomber and submarine target city indices (for HUD display and logic)
   const bomberTargetRef = useRef(0);
+  const subTargetRef = useRef(1); // always different from bomberTargetRef
 
   const getWorldMouse = useCallback(() => {
     const mouse = mouseRef.current;
@@ -596,7 +609,6 @@ const Index = () => {
       bulletsRef.current = bulletsRef.current.filter((b) => {
         b.x += b.dx * dtScale;
         b.y += b.dy * dtScale;
-        // Destroy bullets that hit platforms
         for (const p of bulletPlatforms) {
           if (b.x > p.x - p.halfW && b.x < p.x + p.halfW && b.y > p.topY && b.y < p.bottomY) {
             return false;
@@ -628,12 +640,17 @@ const Index = () => {
           resetSubmarines();
           resetGunboats();
           resetPickups(WORLD_WIDTH);
-          // Pick new random bomber target city (avoid repeating the same one)
+
+          // Pick bomber target, then pick sub target guaranteed different
           const prev = bomberTargetRef.current;
-          let newTarget = Math.floor(Math.random() * (NUM_CITIES - 1));
-          if (newTarget >= prev) newTarget++;
-          setBomberTargetCity(newTarget);
-          bomberTargetRef.current = newTarget;
+          let newBomberTarget = Math.floor(Math.random() * (NUM_CITIES - 1));
+          if (newBomberTarget >= prev) newBomberTarget++;
+          setBomberTargetCity(newBomberTarget);
+          bomberTargetRef.current = newBomberTarget;
+
+          const newSubTarget = pickDifferentCity(newBomberTarget);
+          setSubmarineTargetCity(newSubTarget);
+          subTargetRef.current = newSubTarget;
         }
 
         // Guard: cities not yet initialized
@@ -654,12 +671,12 @@ const Index = () => {
         );
         if (deflectScore > 0) scoreRef.current += deflectScore;
 
-        const centerCity = cities[1];
+        // Submarines target whichever city subTargetRef points to
+        const subTargetIdx = subTargetRef.current;
         const subDmg = updateSubmarinesWithDamage(
           dt,
           viewH,
-          centerCity.x,
-          centerCity.width,
+          citySimpleList,
           pos.x,
           viewW / 2,
           waveDiff,
@@ -668,11 +685,14 @@ const Index = () => {
         );
         if (subDmg > 0) {
           shake(0, 1);
-          cityHPs[1].hp = Math.max(cityHPs[1].hp - subDmg, 0);
-          if (cityHPs[1].hp <= 0) {
-            gameOverRef.current = true;
-            setGameOver(true);
-            setGameOverReason("HAVEN destroyed!");
+          const subCity = cityHPs[subTargetIdx];
+          if (subCity) {
+            subCity.hp = Math.max(subCity.hp - subDmg, 0);
+            if (subCity.hp <= 0) {
+              gameOverRef.current = true;
+              setGameOver(true);
+              setGameOverReason(`${cities[subTargetIdx]?.name ?? "City"} destroyed!`);
+            }
           }
         }
 
@@ -744,7 +764,6 @@ const Index = () => {
         if (invulnRef.current > 0) invulnRef.current -= frameDelta;
         else {
           const isBoosting = boostRef.current.active;
-          // While boosting, normal bullets pass through the player
           const playerHits = isBoosting ? 0 : checkChaserBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
           const missileHits = checkMissileHitsPlayer(pos.x, pos.y, TRI_SIZE);
           const gunboatHits = isBoosting ? 0 : checkGunboatBulletHitsPlayer(pos.x, pos.y, TRI_SIZE);
@@ -829,12 +848,14 @@ const Index = () => {
 
         const waveElapsed = waveRef.current.waveTimer;
         if (waveElapsed > 30 && cities.length > 0) {
-          // Find nearest city to player
           let nearestCity = cities[0];
           let nearestDist = Math.abs(pos.x - cities[0].x);
           for (let i = 1; i < cities.length; i++) {
             const d = Math.abs(pos.x - cities[i].x);
-            if (d < nearestDist) { nearestDist = d; nearestCity = cities[i]; }
+            if (d < nearestDist) {
+              nearestDist = d;
+              nearestCity = cities[i];
+            }
           }
           checkScoreRewards(scoreRef.current, nearestCity.x, nearestCity.width, viewH);
         }
@@ -842,7 +863,6 @@ const Index = () => {
         const pickedUp = checkPowerupPickup(pos.x, pos.y, TRI_SIZE);
         if (pickedUp === "health") playerHPRef.current = Math.min(playerHPRef.current + 1, PLAYER_MAX_HP);
         else if (pickedUp === "repair") {
-          // Repair the most damaged city
           let worstIdx = 0;
           let worstHp = cityHPs[0].hp;
           for (let i = 1; i < cityHPs.length; i++) {
@@ -1160,7 +1180,6 @@ const Index = () => {
       let ly = hudY + 20;
       const labelX = lx + 46;
 
-      // Round indicator helper
       const drawRoundLight = (
         cx: number,
         cy: number,
@@ -1192,7 +1211,6 @@ const Index = () => {
         ctx.fill();
       };
 
-      // Diamond indicator helper
       const drawDiamondLight = (
         cx: number,
         cy: number,
@@ -1233,7 +1251,6 @@ const Index = () => {
         ctx.fill();
       };
 
-      // Strip segment helper
       const drawStripSegment = (
         x: number,
         y: number,
@@ -1450,36 +1467,35 @@ const Index = () => {
       let cityPanelY = hudY;
 
       const bomberTarget = bomberTargetRef.current;
-      const cityColors = ["#ff7f50", "#00dcff", "#a0ff80"]; // distinct color per city
+      const subTarget = subTargetRef.current;
+      const cityColors = ["#ff7f50", "#00dcff", "#a0ff80"];
 
-      // Sub detection near Haven (index 1)
-      const HAVEN_INDEX = 1;
+      // Sub detection: check which city subs are approaching
       const activeSubs = getSubmarines().filter((s) => s.alive);
-      const havenCity = cities[HAVEN_INDEX];
-      const subNearHaven = havenCity
-        ? activeSubs.some((s) => Math.abs(s.x - havenCity.x) < havenCity.width * 1.5)
+      const subTargetCity = cities[subTarget];
+      const subNearTarget = subTargetCity
+        ? activeSubs.some((s) => Math.abs(s.x - subTargetCity.x) < subTargetCity.width * 1.5)
         : false;
 
-      // Bomber spawn flash: bright fast blink for 3s after a bomber spawns, then off
+      // Bomber spawn flash
       const msSinceSpawn = hudNow - getLastBomberSpawnTime();
       const spawnFlashActive = msSinceSpawn < 3000;
       const spawnFlash = spawnFlashActive && Math.sin(hudNow * 0.012) > 0;
 
-      // Sub warning: slow blink (~2s period)
+      // Sub warning: slow blink
       const subBlink = Math.sin(hudNow * 0.0025) > -0.5;
 
       for (let ci = 0; ci < cities.length; ci++) {
         const city = cities[ci];
         const cHp = cityHPs[ci];
         if (!cHp) continue;
-        const isTarget = ci === bomberTarget;
-        const isHaven = ci === HAVEN_INDEX;
-        const hasSub = isHaven && subNearHaven;
+        const isBomberTarget = ci === bomberTarget;
+        const isSubTarget = ci === subTarget;
+        const hasSub = isSubTarget && subNearTarget;
         const barrierUp = cHp.hp > 3;
         const py2 = cityPanelY;
 
         ctx.save();
-        // Panel background
         drawPanel(cityPanelX, py2, cityPanelW, cityPanelH, 0, 10);
         const rGrad = ctx.createLinearGradient(cityPanelX, py2, cityPanelX, py2 + cityPanelH);
         rGrad.addColorStop(0, "rgba(0,20,40,0.80)");
@@ -1487,14 +1503,13 @@ const Index = () => {
         ctx.fillStyle = rGrad;
         ctx.fill();
 
-        // Border color
+        // Border color reflects which threats this city faces
         const borderPulse = 0.4 + Math.sin(hudNow * 0.004) * 0.2;
-        if (isTarget && hasSub) {
-          // Both threats: alternate between red and yellow
+        if (isBomberTarget && hasSub) {
           const alt = Math.sin(hudNow * 0.004) > 0;
           ctx.strokeStyle = alt ? `rgba(255,80,40,${borderPulse})` : `rgba(255,210,40,${borderPulse})`;
           ctx.lineWidth = 2;
-        } else if (isTarget) {
+        } else if (isBomberTarget) {
           ctx.strokeStyle = `rgba(255,80,40,${borderPulse})`;
           ctx.lineWidth = 2;
         } else if (hasSub) {
@@ -1516,14 +1531,11 @@ const Index = () => {
         // Threat indicators
         let indicatorX = cityPanelX + 90;
 
-        // Bomber indicator: solid steady glow when this city is targeted;
-        // flashes brightly for 3s after a new bomber spawns
-        if (isTarget) {
+        // Bomber indicator
+        if (isBomberTarget) {
           if (spawnFlashActive) {
-            // Bright flash on spawn
             ctx.fillStyle = spawnFlash ? "rgba(255,100,50,1.0)" : "rgba(255,80,40,0.35)";
           } else {
-            // Steady dim glow when no recent spawn
             const steadyGlow = 0.55 + Math.sin(hudNow * 0.003) * 0.1;
             ctx.fillStyle = `rgba(255,80,40,${steadyGlow})`;
           }
@@ -1532,7 +1544,7 @@ const Index = () => {
           indicatorX += 68;
         }
 
-        // Sub indicator: slow blink when sub is near Haven
+        // Sub indicator — now shown on whichever city is the sub target
         if (hasSub && subBlink) {
           ctx.fillStyle = "rgba(255,210,40,0.85)";
           ctx.font = "bold 9px monospace";
@@ -1570,18 +1582,27 @@ const Index = () => {
         cityPanelY += cityPanelH + cityPanelGap;
       }
 
-      // Bomber target indicator below city panels — steady glow, flashes on spawn
+      // Threat summary below city panels
       ctx.save();
-      const targetIndicatorY = cityPanelY + 4;
+      const threatY = cityPanelY + 4;
       ctx.font = "bold 9px monospace";
       ctx.textAlign = "center";
+      const centerX = cityPanelX + cityPanelW / 2;
+
+      // Bomber target line
       if (spawnFlashActive) {
         ctx.fillStyle = spawnFlash ? "rgba(255,120,40,1.0)" : "rgba(255,120,40,0.3)";
       } else {
         const steadyGlow = 0.5 + Math.sin(hudNow * 0.003) * 0.1;
         ctx.fillStyle = `rgba(255,120,40,${steadyGlow})`;
       }
-      ctx.fillText(`BOMBERS → ${cities[bomberTarget]?.name ?? ""}`, cityPanelX + cityPanelW / 2, targetIndicatorY);
+      ctx.fillText(`BOMBERS → ${cities[bomberTarget]?.name ?? ""}`, centerX, threatY);
+
+      // Sub target line (always visible so player knows which city to protect underwater)
+      const subGlow = 0.5 + Math.sin(hudNow * 0.003 + 1.5) * 0.1;
+      ctx.fillStyle = `rgba(255,210,40,${subGlow})`;
+      ctx.fillText(`SUBS → ${cities[subTarget]?.name ?? ""}`, centerX, threatY + 14);
+
       ctx.restore();
 
       // CENTER: Score + Wave
@@ -1599,19 +1620,18 @@ const Index = () => {
       ctx.restore();
 
       drawWaveHUD(ctx, waveRef.current, cw);
-      // ---- NAVIGATION COMPASS HUD (center-top, below wave indicator) ----
+
+      // ---- NAVIGATION COMPASS HUD ----
       {
         const NAV_W = 260;
         const NAV_H = 28;
         const navX = cw / 2 - NAV_W / 2;
         const navY = 56;
         const depotWorldX = WORLD_WIDTH - 80;
-        const cityColors = ["#ff7f50", "#00dcff", "#a0ff80"];
-        const bomberTarget = bomberTargetRef.current;
+        const cityColors2 = ["#ff7f50", "#00dcff", "#a0ff80"];
 
         ctx.save();
 
-        // Panel background
         ctx.beginPath();
         ctx.roundRect(navX, navY, NAV_W, NAV_H, 6);
         ctx.fillStyle = "rgba(0,20,40,0.65)";
@@ -1620,7 +1640,6 @@ const Index = () => {
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        // Horizontal track line
         const lineY = navY + NAV_H / 2;
         const lineX0 = navX + 14;
         const lineX1 = navX + NAV_W - 14;
@@ -1633,7 +1652,6 @@ const Index = () => {
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        // Map world X → nav track X. Player at center, world wraps, result clamped.
         const EDGE_PAD = 5;
         const halfWorld = WORLD_WIDTH / 2;
         const navScale = lineW / WORLD_WIDTH;
@@ -1650,7 +1668,7 @@ const Index = () => {
           };
         };
 
-        // Player dot (always at center)
+        // Player dot
         ctx.beginPath();
         ctx.arc(lineX0 + lineW / 2, lineY, 3.5, 0, Math.PI * 2);
         ctx.fillStyle = "#00e5cc";
@@ -1659,27 +1677,27 @@ const Index = () => {
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        // Draw city tick markers
-        const cities = citiesRef.current;
+        // City markers
         for (let ci = 0; ci < cities.length; ci++) {
           const city = cities[ci];
-          const color = cityColors[ci] ?? "#ffffff";
-          const isTarget = ci === bomberTarget;
+          const color = cityColors2[ci] ?? "#ffffff";
+          const isBTarget = ci === bomberTarget;
+          const isSTarget = ci === subTarget;
           const { x: cx, clamped } = getNavX(city.x);
 
-          // Vertical tick — taller and brighter for the targeted city
-          const tickH = isTarget ? 9 : 6;
+          // Taller tick for any threatened city
+          const tickH = isBTarget || isSTarget ? 9 : 6;
           ctx.beginPath();
           ctx.moveTo(cx, lineY - tickH);
           ctx.lineTo(cx, lineY + tickH);
           ctx.strokeStyle = color;
-          ctx.lineWidth = isTarget ? 2.5 : 1.5;
+          ctx.lineWidth = isBTarget || isSTarget ? 2.5 : 1.5;
           ctx.globalAlpha = clamped ? 0.7 : 1;
           ctx.stroke();
           ctx.globalAlpha = 1;
 
-          // Pulsing ring on targeted city
-          if (isTarget) {
+          // Pulsing ring on any targeted city
+          if (isBTarget || isSTarget) {
             const pulse = 0.5 + Math.sin(hudNow * 0.008) * 0.35;
             ctx.beginPath();
             ctx.arc(cx, lineY, 5 + pulse * 2, 0, Math.PI * 2);
@@ -1690,7 +1708,6 @@ const Index = () => {
             ctx.globalAlpha = 1;
           }
 
-          // Arrow cap when clamped to show it's off the edge
           if (clamped) {
             const dir = cx <= lineX0 + EDGE_PAD ? -1 : 1;
             ctx.beginPath();
@@ -1704,16 +1721,15 @@ const Index = () => {
             ctx.globalAlpha = 1;
           }
 
-          // City name label above the line
           ctx.font = `bold 7px monospace`;
           ctx.textAlign = "center";
           ctx.fillStyle = color;
           ctx.globalAlpha = clamped ? 0.6 : 1;
-          ctx.fillText(city.name.split(" ")[0], cx, navY + 8); // first word only to keep it short
+          ctx.fillText(city.name.split(" ")[0], cx, navY + 8);
           ctx.globalAlpha = 1;
         }
 
-        // Depot X marker
+        // Depot marker
         {
           const { x: cx, clamped } = getNavX(depotWorldX);
           const xs = 4;
@@ -1814,10 +1830,15 @@ const Index = () => {
         resetPickups(WORLD_WIDTH);
         resetJetTrail();
         fuelRef.current = MAX_FUEL;
-        // Set initial bomber target randomly
-        const initialTarget = Math.floor(Math.random() * NUM_CITIES);
-        setBomberTargetCity(initialTarget);
-        bomberTargetRef.current = initialTarget;
+
+        // Initial targets: bomber random, sub different from bomber
+        const initialBomberTarget = Math.floor(Math.random() * NUM_CITIES);
+        setBomberTargetCity(initialBomberTarget);
+        bomberTargetRef.current = initialBomberTarget;
+        const initialSubTarget = pickDifferentCity(initialBomberTarget);
+        setSubmarineTargetCity(initialSubTarget);
+        subTargetRef.current = initialSubTarget;
+
         if (musicRef.current) {
           musicRef.current.currentTime = 0;
           musicRef.current.play().catch(() => {});
@@ -1890,9 +1911,14 @@ const Index = () => {
             resetPickups(WORLD_WIDTH);
             resetJetTrail();
             fuelRef.current = MAX_FUEL;
-            const initialTarget = Math.floor(Math.random() * NUM_CITIES);
-            setBomberTargetCity(initialTarget);
-            bomberTargetRef.current = initialTarget;
+
+            const initialBomberTarget = Math.floor(Math.random() * NUM_CITIES);
+            setBomberTargetCity(initialBomberTarget);
+            bomberTargetRef.current = initialBomberTarget;
+            const initialSubTarget = pickDifferentCity(initialBomberTarget);
+            setSubmarineTargetCity(initialSubTarget);
+            subTargetRef.current = initialSubTarget;
+
             if (musicRef.current) {
               musicRef.current.currentTime = 0;
               musicRef.current.play().catch(() => {});
@@ -1919,8 +1945,8 @@ const Index = () => {
               <p className="text-sm leading-relaxed" style={{ color: "#ccc" }}>
                 Protect three floating cities: <span style={{ color: "#ff7f50" }}>PORT ASTRA</span>,{" "}
                 <span style={{ color: "#00dcff" }}>HAVEN</span>, and <span style={{ color: "#a0ff80" }}>NOVA MARE</span>
-                . Each wave, enemy bombers will focus on a single city — watch the HUD to know which is under attack!
-                Lose any city and the mission fails.
+                . Each wave, enemy bombers focus on one city while submarines target another — watch the HUD to track
+                both threats!
               </p>
             </div>
             <div className="mb-4 px-4 py-3 rounded" style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>

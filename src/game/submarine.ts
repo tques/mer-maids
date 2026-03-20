@@ -1,18 +1,18 @@
 /**
  * submarine.ts — Underwater Enemy System
  *
- * Submarines are underwater threats that attack the city from below.
+ * Submarines are underwater threats that attack cities from below.
  * The player must dive underwater to intercept them.
  *
  * Behavior:
  * 1. Submarines spawn far to the left or right, deep underwater
- * 2. They slowly approach the city at their spawn depth
+ * 2. They slowly approach the target city at their spawn depth
  * 3. When directly beneath the city, they stop and begin charging
  * 4. After a charge timer (with visible warning flash), they detonate
  * 5. Detonation damages the city directly
  *
- * Visual design: Dark gunmetal hull with crimson accents,
- * pulsing red "eye" porthole, jagged tail fins, and warning flash when attacking.
+ * Target city is set each wave via setSubmarineTargetCity(), always
+ * guaranteed to be different from the bomber target city.
  */
 
 import { getWaterSurfaceY } from "./water";
@@ -22,37 +22,48 @@ import { spawnExplosion } from "./effects";
 
 /** A submarine enemy entity */
 export interface Submarine {
-  x: number; // World X position
-  y: number; // World Y position (depth below water surface)
-  targetY: number; // Target depth to rise to after spawning
-  speed: number; // Horizontal movement speed
-  dir: 1 | -1; // Direction: 1 = moving right, -1 = moving left
+  x: number;
+  y: number;
+  targetY: number;
+  speed: number;
+  dir: 1 | -1;
   alive: boolean;
-  attacking: boolean; // true when positioned under city and charging
-  attackTimer: number; // Seconds remaining before detonation
-  flashTimer: number; // Accumulated time for attack warning animation
+  attacking: boolean;
+  attackTimer: number;
+  flashTimer: number;
 }
 
 // ==================== MODULE STATE ====================
 
 let submarines: Submarine[] = [];
-let subSpawnTimer = 30; // Countdown to first submarine spawn
+let subSpawnTimer = 30;
+
+/** Which city index submarines are targeting this wave */
+let subTargetCityIndex = 1;
 
 // ==================== CONSTANTS ====================
 
-const SUB_WIDTH = 50; // Visual width of submarine
-const SUB_HEIGHT = 16; // Visual height of submarine
-const SUB_SPEED = 0.35; // Slowed down (was 0.6) — player has more time to intercept
-const SUB_ATTACK_TIME = 4.5; // Longer charge time (was 2.0) — more warning before detonation
-const SUB_DEPTH_MIN = 50; // Minimum depth below water surface
-const SUB_DEPTH_MAX = 140; // Maximum depth (deeper subs require deeper dives)
-const SUB_SPAWN_DEPTH = 350; // Spawn far below screen, then rise
-const SUB_RISE_SPEED = 0.4; // Vertical speed when rising to target depth
+const SUB_WIDTH = 50;
+const SUB_HEIGHT = 16;
+const SUB_SPEED = 0.35;
+const SUB_ATTACK_TIME = 4.5;
+const SUB_DEPTH_MIN = 50;
+const SUB_DEPTH_MAX = 140;
+const SUB_SPAWN_DEPTH = 350;
+const SUB_RISE_SPEED = 0.4;
 
 // ==================== ACCESSORS & RESET ====================
 
 export function getSubmarines() {
   return submarines;
+}
+
+export function setSubmarineTargetCity(index: number) {
+  subTargetCityIndex = index;
+}
+
+export function getSubmarineTargetCityIndex() {
+  return subTargetCityIndex;
 }
 
 /** Reset submarine state. Called at game start and between waves. */
@@ -61,108 +72,18 @@ export function resetSubmarines() {
   subSpawnTimer = 30;
 }
 
-// ==================== UPDATE (simple version, unused) ====================
-
-/**
- * Basic update function without damage return.
- * Kept for API compatibility but updateSubmarinesWithDamage is preferred.
- */
-export function updateSubmarines(
-  dt: number,
-  viewH: number,
-  boatX: number,
-  boatWidth: number,
-  playerX: number,
-  viewHalfW: number,
-  waveDifficulty: number,
-  fleeing: boolean,
-  gameTime: number,
-) {
-  const waterY = getWaterSurfaceY(viewH);
-  const hw = boatWidth / 2;
-
-  // ---- Spawning ----
-  if (!fleeing && gameTime > 20 / waveDifficulty) {
-    subSpawnTimer -= dt;
-    const maxSubs = 1; // Only one sub at a time
-    const aliveSubs = submarines.filter((s) => s.alive).length;
-    if (subSpawnTimer <= 0 && aliveSubs < maxSubs) {
-      subSpawnTimer = Math.max(35 - waveDifficulty * 2, 20) + Math.random() * 10;
-      const fromLeft = Math.random() > 0.5;
-      const dir = fromLeft ? 1 : -1;
-      const spawnX = fromLeft ? boatX - hw - 600 - Math.random() * 400 : boatX + hw + 600 + Math.random() * 400;
-      const depthOffset = SUB_DEPTH_MIN + Math.random() * (SUB_DEPTH_MAX - SUB_DEPTH_MIN);
-      submarines.push({
-        x: spawnX,
-        y: waterY + SUB_SPAWN_DEPTH,
-        targetY: waterY + depthOffset,
-        speed: SUB_SPEED + Math.random() * 0.1,
-        dir: dir as 1 | -1,
-        alive: true,
-        attacking: false,
-        attackTimer: 0,
-        flashTimer: 0,
-      });
-    }
-  }
-
-  // ---- Movement & Attack ----
-  for (const sub of submarines) {
-    if (!sub.alive) continue;
-
-    if (fleeing) {
-      sub.attacking = false;
-      sub.x -= sub.dir * 2.5; // Reverse direction to flee
-      if (Math.abs(sub.x - playerX) > viewHalfW * 4) sub.alive = false;
-      continue;
-    }
-
-    if (!sub.attacking) {
-      sub.x += sub.dir * sub.speed;
-
-      // Check if underneath the city (within 60% of city width)
-      if (sub.x > boatX - hw * 0.6 && sub.x < boatX + hw * 0.6) {
-        sub.attacking = true;
-        sub.attackTimer = SUB_ATTACK_TIME;
-        sub.speed = 0; // Stop moving while charging
-      }
-
-      // Despawn if way past the city
-      if ((sub.dir === 1 && sub.x > boatX + hw + 800) || (sub.dir === -1 && sub.x < boatX - hw - 800)) {
-        sub.alive = false;
-      }
-    } else {
-      // Charging attack — countdown to detonation
-      sub.attackTimer -= dt;
-      sub.flashTimer += dt;
-      if (sub.attackTimer <= 0) {
-        sub.alive = false;
-        spawnExplosion(sub.x, waterY, 40);
-      }
-    }
-  }
-
-  submarines = submarines.filter((s) => s.alive);
-}
-
-/** Unused — damage is handled by updateSubmarinesWithDamage instead */
-export function checkSubmarineAttacks(boatX: number, boatWidth: number, viewH: number): number {
-  return 0;
-}
-
 // ==================== UPDATE WITH DAMAGE RETURN ====================
 
 /**
- * Main submarine update function. Same as updateSubmarines but returns
- * the amount of damage dealt to the city this frame.
+ * Main submarine update. Accepts full cities array and uses
+ * subTargetCityIndex to pick the target city.
  *
- * @returns Number of submarine detonations (each deals 1 damage to city)
+ * @returns Total damage dealt to the target city this frame
  */
 export function updateSubmarinesWithDamage(
   dt: number,
   viewH: number,
-  boatX: number,
-  boatWidth: number,
+  cities: { x: number; width: number }[],
   playerX: number,
   viewHalfW: number,
   waveDifficulty: number,
@@ -170,10 +91,16 @@ export function updateSubmarinesWithDamage(
   gameTime: number,
 ): number {
   const waterY = getWaterSurfaceY(viewH);
+
+  // Resolve target city (fall back to index 0 if out of range)
+  const targetCity = cities[subTargetCityIndex] ?? cities[0];
+  const boatX = targetCity.x;
+  const boatWidth = targetCity.width;
   const hw = boatWidth / 2;
+
   let damage = 0;
 
-  // ---- Spawning (same logic as above) ----
+  // ---- Spawning ----
   if (!fleeing && gameTime > 20 / waveDifficulty) {
     subSpawnTimer -= dt;
     const maxSubs = 1;
@@ -233,7 +160,7 @@ export function updateSubmarinesWithDamage(
       if (sub.attackTimer <= 0) {
         sub.alive = false;
         spawnExplosion(sub.x, waterY, 40);
-        damage += 3; // Each detonation = 3 city damage
+        damage += 3;
       }
     }
   }
@@ -244,25 +171,18 @@ export function updateSubmarinesWithDamage(
 
 // ==================== BULLET COLLISION ====================
 
-/**
- * Check if any player bullets hit a submarine.
- * Submarines have a rectangular hitbox based on SUB_WIDTH × SUB_HEIGHT.
- *
- * @returns Remaining bullets and total score earned from submarine kills
- */
 export function checkBulletHitsSubmarine(bullets: { x: number; y: number; dx: number; dy: number; id: number }[]): {
   remaining: typeof bullets;
   score: number;
 } {
   const remaining: typeof bullets = [];
   let score = 0;
-  const SCORE_SUB = 200; // Points per submarine destroyed
+  const SCORE_SUB = 200;
 
   for (const b of bullets) {
     let hit = false;
     for (const sub of submarines) {
       if (!sub.alive) continue;
-      // Rectangular hitbox check
       if (Math.abs(b.x - sub.x) < SUB_WIDTH / 2 + 5 && Math.abs(b.y - sub.y) < SUB_HEIGHT / 2 + 5) {
         sub.alive = false;
         spawnExplosion(sub.x, sub.y, 35, SCORE_SUB);
@@ -279,10 +199,6 @@ export function checkBulletHitsSubmarine(bullets: { x: number; y: number; dx: nu
 
 // ==================== RENDERING ====================
 
-/**
- * Draws all submarines with their menacing visual design.
- * Called within a camera-translated context (world coordinates).
- */
 export function drawSubmarines(ctx: CanvasRenderingContext2D) {
   for (const sub of submarines) {
     if (!sub.alive) continue;
@@ -293,7 +209,7 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
     const hw = SUB_WIDTH / 2;
     const hh = SUB_HEIGHT / 2;
 
-    // ---- Main hull (industrial dark metal) ----
+    // Main hull
     ctx.beginPath();
     ctx.ellipse(0, 0, hw, hh, 0, 0, Math.PI * 2);
     const hullGrad = ctx.createLinearGradient(0, -hh, 0, hh);
@@ -306,7 +222,7 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // ---- Industrial panel segments ----
+    // Panel segments
     ctx.strokeStyle = "rgba(100, 100, 100, 0.25)";
     ctx.lineWidth = 0.5;
     ctx.beginPath();
@@ -316,7 +232,7 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
     ctx.lineTo(hw * 0.2, hh);
     ctx.stroke();
 
-    // ---- Danger stripe (rust red) ----
+    // Danger stripe
     ctx.beginPath();
     ctx.ellipse(0, 0, hw * 0.92, hh * 0.55, 0, 0, Math.PI * 2);
     ctx.fillStyle = "#5a0000";
@@ -326,7 +242,7 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
     ctx.fillStyle = "#151515";
     ctx.fill();
 
-    // ---- Conning tower (angular, robotic) ----
+    // Conning tower
     ctx.beginPath();
     ctx.moveTo(-8, -hh);
     ctx.lineTo(-6, -hh - 10);
@@ -339,7 +255,7 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // ---- Sensor mast (antenna with blinking red) ----
+    // Sensor mast
     ctx.beginPath();
     ctx.moveTo(0, -hh - 10);
     ctx.lineTo(0, -hh - 16);
@@ -354,7 +270,7 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
       ctx.fill();
     }
 
-    // ---- Armored nose (mechanical ram) ----
+    // Armored nose
     const noseX = sub.dir * hw;
     ctx.beginPath();
     ctx.moveTo(noseX, -hh * 0.6);
@@ -367,7 +283,7 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
     ctx.lineWidth = 0.5;
     ctx.stroke();
 
-    // ---- Hostile eye (pulsing red, robotic) ----
+    // Hostile eye
     const eyeX = sub.dir * hw * 0.35;
     ctx.beginPath();
     ctx.arc(eyeX, 0, 4, 0, Math.PI * 2);
@@ -383,7 +299,7 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
     ctx.fillStyle = "#fff";
     ctx.fill();
 
-    // ---- Jagged tail fins (mechanical) ----
+    // Tail fins
     const tailX = -sub.dir * hw * 0.85;
     ctx.beginPath();
     ctx.moveTo(tailX, -hh * 0.4);
@@ -395,15 +311,14 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
     ctx.fillStyle = "#3a0000";
     ctx.fill();
 
-    // ---- Torpedo tube markings (small rectangles) ----
+    // Torpedo tubes
     const tubeX = sub.dir * hw * 0.6;
     ctx.fillStyle = "#333";
     ctx.fillRect(tubeX - 1, -hh * 0.5, 2, 3);
     ctx.fillRect(tubeX - 1, hh * 0.5 - 3, 2, 3);
 
-    // ---- Attack warning effects ----
+    // Attack warning
     if (sub.attacking) {
-      // Flashing red outline
       const flash = Math.sin(sub.flashTimer * 10) > 0;
       if (flash) {
         ctx.beginPath();
@@ -412,8 +327,6 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
         ctx.lineWidth = 2.5;
         ctx.stroke();
       }
-
-      // Rising red bubbles (indicate imminent detonation)
       for (let i = 0; i < 4; i++) {
         const bx = (i - 1.5) * 8 + Math.sin(sub.flashTimer * 4 + i) * 4;
         const by = -hh - 12 - ((sub.flashTimer * 35 + i * 12) % 50);
@@ -430,7 +343,6 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
 
 // ==================== WAVE FLEEING ====================
 
-/** Make all submarines stop attacking and reverse direction */
 export function fleeSubmarines() {
   for (const sub of submarines) {
     if (sub.alive) {
@@ -439,7 +351,6 @@ export function fleeSubmarines() {
   }
 }
 
-/** Check if all submarines have fled or been destroyed */
 export function areSubmarinesGone(): boolean {
   return submarines.filter((s) => s.alive).length === 0;
 }
