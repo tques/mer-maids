@@ -36,7 +36,7 @@ export interface Submarine {
 // ==================== MODULE STATE ====================
 
 let submarines: Submarine[] = [];
-let subSpawnTimer = 15; // Countdown to first submarine spawn
+let subSpawnTimer = 30; // Countdown to first submarine spawn
 
 // ==================== CONSTANTS ====================
 
