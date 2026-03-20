@@ -581,7 +581,7 @@ const Index = () => {
       }
 
       const bulletPlatforms = [
-        ...cities.map((c) => {
+        ...citiesRef.current.map((c) => {
           const ty = getBoatTopY(c, viewH);
           return { x: c.x, halfW: c.width / 2, topY: ty, bottomY: ty + 36 };
         }),
