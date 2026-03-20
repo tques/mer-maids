@@ -58,7 +58,7 @@ export function getSubmarines() {
 /** Reset submarine state. Called at game start and between waves. */
 export function resetSubmarines() {
   submarines = [];
-  subSpawnTimer = 15;
+  subSpawnTimer = 30;
 }
 
 // ==================== UPDATE (simple version, unused) ====================
