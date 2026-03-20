@@ -539,9 +539,12 @@ const Index = () => {
         vel.y *= Math.pow(AIR_DRAG, dtScale);
         if (!submerged) vel.y = Math.min(vel.y + GRAVITY * dtScale, MAX_FALL_SPEED);
         else {
+          const isFiring = rightMouseRef.current || gp.fire;
           const surfaceY = getWaterSurfaceY(viewH);
           const depth = pos.y - surfaceY;
-          vel.y -= BUOYANCY * Math.min(depth / 40, 1) * dtScale;
+          if (!isFiring) {
+            vel.y -= BUOYANCY * Math.min(depth / 40, 1) * dtScale;
+          }
           vel.x *= Math.pow(0.97, dtScale);
           vel.y *= Math.pow(0.97, dtScale);
         }
