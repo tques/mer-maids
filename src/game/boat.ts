@@ -30,7 +30,7 @@ export function createBoat(worldWidth: number): Boat {
 export function createCities(worldWidth: number): Boat[] {
   return [
     { x: Math.floor(worldWidth * 0.17), width: 580, hullDepth: 36, name: "PORT ASTRA" },
-    { x: Math.floor(worldWidth * 0.5), width: 820, hullDepth: 36, name: "HAVEN" },
+    { x: Math.floor(worldWidth * 0.5), width: 960, hullDepth: 36, name: "HAVEN" },
     { x: Math.floor(worldWidth * 0.83), width: 580, hullDepth: 36, name: "NOVA MARE" },
   ];
 }
@@ -47,7 +47,9 @@ export function getBoatTopY(boat: Boat, viewH: number): number {
  * Consists of: a reinforced bunker base, rotating radar dish, and two missile tubes.
  */
 function drawSAMSite(ctx: CanvasRenderingContext2D, cityX: number, hw: number, topY: number, now: number) {
-  const sx = cityX - hw + 72; // Left side, inset from edge
+  // hw * 0.85 = barrier radius. Place SAM clearly outside: cityX - hw + 50 puts it ~430px
+  // from center when hw=480, well beyond the ~408px barrier radius.
+  const sx = cityX - hw + 55;
   const baseY = topY;
 
   ctx.save();
@@ -174,22 +176,37 @@ function drawSAMSite(ctx: CanvasRenderingContext2D, cityX: number, hw: number, t
   ctx.restore(); // radar translate
 
   // ---- Missile tubes (two angled launchers) ----
+  // Each tube is drawn with (0,0) at the BASE (bottom) of the tube, so
+  // ctx.translate places the pivot exactly on the bunker top surface.
+  // The tube body extends from y=0 up to y=-tubeLen.
+  const tubeLen = 30;
   const tubeConfigs = [
-    { ox: -18, angle: -0.55 }, // left tube, angled left-up
-    { ox: 18, angle: -0.9 }, // right tube, angled more upward
+    // ox = horizontal offset from SAM center, anchorX/Y = exact point on bunker top
+    { ox: -16, angle: -0.6 }, // left tube, angled outward-up
+    { ox: 16, angle: -Math.PI + 0.6 + Math.PI }, // right tube — we'll mirror manually below
   ];
 
-  for (const tube of tubeConfigs) {
-    const tx = sx + tube.ox;
-    const ty = bunkerTop - 2;
-
+  // Draw left tube
+  {
+    const tx = sx - 16;
+    const ty = bunkerTop; // sit right on bunker top
+    const angle = -0.58; // angled left and upward
     ctx.save();
     ctx.translate(tx, ty);
-    ctx.rotate(tube.angle);
+    ctx.rotate(angle);
 
-    // Tube housing (outer shell)
+    // Mounting bracket flush with base
     ctx.beginPath();
-    ctx.roundRect(-5, -28, 10, 28, 2);
+    ctx.roundRect(-7, -4, 14, 6, 1);
+    ctx.fillStyle = "#2a3a4a";
+    ctx.fill();
+    ctx.strokeStyle = "#445566";
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    // Tube outer shell — base at y=0, tip at y=-tubeLen
+    ctx.beginPath();
+    ctx.roundRect(-5, -tubeLen, 10, tubeLen, 2);
     ctx.fillStyle = "#1e2a38";
     ctx.fill();
     ctx.strokeStyle = "#3a4a5a";
@@ -198,21 +215,21 @@ function drawSAMSite(ctx: CanvasRenderingContext2D, cityX: number, hw: number, t
 
     // Tube inner barrel
     ctx.beginPath();
-    ctx.roundRect(-3, -26, 6, 24, 1);
+    ctx.roundRect(-3, -tubeLen + 2, 6, tubeLen - 4, 1);
     ctx.fillStyle = "#0f1820";
     ctx.fill();
 
-    // Missile tip visible inside tube
+    // Missile tip
     ctx.beginPath();
-    ctx.moveTo(0, -26);
-    ctx.lineTo(-2.5, -20);
-    ctx.lineTo(2.5, -20);
+    ctx.moveTo(0, -tubeLen + 2);
+    ctx.lineTo(-2.5, -tubeLen + 8);
+    ctx.lineTo(2.5, -tubeLen + 8);
     ctx.closePath();
     ctx.fillStyle = "#cc3322";
     ctx.fill();
 
-    // Tube band rings (industrial detail)
-    for (const bandY of [-22, -14, -6]) {
+    // Band rings
+    for (const bandY of [-tubeLen + 10, -tubeLen + 18, -8]) {
       ctx.beginPath();
       ctx.roundRect(-6, bandY, 12, 3, 1);
       ctx.fillStyle = "#2a3a4a";
@@ -222,10 +239,71 @@ function drawSAMSite(ctx: CanvasRenderingContext2D, cityX: number, hw: number, t
       ctx.stroke();
     }
 
-    // Missile warhead glow
-    const missilePulse = 0.4 + Math.sin(now * 0.005 + tube.ox) * 0.3;
+    const missilePulse = 0.4 + Math.sin(now * 0.005 - 16) * 0.3;
     ctx.beginPath();
-    ctx.arc(0, -23, 3, 0, Math.PI * 2);
+    ctx.arc(0, -tubeLen + 4, 3, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 60, 30, ${missilePulse * 0.6})`;
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  // Draw right tube
+  {
+    const tx = sx + 16;
+    const ty = bunkerTop; // sit right on bunker top
+    const angle = -Math.PI * 0.62; // angled more steeply upward
+    ctx.save();
+    ctx.translate(tx, ty);
+    ctx.rotate(angle);
+
+    // Mounting bracket flush with base
+    ctx.beginPath();
+    ctx.roundRect(-7, -4, 14, 6, 1);
+    ctx.fillStyle = "#2a3a4a";
+    ctx.fill();
+    ctx.strokeStyle = "#445566";
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    // Tube outer shell
+    ctx.beginPath();
+    ctx.roundRect(-5, -tubeLen, 10, tubeLen, 2);
+    ctx.fillStyle = "#1e2a38";
+    ctx.fill();
+    ctx.strokeStyle = "#3a4a5a";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Tube inner barrel
+    ctx.beginPath();
+    ctx.roundRect(-3, -tubeLen + 2, 6, tubeLen - 4, 1);
+    ctx.fillStyle = "#0f1820";
+    ctx.fill();
+
+    // Missile tip
+    ctx.beginPath();
+    ctx.moveTo(0, -tubeLen + 2);
+    ctx.lineTo(-2.5, -tubeLen + 8);
+    ctx.lineTo(2.5, -tubeLen + 8);
+    ctx.closePath();
+    ctx.fillStyle = "#cc3322";
+    ctx.fill();
+
+    // Band rings
+    for (const bandY of [-tubeLen + 10, -tubeLen + 18, -8]) {
+      ctx.beginPath();
+      ctx.roundRect(-6, bandY, 12, 3, 1);
+      ctx.fillStyle = "#2a3a4a";
+      ctx.fill();
+      ctx.strokeStyle = "#445566";
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+
+    const missilePulse = 0.4 + Math.sin(now * 0.005 + 16) * 0.3;
+    ctx.beginPath();
+    ctx.arc(0, -tubeLen + 4, 3, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(255, 60, 30, ${missilePulse * 0.6})`;
     ctx.fill();
 
