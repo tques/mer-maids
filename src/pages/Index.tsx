@@ -209,6 +209,7 @@ const Index = () => {
 
   const bomberTargetRef = useRef(0);
   const subTargetRef = useRef(1);
+  const samWasAliveRef = useRef(true);
 
   const getWorldMouse = useCallback(() => {
     const mouse = mouseRef.current;
@@ -673,6 +674,13 @@ const Index = () => {
         const sonarAlive = (cityStructHPs[portAstraIdx]?.hp ?? STRUCTURE_MAX_HP) > 0;
         const samAlive = (cityStructHPs[havenIdx]?.hp ?? STRUCTURE_MAX_HP) > 0;
         const shieldAlive = (cityStructHPs[novaMareIdx]?.hp ?? STRUCTURE_MAX_HP) > 0;
+
+        // When SAM first goes down, reset minelayer spawn timer so first plane
+        // arrives quickly rather than waiting out the existing timer
+        if (samWasAliveRef.current && !samAlive) {
+          resetMinelayer();
+        }
+        samWasAliveRef.current = samAlive;
 
         // Build alive structure position lists
         const aliveStructureXs: number[] = [];
