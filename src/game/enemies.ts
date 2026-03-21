@@ -1,6 +1,8 @@
 /**
  * enemies.ts — Air Enemy System
  * Updated for multi-city support: bombers target a specific city each wave.
+ * Bombers occasionally aim at alive sub-structures instead of the city dome.
+ * checkBombHitsShip now accepts shieldAlive flag — if false, dome takes 2x damage.
  */
 
 import { getWaterSurfaceY } from "./water";
@@ -69,7 +71,6 @@ let chaserSpawnTimer = 3;
 let gameTime = 0;
 let lastBomberSpawnTime = -999999;
 
-// Current target city for bombers (index into cities array)
 let bomberTargetCityIndex = 0;
 
 const ENEMY_SIZE = 16;
@@ -82,6 +83,9 @@ const CHASER_BULLET_SPEED = 6;
 const CHASER_SHOOT_INTERVAL = 2.4;
 const MISSILE_SPEED = 4;
 const MISSILE_TURN_RATE = 0.045;
+
+/** Chance per bomb drop that a bomber retargets an alive structure (0–1) */
+const STRUCTURE_TARGET_CHANCE = 0.25;
 
 export function resetEnemies() {
   enemies = [];
@@ -96,7 +100,6 @@ export function resetEnemies() {
   lastBomberSpawnTime = -999999;
 }
 
-/** Set which city index bombers should target (called on wave change) */
 export function setBomberTargetCity(index: number) {
   bomberTargetCityIndex = index;
 }
@@ -105,7 +108,6 @@ export function getBomberTargetCityIndex() {
   return bomberTargetCityIndex;
 }
 
-/** Returns performance.now() timestamp of the last bomber spawn, or -999999 if none this wave */
 export function getLastBomberSpawnTime() {
   return lastBomberSpawnTime;
 }
@@ -160,11 +162,22 @@ export function deflectMissiles() {
   }
 }
 
-export function checkBombHitsShip(boatX: number, boatWidth: number, shipY: number, barrierUp: boolean = true): number {
+/**
+ * Check if any falling bombs hit a city's barrier or hull.
+ * shieldAlive: if false (Nova Mare shield battery down), each bomb hit counts as 2.
+ */
+export function checkBombHitsShip(
+  boatX: number,
+  boatWidth: number,
+  shipY: number,
+  barrierUp: boolean = true,
+  shieldAlive: boolean = true,
+): number {
   let hits = 0;
   const hw = boatWidth / 2;
   const domeRadius = hw * 0.85;
   const domeCenterY = shipY - 10;
+  const damagePerBomb = shieldAlive ? 1 : 2;
 
   for (const b of bombs) {
     if (!b.alive) continue;
@@ -175,13 +188,13 @@ export function checkBombHitsShip(boatX: number, boatWidth: number, shipY: numbe
       if (dist >= domeRadius - 8 && dist <= domeRadius + 8 && b.y < domeCenterY && Math.abs(dx) < domeRadius) {
         b.alive = false;
         spawnExplosion(b.x, b.y, 25);
-        hits++;
+        hits += damagePerBomb;
       }
     } else {
       if (b.y > shipY - 10 && b.y < shipY + 20 && b.x > boatX - hw && b.x < boatX + hw) {
         b.alive = false;
         spawnExplosion(b.x, b.y, 25);
-        hits++;
+        hits += damagePerBomb;
       }
     }
   }
@@ -213,19 +226,19 @@ export function updateEnemies(
   dt: number,
   worldWidth: number,
   viewH: number,
-  // Accept array of cities: [{x, width}]
   cities: { x: number; width: number }[],
   playerX: number,
   playerY: number,
   viewHalfW: number,
   waveDifficulty: number = 1,
   fleeing: boolean = false,
+  /** World X positions of alive sub-structures, used to occasionally retarget bombers */
+  aliveStructureXs: number[] = [],
 ): number {
   const waterY = getWaterSurfaceY(viewH);
   let deflectScore = 0;
   gameTime += dt;
 
-  // Target city for this wave
   const targetCity = cities[bomberTargetCityIndex] ?? cities[0];
   const boatX = targetCity.x;
   const boatWidth = targetCity.width;
@@ -244,13 +257,21 @@ export function updateEnemies(
       const spawnX = fromLeft
         ? boatX - boatWidth - 200 - Math.random() * 200
         : boatX + boatWidth + 200 + Math.random() * 200;
+
+      // Pick initial target: 25% chance to aim at an alive structure if any exist
+      let initialTargetX = boatX + (Math.random() - 0.5) * viewHalfW;
+      if (aliveStructureXs.length > 0 && Math.random() < STRUCTURE_TARGET_CHANCE) {
+        const pick = aliveStructureXs[Math.floor(Math.random() * aliveStructureXs.length)];
+        initialTargetX = pick;
+      }
+
       enemies.push({
         x: spawnX,
         y: -30 - Math.random() * 60,
         speed: 2.4 + Math.random() * 0.8,
         dir: dir as 1 | -1,
         angle: 0,
-        targetX: boatX + (Math.random() - 0.5) * viewHalfW,
+        targetX: initialTargetX,
         bombCooldown: 0.5 + Math.random(),
         alive: true,
       });
@@ -277,6 +298,15 @@ export function updateEnemies(
     e.bombCooldown -= dt;
     if (Math.abs(e.x - e.targetX) < 120 && e.bombCooldown <= 0) {
       e.bombCooldown = BOMB_INTERVAL + Math.random() * 0.5;
+
+      // After dropping, pick next target: 25% chance to retarget a structure
+      if (aliveStructureXs.length > 0 && Math.random() < STRUCTURE_TARGET_CHANCE) {
+        const pick = aliveStructureXs[Math.floor(Math.random() * aliveStructureXs.length)];
+        e.targetX = pick;
+      } else {
+        e.targetX = boatX + (Math.random() - 0.5) * viewHalfW;
+      }
+
       bombs.push({
         x: e.x,
         y: e.y + ENEMY_SIZE,

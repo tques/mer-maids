@@ -657,6 +657,24 @@ const Index = () => {
 
         if (cities.length < 3) return;
 
+        // Derive structure alive flags for penalty logic
+        // PORT ASTRA = index 0 (sonar), HAVEN = index 1 (SAM), NOVA MARE = index 2 (shield)
+        const portAstraIdx = cities.findIndex((c) => c.name === "PORT ASTRA");
+        const havenIdx = cities.findIndex((c) => c.name === "HAVEN");
+        const novaMareIdx = cities.findIndex((c) => c.name === "NOVA MARE");
+        const sonarAlive = (cityStructHPs[portAstraIdx]?.hp ?? STRUCTURE_MAX_HP) > 0;
+        const samAlive = (cityStructHPs[havenIdx]?.hp ?? STRUCTURE_MAX_HP) > 0;
+        const shieldAlive = (cityStructHPs[novaMareIdx]?.hp ?? STRUCTURE_MAX_HP) > 0;
+
+        // Build list of alive structure world X positions for bomber retargeting
+        const aliveStructureXs: number[] = [];
+        for (let ci = 0; ci < cities.length; ci++) {
+          if ((cityStructHPs[ci]?.hp ?? 0) > 0) {
+            const sp = getStructureWorldPos(cities[ci], viewH);
+            if (sp) aliveStructureXs.push(sp.x);
+          }
+        }
+
         const citySimpleList = cities.map((c) => ({ x: c.x, width: c.width }));
         const deflectScore = updateEnemies(
           dt,
@@ -668,6 +686,7 @@ const Index = () => {
           viewW / 2,
           waveDiff,
           wave.enemiesFleeing,
+          aliveStructureXs,
         );
         if (deflectScore > 0) scoreRef.current += deflectScore;
 
@@ -681,6 +700,7 @@ const Index = () => {
           waveDiff,
           wave.enemiesFleeing,
           performance.now() / 1000,
+          sonarAlive,
         );
         if (subDmg > 0) {
           shake(0, 1);
@@ -724,7 +744,7 @@ const Index = () => {
             bottomY: getWaveY(WORLD_WIDTH - 80, waterY2) + 18,
           },
         ];
-        updateMinelayer(dt, WORLD_WIDTH, viewH, waveDiff, wave.enemiesFleeing, minePlatforms);
+        updateMinelayer(dt, WORLD_WIDTH, viewH, waveDiff, wave.enemiesFleeing, minePlatforms, samAlive);
 
         const result = checkBulletCollisions(bulletsRef.current);
         bulletsRef.current = result.remaining;
@@ -745,7 +765,9 @@ const Index = () => {
           const cHp = cityHPs[ci];
           const barrierUp = cHp.hp > 3;
           const cityTopY = getBoatTopY(city, viewH);
-          const bombHits = checkBombHitsShip(city.x, city.width, cityTopY, barrierUp);
+          // Nova Mare shield down = 2x bomb damage on that city's dome
+          const thisShieldAlive = ci === novaMareIdx ? shieldAlive : true;
+          const bombHits = checkBombHitsShip(city.x, city.width, cityTopY, barrierUp, thisShieldAlive);
           if (bombHits > 0) {
             shake(0, 1);
             cHp.hp = Math.max(cHp.hp - bombHits, 0);
