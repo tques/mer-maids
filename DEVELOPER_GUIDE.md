@@ -167,7 +167,7 @@ This is the heart of the game. It contains:
 - Can **only be destroyed by attacking from below** (underwater shots or rams).
 - Fires bullets rapidly (0.35s interval) at the player within a **180° upper hemisphere** arc (far left to far right, but never into the water).
 - **Will not fire** when the player is submerged — diving underwater is both the attack strategy and a way to avoid its fire.
-- **Reverses direction** when approaching the city platform or ammo depot, maintaining safe distance.
+- **Reverses direction** when approaching any city platform or ammo depot, maintaining safe distance.
 - First spawns after 30 seconds, then every 45–60 seconds. Max 1–3 active depending on wave difficulty.
 - Awards 300 points on destruction.
 - `updateGunboats()`: Handles spawning, movement, platform avoidance, firing AI, and bullet updates.
