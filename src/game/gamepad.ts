@@ -114,6 +114,7 @@ export function pollGamepad(): GamepadState {
       rightStickActive: false,
       fire: false,
       thrust: false,
+      boost: false,
       start: false,
       faceA: false,
       dpadLeft: false,
