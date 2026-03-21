@@ -214,6 +214,8 @@ All collectible items in one place:
 - Each wave has a score threshold and time limit.
 - When a wave is completed, enemies flee the screen before the next wave begins.
 - Difficulty multiplier increases each wave (affects spawn rates and enemy counts).
+- Bomber target city rotates each wave (never the same city twice in a row).
+- Submarine target city is always different from the bomber target.
 - Extra life awarded every 3 waves.
 
 ### `src/game/jettrail.ts` — Jet Propulsion Effects
