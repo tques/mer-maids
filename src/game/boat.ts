@@ -105,210 +105,141 @@ function drawSAMSite(ctx: CanvasRenderingContext2D, cityX: number, hw: number, t
   ctx.lineWidth = 0.5;
   ctx.stroke();
 
-  // ---- Radar dish (slow rotation) ----
-  const radarX = sx;
-  const radarY = bunkerTop - 6;
-  const radarSpin = now * 0.0006; // slow spin
+  // ---- Static antenna mast (replaces rotating dish) ----
+  // Mast base sits on bunker top and is drawn as part of the bunker visually.
+  // A cross-brace connects it to the bunker body so there's no floating gap.
+  const antennaX = sx + 14; // right side of bunker top
+  const antennaBaseY = bunkerTop; // flush with bunker top surface
 
-  ctx.save();
-  ctx.translate(radarX, radarY);
-
-  // Radar mast
+  // Cross-brace from bunker body up to antenna base — eliminates any gap
   ctx.beginPath();
-  ctx.moveTo(-2, 0);
-  ctx.lineTo(-2, -14);
-  ctx.lineTo(2, -14);
-  ctx.lineTo(2, 0);
+  ctx.moveTo(antennaX - 10, antennaBaseY);
+  ctx.lineTo(antennaX, antennaBaseY - 6);
+  ctx.lineTo(antennaX + 4, antennaBaseY);
+  ctx.closePath();
+  ctx.fillStyle = "#2a3a4a";
+  ctx.fill();
+  ctx.strokeStyle = "#445566";
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  // Antenna base collar — sits flush on bunker top
+  ctx.beginPath();
+  ctx.roundRect(antennaX - 5, antennaBaseY - 5, 10, 6, 1);
+  ctx.fillStyle = "#334455";
+  ctx.fill();
+  ctx.strokeStyle = "#445566";
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  // Main mast shaft
+  ctx.beginPath();
+  ctx.moveTo(antennaX - 2, antennaBaseY - 4);
+  ctx.lineTo(antennaX - 2, antennaBaseY - 28);
+  ctx.lineTo(antennaX + 2, antennaBaseY - 28);
+  ctx.lineTo(antennaX + 2, antennaBaseY - 4);
   ctx.closePath();
   ctx.fillStyle = "#334455";
   ctx.fill();
 
-  // Radar dish pivot
+  // Mid brace ring
   ctx.beginPath();
-  ctx.arc(0, -14, 4, 0, Math.PI * 2);
-  ctx.fillStyle = "#1a2535";
-  ctx.fill();
-  ctx.strokeStyle = "#445566";
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  // Rotating dish arm + dish
-  ctx.save();
-  ctx.translate(0, -14);
-  ctx.rotate(radarSpin);
-
-  // Arm
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(18, 0);
-  ctx.strokeStyle = "#556677";
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // Dish (parabolic shape)
-  ctx.beginPath();
-  ctx.moveTo(14, -8);
-  ctx.quadraticCurveTo(22, 0, 14, 8);
-  ctx.lineTo(18, 0);
-  ctx.closePath();
+  ctx.roundRect(antennaX - 4, antennaBaseY - 18, 8, 3, 1);
   ctx.fillStyle = "#2a3a4a";
   ctx.fill();
-  ctx.strokeStyle = "#4a6070";
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  // Dish highlight
-  ctx.beginPath();
-  ctx.moveTo(15, -5);
-  ctx.quadraticCurveTo(20, 0, 15, 5);
-  ctx.strokeStyle = "rgba(100, 200, 220, 0.3)";
+  ctx.strokeStyle = "#445566";
   ctx.lineWidth = 0.5;
   ctx.stroke();
 
-  // Radar sweep glow pulse at tip
-  const sweepPulse = 0.5 + Math.sin(now * 0.004) * 0.5;
+  // Horizontal crossbar at top
   ctx.beginPath();
-  ctx.arc(18, 0, 2.5, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(80, 220, 200, ${sweepPulse * 0.9})`;
+  ctx.moveTo(antennaX - 10, antennaBaseY - 28);
+  ctx.lineTo(antennaX + 10, antennaBaseY - 28);
+  ctx.strokeStyle = "#445566";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Short vertical nubs on crossbar ends
+  ctx.beginPath();
+  ctx.moveTo(antennaX - 10, antennaBaseY - 28);
+  ctx.lineTo(antennaX - 10, antennaBaseY - 33);
+  ctx.moveTo(antennaX + 10, antennaBaseY - 28);
+  ctx.lineTo(antennaX + 10, antennaBaseY - 33);
+  ctx.strokeStyle = "#556677";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Tip spike
+  ctx.beginPath();
+  ctx.moveTo(antennaX, antennaBaseY - 28);
+  ctx.lineTo(antennaX, antennaBaseY - 36);
+  ctx.strokeStyle = "#667788";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Blinking tip light
+  const blinkPulse = Math.sin(now * 0.006) > 0.2;
+  ctx.beginPath();
+  ctx.arc(antennaX, antennaBaseY - 36, 2, 0, Math.PI * 2);
+  ctx.fillStyle = blinkPulse ? "rgba(255, 80, 60, 0.95)" : "rgba(120, 30, 20, 0.5)";
   ctx.fill();
 
-  ctx.restore(); // dish rotation
-  ctx.restore(); // radar translate
+  // ---- Single missile tube (left side, angled outward) ----
+  // Tube extends well into the bunker body (positive tubeOverlap) so
+  // the base is visually buried in the structure — no floating gap.
+  const tubeLen = 38;
+  const tubeOverlap = 10; // how many px the tube base sinks into the bunker
+  const tx = sx - 8;
+  const ty = bunkerTop + tubeOverlap; // sink base down into bunker top
+  const angle = -0.62; // angled left-upward
 
-  // ---- Missile tubes (two angled launchers) ----
-  // Each tube is drawn with (0,0) at the BASE (bottom) of the tube, so
-  // ctx.translate places the pivot exactly on the bunker top surface.
-  // The tube body extends from y=0 up to y=-tubeLen.
-  const tubeLen = 30;
-  const tubeConfigs = [
-    // ox = horizontal offset from SAM center, anchorX/Y = exact point on bunker top
-    { ox: -16, angle: -0.6 }, // left tube, angled outward-up
-    { ox: 16, angle: -Math.PI + 0.6 + Math.PI }, // right tube — we'll mirror manually below
-  ];
+  ctx.save();
+  ctx.translate(tx, ty);
+  ctx.rotate(angle);
 
-  // Draw left tube
-  {
-    const tx = sx - 16;
-    const ty = bunkerTop; // sit right on bunker top
-    const angle = -0.58; // angled left and upward
-    ctx.save();
-    ctx.translate(tx, ty);
-    ctx.rotate(angle);
+  // Tube outer shell — base at y=+tubeOverlap (inside bunker), tip at y=-(tubeLen)
+  ctx.beginPath();
+  ctx.roundRect(-5, -tubeLen, 10, tubeLen + tubeOverlap, 2);
+  ctx.fillStyle = "#1e2a38";
+  ctx.fill();
+  ctx.strokeStyle = "#3a4a5a";
+  ctx.lineWidth = 1;
+  ctx.stroke();
 
-    // Mounting bracket flush with base
+  // Tube inner barrel
+  ctx.beginPath();
+  ctx.roundRect(-3, -tubeLen + 2, 6, tubeLen - 2, 1);
+  ctx.fillStyle = "#0f1820";
+  ctx.fill();
+
+  // Missile tip
+  ctx.beginPath();
+  ctx.moveTo(0, -tubeLen + 2);
+  ctx.lineTo(-2.5, -tubeLen + 9);
+  ctx.lineTo(2.5, -tubeLen + 9);
+  ctx.closePath();
+  ctx.fillStyle = "#cc3322";
+  ctx.fill();
+
+  // Band rings along tube
+  for (const bandY of [-tubeLen + 11, -tubeLen + 22, -10]) {
     ctx.beginPath();
-    ctx.roundRect(-7, -4, 14, 6, 1);
+    ctx.roundRect(-6, bandY, 12, 3, 1);
     ctx.fillStyle = "#2a3a4a";
     ctx.fill();
     ctx.strokeStyle = "#445566";
     ctx.lineWidth = 0.5;
     ctx.stroke();
-
-    // Tube outer shell — base at y=0, tip at y=-tubeLen
-    ctx.beginPath();
-    ctx.roundRect(-5, -tubeLen, 10, tubeLen, 2);
-    ctx.fillStyle = "#1e2a38";
-    ctx.fill();
-    ctx.strokeStyle = "#3a4a5a";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Tube inner barrel
-    ctx.beginPath();
-    ctx.roundRect(-3, -tubeLen + 2, 6, tubeLen - 4, 1);
-    ctx.fillStyle = "#0f1820";
-    ctx.fill();
-
-    // Missile tip
-    ctx.beginPath();
-    ctx.moveTo(0, -tubeLen + 2);
-    ctx.lineTo(-2.5, -tubeLen + 8);
-    ctx.lineTo(2.5, -tubeLen + 8);
-    ctx.closePath();
-    ctx.fillStyle = "#cc3322";
-    ctx.fill();
-
-    // Band rings
-    for (const bandY of [-tubeLen + 10, -tubeLen + 18, -8]) {
-      ctx.beginPath();
-      ctx.roundRect(-6, bandY, 12, 3, 1);
-      ctx.fillStyle = "#2a3a4a";
-      ctx.fill();
-      ctx.strokeStyle = "#445566";
-      ctx.lineWidth = 0.5;
-      ctx.stroke();
-    }
-
-    const missilePulse = 0.4 + Math.sin(now * 0.005 - 16) * 0.3;
-    ctx.beginPath();
-    ctx.arc(0, -tubeLen + 4, 3, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 60, 30, ${missilePulse * 0.6})`;
-    ctx.fill();
-
-    ctx.restore();
   }
 
-  // Draw right tube
-  {
-    const tx = sx + 16;
-    const ty = bunkerTop; // sit right on bunker top
-    const angle = -Math.PI * 0.62; // angled more steeply upward
-    ctx.save();
-    ctx.translate(tx, ty);
-    ctx.rotate(angle);
+  // Warhead glow
+  const missilePulse = 0.4 + Math.sin(now * 0.005) * 0.3;
+  ctx.beginPath();
+  ctx.arc(0, -tubeLen + 4, 3, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(255, 60, 30, ${missilePulse * 0.6})`;
+  ctx.fill();
 
-    // Mounting bracket flush with base
-    ctx.beginPath();
-    ctx.roundRect(-7, -4, 14, 6, 1);
-    ctx.fillStyle = "#2a3a4a";
-    ctx.fill();
-    ctx.strokeStyle = "#445566";
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
-
-    // Tube outer shell
-    ctx.beginPath();
-    ctx.roundRect(-5, -tubeLen, 10, tubeLen, 2);
-    ctx.fillStyle = "#1e2a38";
-    ctx.fill();
-    ctx.strokeStyle = "#3a4a5a";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Tube inner barrel
-    ctx.beginPath();
-    ctx.roundRect(-3, -tubeLen + 2, 6, tubeLen - 4, 1);
-    ctx.fillStyle = "#0f1820";
-    ctx.fill();
-
-    // Missile tip
-    ctx.beginPath();
-    ctx.moveTo(0, -tubeLen + 2);
-    ctx.lineTo(-2.5, -tubeLen + 8);
-    ctx.lineTo(2.5, -tubeLen + 8);
-    ctx.closePath();
-    ctx.fillStyle = "#cc3322";
-    ctx.fill();
-
-    // Band rings
-    for (const bandY of [-tubeLen + 10, -tubeLen + 18, -8]) {
-      ctx.beginPath();
-      ctx.roundRect(-6, bandY, 12, 3, 1);
-      ctx.fillStyle = "#2a3a4a";
-      ctx.fill();
-      ctx.strokeStyle = "#445566";
-      ctx.lineWidth = 0.5;
-      ctx.stroke();
-    }
-
-    const missilePulse = 0.4 + Math.sin(now * 0.005 + 16) * 0.3;
-    ctx.beginPath();
-    ctx.arc(0, -tubeLen + 4, 3, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 60, 30, ${missilePulse * 0.6})`;
-    ctx.fill();
-
-    ctx.restore();
-  }
+  ctx.restore();
 
   // ---- Status light on bunker front ----
   const statusPulse = 0.6 + Math.sin(now * 0.003) * 0.4;
