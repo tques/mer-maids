@@ -329,9 +329,402 @@ export function areSubmarinesGone(): boolean {
 }
 
 // ==================== BOMBARDMENT SUBMARINE ====================
-// A rare sub variant that surfaces near a structure, waits 3 seconds
-// (visible warning), fires a lobbed mortar at the structure, then retreats.
-// Only targets alive structures. Mortars do NOT hit city barriers.
+// Pops straight up from below the screen near the target structure,
+// surfaces for 3 seconds, fires a mortar, then sinks back down.
+// Completely vertical movement — unique among all enemies.
+// Only spawns when bomber target city's structure is alive.
+// Mortars do NOT hit city barriers.
+
+export interface BombardSub {
+  x: number;
+  y: number;
+  alive: boolean;
+  phase: "rising" | "aiming" | "firing" | "sinking";
+  phaseTimer: number;
+  targetStructureX: number;
+  targetStructureY: number;
+  surfaceY: number;
+}
+
+export interface Mortar {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  alive: boolean;
+  trail: { x: number; y: number }[];
+  targetX: number;
+  targetY: number;
+}
+
+let bombardSubs: BombardSub[] = [];
+let mortars: Mortar[] = [];
+let bombardSpawnTimer = 45;
+
+const BOMBARD_RISE_SPEED = 2.2;
+const BOMBARD_SINK_SPEED = 3.0;
+const BOMBARD_SPAWN_DEPTH = 300; // px below surface to spawn
+const BOMBARD_X_OFFSET = 160; // px sideways from structure so mortar has an arc
+const AIM_DURATION = 3.0;
+const MORTAR_GRAVITY = 0.18;
+const SCORE_BOMBARD_SUB = 350;
+
+export function resetBombardSubs() {
+  bombardSubs = [];
+  mortars = [];
+  bombardSpawnTimer = 45;
+}
+
+export function getBombardSubs() {
+  return bombardSubs;
+}
+export function getMortars() {
+  return mortars;
+}
+
+export function updateBombardSubs(
+  dt: number,
+  viewH: number,
+  playerX: number,
+  viewHalfW: number,
+  waveDifficulty: number,
+  fleeing: boolean,
+  gameTime: number,
+  /** Position of bomber target city's structure — null if destroyed */
+  bomberTargetStructure: { x: number; y: number } | null,
+): void {
+  const waterY = getWaterSurfaceY(viewH);
+
+  // ---- Spawning ----
+  if (!fleeing && gameTime > 30 && bomberTargetStructure !== null) {
+    bombardSpawnTimer -= dt;
+    const interval = Math.max(30 - waveDifficulty * 4, 15);
+    if (bombardSpawnTimer <= 0 && bombardSubs.filter((s) => s.alive).length === 0) {
+      bombardSpawnTimer = interval + Math.random() * 12;
+
+      // Spawn directly below the structure, offset slightly to one side
+      const side = Math.random() > 0.5 ? 1 : -1;
+      const spawnX = bomberTargetStructure.x + side * BOMBARD_X_OFFSET;
+
+      bombardSubs.push({
+        x: spawnX,
+        y: waterY + BOMBARD_SPAWN_DEPTH,
+        alive: true,
+        phase: "rising",
+        phaseTimer: 0,
+        targetStructureX: bomberTargetStructure.x,
+        targetStructureY: bomberTargetStructure.y,
+        surfaceY: waterY,
+      });
+    }
+  }
+
+  // ---- Update ----
+  for (const s of bombardSubs) {
+    if (!s.alive) continue;
+
+    // Fleeing — just sink immediately
+    if (fleeing && s.phase !== "sinking") s.phase = "sinking";
+
+    switch (s.phase) {
+      case "rising": {
+        s.y -= BOMBARD_RISE_SPEED;
+        if (s.y <= s.surfaceY) {
+          s.y = s.surfaceY;
+          s.phase = "aiming";
+          s.phaseTimer = AIM_DURATION;
+        }
+        break;
+      }
+      case "aiming": {
+        s.y = s.surfaceY;
+        s.phaseTimer -= dt;
+        if (s.phaseTimer <= 0) s.phase = "firing";
+        break;
+      }
+      case "firing": {
+        // Arc mortar to structure position
+        const dx = s.targetStructureX - s.x;
+        const dy = s.targetStructureY - s.y;
+        const flightTime = 55;
+        const vx = dx / flightTime;
+        const vy = dy / flightTime - 0.5 * MORTAR_GRAVITY * flightTime;
+        mortars.push({
+          x: s.x,
+          y: s.y - 10,
+          vx,
+          vy,
+          alive: true,
+          trail: [],
+          targetX: s.targetStructureX,
+          targetY: s.targetStructureY,
+        });
+        s.phase = "sinking";
+        break;
+      }
+      case "sinking": {
+        s.y += BOMBARD_SINK_SPEED;
+        // Despawn once well below screen
+        if (s.y > waterY + BOMBARD_SPAWN_DEPTH + 50) s.alive = false;
+        break;
+      }
+    }
+  }
+
+  // ---- Update mortars ----
+  for (const m of mortars) {
+    if (!m.alive) continue;
+    m.trail.push({ x: m.x, y: m.y });
+    if (m.trail.length > 18) m.trail.shift();
+    m.vy += MORTAR_GRAVITY;
+    m.x += m.vx;
+    m.y += m.vy;
+    if (m.y > waterY + 20) m.alive = false;
+    if (Math.abs(m.x - playerX) > viewHalfW * 4) m.alive = false;
+  }
+
+  bombardSubs = bombardSubs.filter((s) => s.alive);
+  mortars = mortars.filter((m) => m.alive);
+}
+
+export function checkMortarHitsStructure(
+  mortarList: Mortar[],
+  structurePos: { x: number; y: number } | null,
+  hitRadius: number = 42,
+): number {
+  if (!structurePos) return 0;
+  let hits = 0;
+  for (const m of mortarList) {
+    if (!m.alive) continue;
+    if (Math.hypot(m.x - structurePos.x, m.y - structurePos.y) < hitRadius) {
+      m.alive = false;
+      spawnExplosion(m.x, m.y, 30);
+      hits++;
+    }
+  }
+  return hits;
+}
+
+export function checkBulletHitsBombardSub(bullets: { x: number; y: number; dx: number; dy: number; id: number }[]): {
+  remaining: typeof bullets;
+  score: number;
+} {
+  const remaining: typeof bullets = [];
+  let score = 0;
+
+  for (const b of bullets) {
+    let hit = false;
+
+    // Only shootable while surfaced (aiming phase) — it's underwater otherwise
+    for (const s of bombardSubs) {
+      if (!s.alive) continue;
+      if (s.phase !== "aiming" && s.phase !== "firing") continue;
+      if (Math.hypot(b.x - s.x, b.y - s.y) < SUB_WIDTH / 2 + 5) {
+        s.alive = false;
+        spawnExplosion(s.x, s.y, 40, SCORE_BOMBARD_SUB);
+        score += SCORE_BOMBARD_SUB;
+        hit = true;
+        break;
+      }
+    }
+
+    // Mortars in flight are always shootable
+    if (!hit) {
+      for (const m of mortars) {
+        if (!m.alive) continue;
+        if (Math.hypot(b.x - m.x, b.y - m.y) < 10) {
+          m.alive = false;
+          spawnExplosion(m.x, m.y, 20, 75);
+          score += 75;
+          hit = true;
+          break;
+        }
+      }
+    }
+
+    if (!hit) remaining.push(b);
+  }
+
+  return { remaining, score };
+}
+
+export function drawBombardSubs(ctx: CanvasRenderingContext2D) {
+  const now = performance.now();
+
+  // ---- Mortars ----
+  for (const m of mortars) {
+    if (!m.alive) continue;
+
+    // Smoke trail
+    for (let i = 0; i < m.trail.length; i++) {
+      const t = i / m.trail.length;
+      const tr = m.trail[i];
+      ctx.beginPath();
+      ctx.arc(tr.x, tr.y, 2 + t * 2, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(180, 120, 60, ${t * 0.4})`;
+      ctx.fill();
+    }
+
+    // Shell
+    ctx.save();
+    ctx.translate(m.x, m.y);
+    ctx.rotate(now * 0.01);
+    const ms = 6;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      if (i === 0) ctx.moveTo(Math.cos(a) * ms, Math.sin(a) * ms);
+      else ctx.lineTo(Math.cos(a) * ms, Math.sin(a) * ms);
+    }
+    ctx.closePath();
+    ctx.fillStyle = "#2a1a0a";
+    ctx.fill();
+    ctx.strokeStyle = "#ff6030";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 120, 40, ${0.7 + Math.sin(now * 0.02) * 0.3})`;
+    ctx.fill();
+    ctx.restore();
+
+    // Landing marker — dashed X at target
+    ctx.save();
+    ctx.setLineDash([3, 4]);
+    ctx.strokeStyle = "rgba(255, 100, 40, 0.55)";
+    ctx.lineWidth = 1.5;
+    const xs = 9;
+    ctx.beginPath();
+    ctx.moveTo(m.targetX - xs, m.targetY - xs);
+    ctx.lineTo(m.targetX + xs, m.targetY + xs);
+    ctx.moveTo(m.targetX + xs, m.targetY - xs);
+    ctx.lineTo(m.targetX - xs, m.targetY + xs);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  // ---- Bombardment subs ----
+  for (const s of bombardSubs) {
+    if (!s.alive) continue;
+
+    // Only draw when near or at surface — fade in as it rises
+    const distFromSurface = s.y - s.surfaceY;
+    const visibility = Math.max(0, Math.min(1, 1 - distFromSurface / 80));
+    if (visibility <= 0) continue;
+
+    ctx.save();
+    ctx.globalAlpha = visibility;
+    ctx.translate(s.x, s.y);
+
+    const hw = SUB_WIDTH / 2 + 4;
+    const hh = SUB_HEIGHT / 2;
+
+    // Hull — orange-tinted to distinguish from regular subs
+    ctx.beginPath();
+    ctx.ellipse(0, 0, hw, hh, 0, 0, Math.PI * 2);
+    const hullGrad = ctx.createLinearGradient(0, -hh, 0, hh);
+    hullGrad.addColorStop(0, "#3a2010");
+    hullGrad.addColorStop(0.5, "#201008");
+    hullGrad.addColorStop(1, "#2a1808");
+    ctx.fillStyle = hullGrad;
+    ctx.fill();
+    ctx.strokeStyle = "#664422";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Danger stripe
+    ctx.beginPath();
+    ctx.ellipse(0, 0, hw * 0.9, hh * 0.5, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#6a2000";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(0, 0, hw * 0.7, hh * 0.3, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#1a0800";
+    ctx.fill();
+
+    // Mortar barrel — angled toward target, visible when aiming
+    if (s.phase === "aiming" || s.phase === "firing") {
+      const barrelAngle = Math.atan2(s.targetStructureY - s.y, s.targetStructureX - s.x) - Math.PI * 0.25;
+      ctx.save();
+      ctx.translate(0, -hh);
+      ctx.rotate(barrelAngle);
+      ctx.fillStyle = "#443322";
+      ctx.fillRect(-2, -14, 4, 14);
+      ctx.strokeStyle = "#886644";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-2, -14, 4, 14);
+      if (s.phase === "firing") {
+        ctx.beginPath();
+        ctx.arc(0, -14, 6, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255, 160, 60, 0.9)";
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // Conning tower
+    ctx.beginPath();
+    ctx.moveTo(-6, -hh);
+    ctx.lineTo(-4, -hh - 9);
+    ctx.lineTo(4, -hh - 9);
+    ctx.lineTo(6, -hh);
+    ctx.closePath();
+    ctx.fillStyle = "#2a1808";
+    ctx.fill();
+    ctx.strokeStyle = "#884422";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Eye — orange
+    const eyeDir = s.targetStructureX > s.x ? 1 : -1;
+    const eyeX = eyeDir * hw * 0.35;
+    ctx.beginPath();
+    ctx.arc(eyeX, 0, 4, 0, Math.PI * 2);
+    ctx.fillStyle = "#111";
+    ctx.fill();
+    const eyePulse = 0.6 + Math.sin(now * 0.006) * 0.4;
+    ctx.beginPath();
+    ctx.arc(eyeX, 0, 3, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 120, 20, ${eyePulse})`;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(eyeX, 0, 1.2, 0, Math.PI * 2);
+    ctx.fillStyle = "#fff";
+    ctx.fill();
+
+    // Aiming flash ring + countdown arc
+    if (s.phase === "aiming") {
+      if (Math.sin(now * 0.012) > 0) {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, hw + 8, hh + 8, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255, 120, 40, 0.8)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      const fraction = s.phaseTimer / AIM_DURATION;
+      ctx.beginPath();
+      ctx.arc(0, -hh - 14, 8, -Math.PI / 2, -Math.PI / 2 + fraction * Math.PI * 2);
+      ctx.strokeStyle = "rgba(255, 160, 40, 0.9)";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    }
+
+    // Rising water disturbance — ripples while coming up
+    if (s.phase === "rising" && distFromSurface < 60) {
+      const rippleAlpha = (1 - distFromSurface / 60) * 0.4;
+      for (const r of [12, 22, 34]) {
+        ctx.beginPath();
+        ctx.ellipse(0, -hh, r, r * 0.3, 0, Math.PI, 0);
+        ctx.strokeStyle = `rgba(100, 200, 220, ${rippleAlpha * (1 - r / 40)})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+  }
+}
 
 export interface BombardSub {
   x: number;
