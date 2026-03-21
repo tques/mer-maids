@@ -361,10 +361,10 @@ let bombardSubs: BombardSub[] = [];
 let mortars: Mortar[] = [];
 let bombardSpawnTimer = 45;
 
-const BOMBARD_RISE_SPEED = 2.2;
-const BOMBARD_SINK_SPEED = 3.0;
+const BOMBARD_RISE_SPEED = 1.2;
+const BOMBARD_SINK_SPEED = 1.8;
 const BOMBARD_SPAWN_DEPTH = 300; // px below surface to spawn
-const BOMBARD_X_OFFSET = 160; // px sideways from structure so mortar has an arc
+const BOMBARD_X_OFFSET = 220; // offset outward from city center past platform edge
 const AIM_DURATION = 3.0;
 const MORTAR_GRAVITY = 0.18;
 const SCORE_BOMBARD_SUB = 350;
@@ -392,6 +392,8 @@ export function updateBombardSubs(
   gameTime: number,
   /** Position of bomber target city's structure — null if destroyed */
   bomberTargetStructure: { x: number; y: number } | null,
+  /** Center X of the bomber target city — used to compute outward spawn direction */
+  bomberCityX: number = 0,
 ): void {
   const waterY = getWaterSurfaceY(viewH);
 
@@ -402,9 +404,9 @@ export function updateBombardSubs(
     if (bombardSpawnTimer <= 0 && bombardSubs.filter((s) => s.alive).length === 0) {
       bombardSpawnTimer = interval + Math.random() * 12;
 
-      // Spawn directly below the structure, offset slightly to one side
-      const side = Math.random() > 0.5 ? 1 : -1;
-      const spawnX = bomberTargetStructure.x + side * BOMBARD_X_OFFSET;
+      // Always offset outward from the city center so sub spawns outside the platform
+      const outwardDir = bomberTargetStructure.x >= bomberCityX ? 1 : -1;
+      const spawnX = bomberTargetStructure.x + outwardDir * BOMBARD_X_OFFSET;
 
       bombardSubs.push({
         x: spawnX,
