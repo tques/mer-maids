@@ -133,12 +133,13 @@ This is the heart of the game. It contains:
 - `updateParticles()`: Advances wave time and updates splash/ripple physics.
 - `drawWater()`: Renders the ocean with gradient, caustic lights, wave highlights, foam caps, ripples, and splashes.
 
-### `src/game/boat.ts` — Floating City
+### `src/game/boat.ts` — Floating Cities
 
-- `createBoat()`: Initializes the city platform at world center.
-- `getBoatTopY()`: Returns the top Y of the platform (follows waves).
+- `createCities()`: Creates all three cities (Port Zenith, Haven, New Bastion) with unique building layouts.
+- `createBoat()`: Initializes a single city platform (used internally).
+- `getBoatTopY()`: Returns the top Y of a platform (follows waves).
 - `drawBoat()`: Renders the full city — platform base, buildings with lights, dome barrier with cracks, smoke/fire effects when damaged.
-- `collideWithBoat()`: Pushes the player away from the city platform.
+- `collideWithBoat()`: Pushes the player away from the city platform. Also blocks bullets from passing through platforms.
 
 ### `src/game/effects.ts` — Shared Visual Effects
 
