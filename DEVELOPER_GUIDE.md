@@ -151,12 +151,13 @@ This is the heart of the game. It contains:
 
 ### `src/game/enemies.ts` — Air Enemies
 
-- **Bombers**: Fly across the screen, drop dark hexagonal tumbling bombs with pulsing toxic green cores on the city.
-- **Chasers**: Aggressive fighters that pursue the player and fire bullets + homing missiles.
-- **Homing Missiles**: Track the player with turn rate limiting. Can be deflected by barrel rolls.
+- **Bombers**: Fly across the screen, drop dark hexagonal tumbling bombs with pulsing toxic green cores on a targeted city. Target city rotates each wave (never the same city twice in a row).
+- **Chasers**: Aggressive fighters that pursue the player and fire bullets + homing missiles. Spawn at 3x the normal rate but fire missiles at 1/3rd rate and bullets at 1/2 rate.
+- **Homing Missiles**: Track the player with turn rate limiting. Can be deflected by barrel rolls into an erratic lethal swerve that can destroy any enemy, mine, or minelayer. Explode on contact with the water surface.
 - `updateEnemies()`: Spawns and updates all air enemies based on wave difficulty. Also calls `updateEffects()`.
 - `checkBulletCollisions()`: Tests player bullets against all enemy types.
 - `drawEnemies()`: Renders all air enemy types, their projectiles, and calls `drawEffects()`.
+- `setBomberTargetCity()` / `getBomberTargetCityIndex()`: Controls which city bombers attack each wave.
 - Enemies use a **dark industrial robotic** aesthetic — metal paneling, mechanical details, pulsing red/green sensor eyes.
 
 ### `src/game/gunboat.ts` — Gunboat (Armored Surface Enemy)
