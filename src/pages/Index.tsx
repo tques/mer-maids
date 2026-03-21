@@ -1979,29 +1979,19 @@ const Index = () => {
               <div className="text-xs tracking-widest uppercase mb-2" style={{ color: "#74b9ff" }}>
                 KEY MECHANICS
               </div>
-              <div className="text-sm leading-relaxed space-y-1" style={{ color: "#ccc" }}>
-                <p>
-                  <span style={{ color: "#74b9ff" }}>FUEL</span> — Flying uses water. Dive underwater to refuel.
-                </p>
-                <p>
-                  <span style={{ color: "#f0c830" }}>AMMO</span> — Limited ammo. Collect ammo crates that drop during
-                  combat.
-                </p>
-                <p>
-                  <span style={{ color: "#5a9" }}>BARREL ROLL</span> — Dodge enemy fire with a quick lateral roll.
-                </p>
-                <p>
-                  <span style={{ color: "#ff7675" }}>BOOST</span> — Hold <span style={{ color: "#ff7675" }}>W</span> for
-                  high-speed boost. Uses more fuel, locks steering, deflects missiles.
-                </p>
-                <p>
-                  <span style={{ color: "#64ffeb" }}>RAM BLADES</span> — At full HP, blades extend. Boost into enemies
-                  to destroy them instantly!
-                </p>
-                <p>
-                  <span style={{ color: "#ffb830" }}>CITY REPAIR</span> — Repair pickups heal the most damaged city
-                  automatically.
-                </p>
+              <div className="text-sm leading-relaxed" style={{ color: "#ccc", display: "grid", gridTemplateColumns: "auto 1fr", gap: "4px 10px" }}>
+                <span style={{ color: "#74b9ff", textAlign: "right" }}>FUEL</span>
+                <span>Flying uses water. Dive underwater to refuel.</span>
+                <span style={{ color: "#f0c830", textAlign: "right" }}>AMMO</span>
+                <span>Limited ammo. Collect ammo crates that drop during combat.</span>
+                <span style={{ color: "#5a9", textAlign: "right" }}>BARREL ROLL</span>
+                <span>Dodge enemy fire with a quick lateral roll. Breaks missile lock-on.</span>
+                <span style={{ color: "#ff7675", textAlign: "right" }}>BOOST</span>
+                <span>High-speed dash. Uses more fuel, locks steering, deflects missiles.</span>
+                <span style={{ color: "#64ffeb", textAlign: "right" }}>RAM BLADES</span>
+                <span>At full HP, blades extend. Boost into enemies to destroy them!</span>
+                <span style={{ color: "#ffb830", textAlign: "right" }}>CITY REPAIR</span>
+                <span>Repair pickups heal the most damaged city automatically.</span>
               </div>
             </div>
             <div className="flex gap-4 text-left text-xs" style={{ color: "#999" }}>
