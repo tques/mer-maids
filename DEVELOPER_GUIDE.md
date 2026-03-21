@@ -76,14 +76,23 @@ loop() {
 
 ### Coordinate System
 
-- **World space**: The game world is `WORLD_WIDTH` (3000) pixels wide and wraps horizontally.
+- **World space**: The game world is `WORLD_WIDTH` (9000) pixels wide and wraps horizontally. Three named cities are spread across the world.
 - **View space**: The camera follows the player. `viewW = canvas.width / ZOOM`, `viewH = canvas.height / ZOOM`.
 - **Screen space**: Raw pixel coordinates on the canvas (used for HUD drawing).
 - The camera offset is `camX = playerX - viewW / 2`.
 
 ### World Wrapping
 
-The world wraps seamlessly — when the player crosses `x=3000`, they appear at `x=0`. The renderer draws 3 copies of the world (offset by `±WORLD_WIDTH`) to handle the seam.
+The world wraps seamlessly — when the player crosses `x=9000`, they appear at `x=0`. The renderer draws 3 copies of the world (offset by `±WORLD_WIDTH`) to handle the seam.
+
+### Multiple Cities
+
+The game features three named floating cities spread across the 9000-wide world:
+- **Port Zenith** (left)
+- **Haven** (center)
+- **New Bastion** (right)
+
+Each city has unique building layouts. Bombers rotate targets between waves so the same city is never attacked twice in a row. Submarines always target a different city than the bombers. Score-based powerup drops spawn at whichever city is nearest to the player.
 
 ---
 
