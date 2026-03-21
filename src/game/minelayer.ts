@@ -99,18 +99,12 @@ export function updateMinelayer(
   const waterY = getWaterSurfaceY(viewH);
   gameTime += dt;
 
-  // ---- Spawn planes ----
-  // When SAM is down: spawn even during fleeing phase, shorter interval
-  const canSpawn = samAlive ? !fleeing : true;
+  // Minelayers only spawn when SAM is down — samAlive=false gates spawning entirely
+  const canSpawn = !samAlive && !fleeing;
   if (canSpawn) {
     spawnTimer -= dt;
-    const firstSpawnReady = samAlive ? gameTime > FIRST_SPAWN_DELAY / waveDifficulty : true; // no delay once SAM is down
-
-    if (spawnTimer <= 0 && firstSpawnReady) {
-      const minInterval = samAlive ? SPAWN_INTERVAL_MIN : SPAWN_INTERVAL_NO_SAM_MIN;
-      const maxInterval = samAlive ? SPAWN_INTERVAL_MAX : SPAWN_INTERVAL_NO_SAM_MAX;
-      spawnTimer = minInterval + Math.random() * (maxInterval - minInterval);
-
+    if (spawnTimer <= 0) {
+      spawnTimer = SPAWN_INTERVAL_NO_SAM_MIN + Math.random() * (SPAWN_INTERVAL_NO_SAM_MAX - SPAWN_INTERVAL_NO_SAM_MIN);
       const fromLeft = Math.random() > 0.5;
       planes.push({
         x: fromLeft ? -50 : worldWidth + 50,
