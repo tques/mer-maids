@@ -362,11 +362,11 @@ let bombardSubs: BombardSub[] = [];
 let mortars: Mortar[] = [];
 let bombardSpawnTimer = 90;
 
-const BOMBARD_SPEED = 0.5;
+const BOMBARD_SPEED = 1.8;
 const BOMBARD_CRUISE_DEPTH = 120;
-const BOMBARD_SURFACE_SPEED = 1.2;
+const BOMBARD_SURFACE_SPEED = 2.5;
 const BOMBARD_SPAWN_DIST = 700;
-const BOMBARD_FIRE_OFFSET = 180;
+const BOMBARD_FIRE_OFFSET = 520; // must exceed widest city hw (Haven=480) to surface outside platform
 const AIM_DURATION = 3.0;
 const MORTAR_GRAVITY = 0.18;
 const SCORE_BOMBARD_SUB = 350;
@@ -392,17 +392,18 @@ export function updateBombardSubs(
   waveDifficulty: number,
   fleeing: boolean,
   gameTime: number,
-  aliveStructurePositions: { x: number; y: number }[],
+  /** Position of the bomber target city's structure — null if destroyed or unavailable */
+  bomberTargetStructure: { x: number; y: number } | null,
 ): void {
   const waterY = getWaterSurfaceY(viewH);
 
-  if (!fleeing && gameTime > 60 && aliveStructurePositions.length > 0) {
+  if (!fleeing && gameTime > 60 && bomberTargetStructure !== null) {
     bombardSpawnTimer -= dt;
     const interval = Math.max(55 - waveDifficulty * 6, 28);
     if (bombardSpawnTimer <= 0 && bombardSubs.filter((s) => s.alive).length === 0) {
       bombardSpawnTimer = interval + Math.random() * 20;
 
-      const target = aliveStructurePositions[Math.floor(Math.random() * aliveStructurePositions.length)];
+      const target = bomberTargetStructure;
 
       const fromLeft = target.x > playerX;
       const dir = fromLeft ? 1 : -1;

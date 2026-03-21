@@ -766,6 +766,11 @@ const Index = () => {
         scoreRef.current += subResult.score;
 
         // ---- Bombardment submarines ----
+        // Target the structure of whichever city bombers are currently attacking
+        const bomberTargetStructPos =
+          (cityStructHPs[bomberTargetRef.current]?.hp ?? 0) > 0
+            ? getStructureWorldPos(cities[bomberTargetRef.current], viewH)
+            : null;
         updateBombardSubs(
           dt,
           viewH,
@@ -774,7 +779,7 @@ const Index = () => {
           waveDiff,
           wave.enemiesFleeing,
           performance.now() / 1000,
-          aliveStructurePositions,
+          bomberTargetStructPos,
         );
         const bombardResult = checkBulletHitsBombardSub(bulletsRef.current);
         bulletsRef.current = bombardResult.remaining;
