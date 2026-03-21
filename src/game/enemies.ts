@@ -314,7 +314,7 @@ export function updateEnemies(
         rotation: 0,
         rotSpeed: (Math.random() - 0.5) * 8,
         alive: true,
-        hangTime: 0.5 + Math.random() * 0.3,
+        hangTime: 0,
       });
     }
     if (Math.abs(e.x - playerX) > viewHalfW * 4) e.alive = false;

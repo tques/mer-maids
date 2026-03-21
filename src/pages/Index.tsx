@@ -113,7 +113,7 @@ const FUEL_REFILL_RATE = 25;
 const FUEL_LOW_THRESHOLD = 25;
 const NUM_CITIES = 3;
 const STRUCTURE_MAX_HP = 3;
-const STRUCTURE_HIT_RADIUS = 28;
+const STRUCTURE_HIT_RADIUS = 42;
 
 interface Bullet {
   x: number;
