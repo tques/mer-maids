@@ -474,7 +474,7 @@ const Index = () => {
 
       if (gp.thrust || gp.fire) gamepadAimingRef.current = true;
       const isThrusting = keysRef.current.has("thrust") || gp.thrust;
-      const isBoosting = keysRef.current.has("w");
+      const isBoosting = keysRef.current.has("w") || gp.boost;
       const isMoving = isThrusting || isBoosting;
       const hasFuel = fuelRef.current > 0;
       const vel = velRef.current;
@@ -2036,7 +2036,10 @@ const Index = () => {
                   <span style={{ color: "#ccc" }}>Y / LB / LT</span> — Thrust
                 </p>
                 <p>
-                  <span style={{ color: "#ccc" }}>A / B / X / RB / RT</span> — Fire
+                  <span style={{ color: "#ccc" }}>A / X / RB / RT</span> — Fire
+                </p>
+                <p>
+                  <span style={{ color: "#ccc" }}>B</span> — Boost
                 </p>
                 <p>
                   <span style={{ color: "#ccc" }}>D-Pad ◄►</span> — Barrel Roll

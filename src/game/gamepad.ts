@@ -42,8 +42,9 @@ export interface GamepadState {
   dpadDown: boolean;
 
   // Action buttons (mapped to game actions)
-  fire: boolean;    // A, B, X, RB, or RT pressed
+  fire: boolean;    // A, X, RB, or RT pressed
   thrust: boolean;  // Y, LB, or LT pressed
+  boost: boolean;   // B button (high-speed boost)
   start: boolean;   // Start/Options button
   faceA: boolean;   // A button specifically (for menu selection)
 
@@ -75,6 +76,7 @@ let lastState: GamepadState = {
   dpadDown: false,
   fire: false,
   thrust: false,
+  boost: false,
   start: false,
   faceA: false,
   connected: false,
@@ -112,6 +114,7 @@ export function pollGamepad(): GamepadState {
       rightStickActive: false,
       fire: false,
       thrust: false,
+      boost: false,
       start: false,
       faceA: false,
       dpadLeft: false,
@@ -148,15 +151,16 @@ export function pollGamepad(): GamepadState {
   const dpadLeft = gp.buttons[14]?.pressed ?? false;
   const dpadRight = gp.buttons[15]?.pressed ?? false;
 
-  // ---- FIRE: multiple buttons for accessibility ----
-  // A(0), B(1), X(2) face buttons, RB(5), RT(7) shoulder/trigger
+  // ---- FIRE: A(0), X(2), RB(5), RT(7) ----
   const fire =
     (gp.buttons[0]?.pressed ?? false) ||
-    (gp.buttons[1]?.pressed ?? false) ||
     (gp.buttons[2]?.pressed ?? false) ||
     (gp.buttons[5]?.pressed ?? false) ||  // Right bumper
     (gp.buttons[7]?.pressed ?? false) ||  // Right trigger (digital)
     (gp.buttons[7]?.value ?? 0) > 0.15;  // Right trigger (analog)
+
+  // ---- BOOST: B/Circle(1) ----
+  const boost = gp.buttons[1]?.pressed ?? false;
 
   // ---- THRUST: Y/Triangle(3), LB(4), LT(6) ----
   const thrust =
@@ -183,6 +187,7 @@ export function pollGamepad(): GamepadState {
     dpadDown,
     fire,
     thrust,
+    boost,
     start,
     faceA,
     connected: true,
