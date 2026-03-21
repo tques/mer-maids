@@ -739,8 +739,8 @@ export function drawBoat(
     ctx.restore();
   }
 
-  // Statue (only on the largest / center city — Haven)
-  if (boat.width >= 700) {
+  // Statue and SAM site only on Haven
+  if (boat.name === "HAVEN") {
     const sx = boat.x + hw - 60;
     const statueH = 120;
     const baseY2 = topY;
