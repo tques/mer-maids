@@ -31,7 +31,7 @@ export function createCities(worldWidth: number): Boat[] {
   return [
     { x: Math.floor(worldWidth * 0.17), width: 580, hullDepth: 36, name: "PORT ASTRA" },
     { x: Math.floor(worldWidth * 0.5), width: 960, hullDepth: 36, name: "HAVEN" },
-    { x: Math.floor(worldWidth * 0.83), width: 720, hullDepth: 36, name: "NOVA MARE" },
+    { x: Math.floor(worldWidth * 0.83), width: 800, hullDepth: 36, name: "NOVA MARE" },
   ];
 }
 
@@ -47,8 +47,10 @@ export function getBoatTopY(boat: Boat, viewH: number): number {
  * three capacitor cylinders and pulsing energy conduits between them.
  */
 function drawShieldBattery(ctx: CanvasRenderingContext2D, cityX: number, hw: number, topY: number, now: number) {
-  // Place on RIGHT side, clearly outside barrier (hw*0.85)
-  const sx = cityX + hw - 55;
+  // hw=400, barrier radius = 400*0.85 = 340px.
+  // bunkerW=62, so left edge of bunker = sx - 31. Need sx - 31 > 340, so sx > 371.
+  // sx = cityX + hw - 28 = cityX + 372 — left edge at 341px, just clear.
+  const sx = cityX + hw - 28;
   const baseY = topY;
 
   ctx.save();
