@@ -255,6 +255,19 @@ npm test
 
 ---
 
+## Key Gameplay Mechanics
+
+### Buoyancy Suppression
+Buoyancy is suppressed while the player is thrusting (holding movement keys) or firing. This allows the player to stay submerged easily during combat without fighting against upward buoyancy force.
+
+### Boost Damage Immunity
+While boosting forward, the player is immune to normal enemy bullets (but not missiles, bombs, or rams). This encourages aggressive play.
+
+### Bullet-Platform Collision
+Player bullets are blocked by city platforms — they cannot pass through the hull of any city.
+
+---
+
 ## How to Modify the Game
 
 ### Changing game balance
