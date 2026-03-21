@@ -42,8 +42,9 @@ export interface GamepadState {
   dpadDown: boolean;
 
   // Action buttons (mapped to game actions)
-  fire: boolean;    // A, B, X, RB, or RT pressed
+  fire: boolean;    // A, X, RB, or RT pressed
   thrust: boolean;  // Y, LB, or LT pressed
+  boost: boolean;   // B button (high-speed boost)
   start: boolean;   // Start/Options button
   faceA: boolean;   // A button specifically (for menu selection)
 
