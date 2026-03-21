@@ -31,7 +31,7 @@ export function createCities(worldWidth: number): Boat[] {
   return [
     { x: Math.floor(worldWidth * 0.17), width: 580, hullDepth: 36, name: "PORT ASTRA" },
     { x: Math.floor(worldWidth * 0.5), width: 960, hullDepth: 36, name: "HAVEN" },
-    { x: Math.floor(worldWidth * 0.83), width: 580, hullDepth: 36, name: "NOVA MARE" },
+    { x: Math.floor(worldWidth * 0.83), width: 720, hullDepth: 36, name: "NOVA MARE" },
   ];
 }
 
@@ -39,6 +39,188 @@ export function getBoatTopY(boat: Boat, viewH: number): number {
   const surfaceY = getWaterSurfaceY(viewH);
   const waveY = getWaveY(boat.x, surfaceY);
   return waveY - 22;
+}
+
+/**
+ * Draw a Shield Battery on the right side of Nova Mare.
+ * Simpler than the SAM site — a squat reinforced base with
+ * three capacitor cylinders and pulsing energy conduits between them.
+ */
+function drawShieldBattery(ctx: CanvasRenderingContext2D, cityX: number, hw: number, topY: number, now: number) {
+  // Place on RIGHT side, clearly outside barrier (hw*0.85)
+  const sx = cityX + hw - 55;
+  const baseY = topY;
+
+  ctx.save();
+
+  // ---- Squat bunker base ----
+  const bunkerW = 62;
+  const bunkerH = 18;
+  const bunkerX = sx - bunkerW / 2;
+  const bunkerTop = baseY - bunkerH;
+
+  ctx.beginPath();
+  ctx.moveTo(bunkerX + 5, bunkerTop);
+  ctx.lineTo(bunkerX + bunkerW - 5, bunkerTop);
+  ctx.lineTo(bunkerX + bunkerW, bunkerTop + 7);
+  ctx.lineTo(bunkerX + bunkerW, baseY);
+  ctx.lineTo(bunkerX, baseY);
+  ctx.lineTo(bunkerX, bunkerTop + 7);
+  ctx.closePath();
+  const bunkerGrad = ctx.createLinearGradient(bunkerX, bunkerTop, bunkerX, baseY);
+  bunkerGrad.addColorStop(0, "#1e2a3a");
+  bunkerGrad.addColorStop(0.5, "#131c28");
+  bunkerGrad.addColorStop(1, "#0a1018");
+  ctx.fillStyle = bunkerGrad;
+  ctx.fill();
+  ctx.strokeStyle = "#2a3a50";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Bunker panel line
+  ctx.strokeStyle = "rgba(60, 120, 180, 0.2)";
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(bunkerX + 14, bunkerTop + 3);
+  ctx.lineTo(bunkerX + 14, baseY);
+  ctx.moveTo(bunkerX + bunkerW - 14, bunkerTop + 3);
+  ctx.lineTo(bunkerX + bunkerW - 14, baseY);
+  ctx.stroke();
+
+  // Energy intake vent slots on front face
+  ctx.fillStyle = "rgba(60, 140, 220, 0.25)";
+  for (let i = 0; i < 4; i++) {
+    ctx.fillRect(bunkerX + 18 + i * 7, bunkerTop + 9, 4, 5);
+  }
+
+  // ---- Platform collar ----
+  ctx.beginPath();
+  ctx.moveTo(bunkerX - 5, baseY);
+  ctx.lineTo(bunkerX + bunkerW + 5, baseY);
+  ctx.lineTo(bunkerX + bunkerW + 3, baseY - 4);
+  ctx.lineTo(bunkerX - 3, baseY - 4);
+  ctx.closePath();
+  ctx.fillStyle = "#1a2230";
+  ctx.fill();
+  ctx.strokeStyle = "#334455";
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  // ---- Three capacitor cylinders ----
+  const capPositions = [-18, 0, 18];
+  const capH = 24;
+  const capR = 6;
+  const energyPulse = 0.5 + Math.sin(now * 0.004) * 0.5;
+
+  for (let i = 0; i < capPositions.length; i++) {
+    const cx = sx + capPositions[i];
+    const capTop = bunkerTop - capH;
+    const phase = (i / capPositions.length) * Math.PI * 2;
+    const capGlow = 0.4 + Math.sin(now * 0.004 + phase) * 0.3;
+
+    // Cylinder body
+    ctx.beginPath();
+    ctx.roundRect(cx - capR, capTop, capR * 2, capH, 3);
+    const capGrad = ctx.createLinearGradient(cx - capR, capTop, cx + capR, capTop);
+    capGrad.addColorStop(0, "#1a2535");
+    capGrad.addColorStop(0.4, "#253545");
+    capGrad.addColorStop(0.6, "#253545");
+    capGrad.addColorStop(1, "#1a2535");
+    ctx.fillStyle = capGrad;
+    ctx.fill();
+    ctx.strokeStyle = "#2a3a50";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Cylinder highlight strip
+    ctx.beginPath();
+    ctx.roundRect(cx - capR + 2, capTop + 2, 3, capH - 4, 1);
+    ctx.fillStyle = "rgba(100, 160, 220, 0.15)";
+    ctx.fill();
+
+    // Band rings on cylinder
+    for (const bandY of [capTop + 5, capTop + 13, capTop + 20]) {
+      ctx.beginPath();
+      ctx.roundRect(cx - capR - 1, bandY, capR * 2 + 2, 2, 1);
+      ctx.fillStyle = "#2a3a50";
+      ctx.fill();
+      ctx.strokeStyle = "#3a4a60";
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+
+    // Top cap with energy glow
+    ctx.beginPath();
+    ctx.ellipse(cx, capTop, capR, 3, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#1e2e42";
+    ctx.fill();
+    ctx.strokeStyle = "#3a5a70";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Energy core glow inside top cap
+    ctx.beginPath();
+    ctx.ellipse(cx, capTop, capR - 2, 2, 0, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(60, 160, 255, ${capGlow * 0.8})`;
+    ctx.fill();
+
+    // Outer glow halo above cap
+    ctx.beginPath();
+    ctx.arc(cx, capTop, capR + 3, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(40, 120, 255, ${capGlow * 0.12})`;
+    ctx.fill();
+
+    // Base connector stub into bunker top
+    ctx.beginPath();
+    ctx.roundRect(cx - capR + 1, bunkerTop - 3, (capR - 1) * 2, 5, 1);
+    ctx.fillStyle = "#2a3a4a";
+    ctx.fill();
+    ctx.strokeStyle = "#3a4a5a";
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+
+  // ---- Energy conduit lines between capacitors ----
+  // Drawn as arcing lines with animated dash offset for a "live wire" feel
+  const dashOffset = (now * 0.05) % 12;
+  ctx.setLineDash([4, 8]);
+  ctx.lineDashOffset = -dashOffset;
+
+  for (let i = 0; i < capPositions.length - 1; i++) {
+    const x1 = sx + capPositions[i];
+    const x2 = sx + capPositions[i + 1];
+    const arcY = bunkerTop - capH - 6;
+    const conduitAlpha = 0.3 + energyPulse * 0.4;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, bunkerTop - capH);
+    ctx.quadraticCurveTo((x1 + x2) / 2, arcY, x2, bunkerTop - capH);
+    ctx.strokeStyle = `rgba(60, 160, 255, ${conduitAlpha})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  ctx.setLineDash([]);
+  ctx.lineDashOffset = 0;
+
+  // ---- Status light ----
+  const statusPulse = 0.6 + Math.sin(now * 0.003) * 0.4;
+  ctx.beginPath();
+  ctx.arc(sx, bunkerTop + 6, 3, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(60, 160, 255, ${statusPulse})`;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(sx, bunkerTop + 6, 5, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(60, 160, 255, ${statusPulse * 0.2})`;
+  ctx.fill();
+
+  // ---- Label ----
+  ctx.font = "bold 7px monospace";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(80, 160, 220, 0.6)";
+  ctx.fillText("SHIELD-B", sx, bunkerTop - capH - 14);
+
+  ctx.restore();
 }
 
 /**
@@ -691,6 +873,11 @@ export function drawBoat(
 
     // ---- SAM site on left side of Haven ----
     drawSAMSite(ctx, boat.x, hw, topY, now);
+  }
+
+  // Shield Battery on right side of Nova Mare
+  if (boat.name === "NOVA MARE") {
+    drawShieldBattery(ctx, boat.x, hw, topY, now);
   }
 
   if (exposed) {
