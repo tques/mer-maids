@@ -474,7 +474,7 @@ const Index = () => {
 
       if (gp.thrust || gp.fire) gamepadAimingRef.current = true;
       const isThrusting = keysRef.current.has("thrust") || gp.thrust;
-      const isBoosting = keysRef.current.has("w");
+      const isBoosting = keysRef.current.has("w") || gp.boost;
       const isMoving = isThrusting || isBoosting;
       const hasFuel = fuelRef.current > 0;
       const vel = velRef.current;
