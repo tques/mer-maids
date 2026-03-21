@@ -25,11 +25,12 @@ export function createBoat(worldWidth: number): Boat {
 /**
  * Create all three cities spread across the world.
  * Left city, Center city, Right city.
+ * Haven is wider to accommodate the SAM site on the left.
  */
 export function createCities(worldWidth: number): Boat[] {
   return [
     { x: Math.floor(worldWidth * 0.17), width: 580, hullDepth: 36, name: "PORT ASTRA" },
-    { x: Math.floor(worldWidth * 0.5), width: 700, hullDepth: 36, name: "HAVEN" },
+    { x: Math.floor(worldWidth * 0.5), width: 820, hullDepth: 36, name: "HAVEN" },
     { x: Math.floor(worldWidth * 0.83), width: 580, hullDepth: 36, name: "NOVA MARE" },
   ];
 }
@@ -38,6 +39,218 @@ export function getBoatTopY(boat: Boat, viewH: number): number {
   const surfaceY = getWaterSurfaceY(viewH);
   const waveY = getWaveY(boat.x, surfaceY);
   return waveY - 22;
+}
+
+/**
+ * Draw a SAM (Surface-to-Air Missile) site on the left side of Haven.
+ * Industrial-alien aesthetic matching the rest of the game.
+ * Consists of: a reinforced bunker base, rotating radar dish, and two missile tubes.
+ */
+function drawSAMSite(ctx: CanvasRenderingContext2D, cityX: number, hw: number, topY: number, now: number) {
+  const sx = cityX - hw + 72; // Left side, inset from edge
+  const baseY = topY;
+
+  ctx.save();
+
+  // ---- Bunker base ----
+  const bunkerW = 70;
+  const bunkerH = 22;
+  const bunkerX = sx - bunkerW / 2;
+  const bunkerTop = baseY - bunkerH;
+
+  ctx.beginPath();
+  ctx.moveTo(bunkerX + 6, bunkerTop);
+  ctx.lineTo(bunkerX + bunkerW - 6, bunkerTop);
+  ctx.lineTo(bunkerX + bunkerW, bunkerTop + 8);
+  ctx.lineTo(bunkerX + bunkerW, baseY);
+  ctx.lineTo(bunkerX, baseY);
+  ctx.lineTo(bunkerX, bunkerTop + 8);
+  ctx.closePath();
+  const bunkerGrad = ctx.createLinearGradient(bunkerX, bunkerTop, bunkerX, baseY);
+  bunkerGrad.addColorStop(0, "#2a3040");
+  bunkerGrad.addColorStop(0.5, "#1a2030");
+  bunkerGrad.addColorStop(1, "#0f1520");
+  ctx.fillStyle = bunkerGrad;
+  ctx.fill();
+  ctx.strokeStyle = "#3a4a5a";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Bunker panel lines
+  ctx.strokeStyle = "rgba(80, 140, 160, 0.2)";
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(bunkerX + 16, bunkerTop + 4);
+  ctx.lineTo(bunkerX + 16, baseY);
+  ctx.moveTo(bunkerX + bunkerW - 16, bunkerTop + 4);
+  ctx.lineTo(bunkerX + bunkerW - 16, baseY);
+  ctx.stroke();
+
+  // Bunker warning stripe
+  ctx.fillStyle = "rgba(200, 60, 30, 0.35)";
+  ctx.fillRect(bunkerX + 4, bunkerTop + 10, bunkerW - 8, 4);
+
+  // ---- Reinforced platform collar ----
+  ctx.beginPath();
+  ctx.moveTo(bunkerX - 6, baseY);
+  ctx.lineTo(bunkerX + bunkerW + 6, baseY);
+  ctx.lineTo(bunkerX + bunkerW + 4, baseY - 5);
+  ctx.lineTo(bunkerX - 4, baseY - 5);
+  ctx.closePath();
+  ctx.fillStyle = "#222a35";
+  ctx.fill();
+  ctx.strokeStyle = "#445566";
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  // ---- Radar dish (slow rotation) ----
+  const radarX = sx;
+  const radarY = bunkerTop - 6;
+  const radarSpin = now * 0.0006; // slow spin
+
+  ctx.save();
+  ctx.translate(radarX, radarY);
+
+  // Radar mast
+  ctx.beginPath();
+  ctx.moveTo(-2, 0);
+  ctx.lineTo(-2, -14);
+  ctx.lineTo(2, -14);
+  ctx.lineTo(2, 0);
+  ctx.closePath();
+  ctx.fillStyle = "#334455";
+  ctx.fill();
+
+  // Radar dish pivot
+  ctx.beginPath();
+  ctx.arc(0, -14, 4, 0, Math.PI * 2);
+  ctx.fillStyle = "#1a2535";
+  ctx.fill();
+  ctx.strokeStyle = "#445566";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Rotating dish arm + dish
+  ctx.save();
+  ctx.translate(0, -14);
+  ctx.rotate(radarSpin);
+
+  // Arm
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(18, 0);
+  ctx.strokeStyle = "#556677";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Dish (parabolic shape)
+  ctx.beginPath();
+  ctx.moveTo(14, -8);
+  ctx.quadraticCurveTo(22, 0, 14, 8);
+  ctx.lineTo(18, 0);
+  ctx.closePath();
+  ctx.fillStyle = "#2a3a4a";
+  ctx.fill();
+  ctx.strokeStyle = "#4a6070";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Dish highlight
+  ctx.beginPath();
+  ctx.moveTo(15, -5);
+  ctx.quadraticCurveTo(20, 0, 15, 5);
+  ctx.strokeStyle = "rgba(100, 200, 220, 0.3)";
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  // Radar sweep glow pulse at tip
+  const sweepPulse = 0.5 + Math.sin(now * 0.004) * 0.5;
+  ctx.beginPath();
+  ctx.arc(18, 0, 2.5, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(80, 220, 200, ${sweepPulse * 0.9})`;
+  ctx.fill();
+
+  ctx.restore(); // dish rotation
+  ctx.restore(); // radar translate
+
+  // ---- Missile tubes (two angled launchers) ----
+  const tubeConfigs = [
+    { ox: -18, angle: -0.55 }, // left tube, angled left-up
+    { ox: 18, angle: -0.9 }, // right tube, angled more upward
+  ];
+
+  for (const tube of tubeConfigs) {
+    const tx = sx + tube.ox;
+    const ty = bunkerTop - 2;
+
+    ctx.save();
+    ctx.translate(tx, ty);
+    ctx.rotate(tube.angle);
+
+    // Tube housing (outer shell)
+    ctx.beginPath();
+    ctx.roundRect(-5, -28, 10, 28, 2);
+    ctx.fillStyle = "#1e2a38";
+    ctx.fill();
+    ctx.strokeStyle = "#3a4a5a";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Tube inner barrel
+    ctx.beginPath();
+    ctx.roundRect(-3, -26, 6, 24, 1);
+    ctx.fillStyle = "#0f1820";
+    ctx.fill();
+
+    // Missile tip visible inside tube
+    ctx.beginPath();
+    ctx.moveTo(0, -26);
+    ctx.lineTo(-2.5, -20);
+    ctx.lineTo(2.5, -20);
+    ctx.closePath();
+    ctx.fillStyle = "#cc3322";
+    ctx.fill();
+
+    // Tube band rings (industrial detail)
+    for (const bandY of [-22, -14, -6]) {
+      ctx.beginPath();
+      ctx.roundRect(-6, bandY, 12, 3, 1);
+      ctx.fillStyle = "#2a3a4a";
+      ctx.fill();
+      ctx.strokeStyle = "#445566";
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+
+    // Missile warhead glow
+    const missilePulse = 0.4 + Math.sin(now * 0.005 + tube.ox) * 0.3;
+    ctx.beginPath();
+    ctx.arc(0, -23, 3, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 60, 30, ${missilePulse * 0.6})`;
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  // ---- Status light on bunker front ----
+  const statusPulse = 0.6 + Math.sin(now * 0.003) * 0.4;
+  ctx.beginPath();
+  ctx.arc(sx, bunkerTop + 6, 3, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(80, 220, 100, ${statusPulse})`;
+  ctx.fill();
+  // Status light halo
+  ctx.beginPath();
+  ctx.arc(sx, bunkerTop + 6, 5, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(80, 220, 100, ${statusPulse * 0.2})`;
+  ctx.fill();
+
+  // ---- "SAM" label ----
+  ctx.font = "bold 7px monospace";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(100, 200, 180, 0.6)";
+  ctx.fillText("SAM-7", sx, baseY - bunkerH - 32);
+
+  ctx.restore();
 }
 
 export function drawBoat(
@@ -122,49 +335,53 @@ export function drawBoat(
   // Scale buildings relative to city width
   const scale = boat.width / 700;
 
-  const backBuildings: BldDef[] = ([
-    { ox: -260, w: 30, h: 28, s: "rect" },
-    { ox: -220, w: 24, h: 35, s: "dome" },
-    { ox: -185, w: 28, h: 32, s: "cylinder" },
-    { ox: -150, w: 22, h: 42, s: "spire" },
-    { ox: -115, w: 26, h: 38, s: "stepped" },
-    { ox: -85, w: 20, h: 48, s: "dome" },
-    { ox: -55, w: 24, h: 44, s: "rect" },
-    { ox: -25, w: 22, h: 55, s: "spire" },
-    { ox: 5, w: 28, h: 60, s: "cylinder" },
-    { ox: 35, w: 24, h: 52, s: "stepped" },
-    { ox: 65, w: 20, h: 46, s: "dome" },
-    { ox: 90, w: 26, h: 40, s: "rect" },
-    { ox: 120, w: 22, h: 50, s: "spire" },
-    { ox: 148, w: 28, h: 36, s: "dome" },
-    { ox: 178, w: 24, h: 42, s: "cylinder" },
-    { ox: 208, w: 20, h: 34, s: "stepped" },
-    { ox: 232, w: 26, h: 30, s: "rect" },
-  ] as const).map((b) => ({ ...b, ox: b.ox * scale, w: b.w * scale, h: b.h * scale }));
+  const backBuildings: BldDef[] = (
+    [
+      { ox: -260, w: 30, h: 28, s: "rect" },
+      { ox: -220, w: 24, h: 35, s: "dome" },
+      { ox: -185, w: 28, h: 32, s: "cylinder" },
+      { ox: -150, w: 22, h: 42, s: "spire" },
+      { ox: -115, w: 26, h: 38, s: "stepped" },
+      { ox: -85, w: 20, h: 48, s: "dome" },
+      { ox: -55, w: 24, h: 44, s: "rect" },
+      { ox: -25, w: 22, h: 55, s: "spire" },
+      { ox: 5, w: 28, h: 60, s: "cylinder" },
+      { ox: 35, w: 24, h: 52, s: "stepped" },
+      { ox: 65, w: 20, h: 46, s: "dome" },
+      { ox: 90, w: 26, h: 40, s: "rect" },
+      { ox: 120, w: 22, h: 50, s: "spire" },
+      { ox: 148, w: 28, h: 36, s: "dome" },
+      { ox: 178, w: 24, h: 42, s: "cylinder" },
+      { ox: 208, w: 20, h: 34, s: "stepped" },
+      { ox: 232, w: 26, h: 30, s: "rect" },
+    ] as const
+  ).map((b) => ({ ...b, ox: b.ox * scale, w: b.w * scale, h: b.h * scale }));
 
-  const buildings: BldDef[] = ([
-    { ox: -270, w: 22, h: 22, s: "dome" },
-    { ox: -248, w: 26, h: 30, s: "stepped" },
-    { ox: -222, w: 20, h: 38, s: "spire" },
-    { ox: -200, w: 28, h: 32, s: "cylinder" },
-    { ox: -172, w: 24, h: 45, s: "rect" },
-    { ox: -145, w: 30, h: 50, s: "dome" },
-    { ox: -115, w: 22, h: 58, s: "spire" },
-    { ox: -90, w: 26, h: 48, s: "stepped" },
-    { ox: -64, w: 20, h: 62, s: "cylinder" },
-    { ox: -40, w: 28, h: 70, s: "dome" },
-    { ox: -12, w: 24, h: 78, s: "rect" },
-    { ox: 15, w: 36, h: 90, s: "spire" },
-    { ox: 45, w: 24, h: 75, s: "stepped" },
-    { ox: 70, w: 28, h: 65, s: "dome" },
-    { ox: 98, w: 22, h: 55, s: "cylinder" },
-    { ox: 122, w: 26, h: 60, s: "rect" },
-    { ox: 150, w: 24, h: 48, s: "spire" },
-    { ox: 175, w: 20, h: 52, s: "dome" },
-    { ox: 198, w: 28, h: 42, s: "stepped" },
-    { ox: 225, w: 22, h: 35, s: "cylinder" },
-    { ox: 248, w: 26, h: 28, s: "rect" },
-  ] as const).map((b) => ({ ...b, ox: b.ox * scale, w: b.w * scale, h: b.h * scale }));
+  const buildings: BldDef[] = (
+    [
+      { ox: -270, w: 22, h: 22, s: "dome" },
+      { ox: -248, w: 26, h: 30, s: "stepped" },
+      { ox: -222, w: 20, h: 38, s: "spire" },
+      { ox: -200, w: 28, h: 32, s: "cylinder" },
+      { ox: -172, w: 24, h: 45, s: "rect" },
+      { ox: -145, w: 30, h: 50, s: "dome" },
+      { ox: -115, w: 22, h: 58, s: "spire" },
+      { ox: -90, w: 26, h: 48, s: "stepped" },
+      { ox: -64, w: 20, h: 62, s: "cylinder" },
+      { ox: -40, w: 28, h: 70, s: "dome" },
+      { ox: -12, w: 24, h: 78, s: "rect" },
+      { ox: 15, w: 36, h: 90, s: "spire" },
+      { ox: 45, w: 24, h: 75, s: "stepped" },
+      { ox: 70, w: 28, h: 65, s: "dome" },
+      { ox: 98, w: 22, h: 55, s: "cylinder" },
+      { ox: 122, w: 26, h: 60, s: "rect" },
+      { ox: 150, w: 24, h: 48, s: "spire" },
+      { ox: 175, w: 20, h: 52, s: "dome" },
+      { ox: 198, w: 28, h: 42, s: "stepped" },
+      { ox: 225, w: 22, h: 35, s: "cylinder" },
+      { ox: 248, w: 26, h: 28, s: "rect" },
+    ] as const
+  ).map((b) => ({ ...b, ox: b.ox * scale, w: b.w * scale, h: b.h * scale }));
 
   function traceBldShape(bx: number, by: number, w: number, h: number, s: BldStyle) {
     const hw2 = w / 2;
@@ -331,7 +548,7 @@ export function drawBoat(
     ctx.restore();
   }
 
-  // Statue (only on the largest / center city)
+  // Statue (only on the largest / center city — Haven)
   if (boat.width >= 700) {
     const sx = boat.x + hw - 60;
     const statueH = 120;
@@ -462,6 +679,9 @@ export function drawBoat(
     ctx.closePath();
     ctx.fillStyle = exposed ? "rgba(50,25,15,0.6)" : "rgba(30,70,80,0.5)";
     ctx.fill();
+
+    // ---- SAM site on left side of Haven ----
+    drawSAMSite(ctx, boat.x, hw, topY, now);
   }
 
   if (exposed) {
