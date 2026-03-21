@@ -203,9 +203,10 @@ This is the heart of the game. It contains:
 All collectible items in one place:
 - **Health Kit** ("HP"): Restores 1 player HP. Spawns every 1500 points. Sinks underwater from city waterline.
 - **Barrier Repair** ("Barrier"): Restores 3 city HP. Spawns every 1200 points. Sinks underwater from city waterline.
-- **Ammo Crate** (gold): Fully restores ammo. Spawns at world edges when ammo drops below threshold.
+- **Ammo Crate** (gold): Fully restores ammo. Launched from the nearest ammo depot toward the player's position; lands on the water surface and bobs on waves.
 - **Rare Ammo Drop** (blue, "+20"): Grants 20 ammo. Spawns periodically every 40–80 seconds, despawns after 20s.
 - Underwater pickups bob gently when settled and blink before despawning (18 seconds).
+- Score-based pickups drop from the city nearest to the player (not always Haven).
 - Only one of each type can exist at a time.
 
 ### `src/game/waves.ts` — Wave System
