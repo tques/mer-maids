@@ -189,12 +189,13 @@ This is the heart of the game. It contains:
 ### `src/game/minelayer.ts` — Mine-Layer Plane & Floating Mines
 
 - A fast plane that flies edge-to-edge dropping naval mines.
-- **Mines** have buoyancy — they sink initially then float on the water surface. Never despawn naturally.
+- **Mines** have buoyancy — they sink initially then float on the water surface. Despawn after 60 seconds once settled. Maximum 40 active mines.
 - Players can shoot mines (explosion + score) but touching one deals 1 damage.
 - Mines use a **dark industrial aesthetic** — rust-toned orbs with slow rotation, red danger glow, energy spikes with glowing tips, and a central robotic eye.
+- Deflected missiles can destroy mines and minelayer planes.
 - `updateMinelayer()`: Handles plane spawning, mine dropping, and mine physics.
-- `checkBulletHitsMines()`: Tests player bullets against floating mines.
-- `checkPlayerHitsMine()`: Tests player collision with mines.
+- `checkBulletHitsMine()`: Tests player bullets against floating mines.
+- `checkMineHitsPlayer()` / `checkRamMine()`: Tests player collision with mines.
 - `drawMinelayer()`: Renders the plane and all active mines.
 
 ### `src/game/pickups.ts` — Collectible Pickups
