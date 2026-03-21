@@ -56,7 +56,7 @@ function drawShieldBattery(ctx: CanvasRenderingContext2D, cityX: number, hw: num
   ctx.save();
 
   // ---- Squat bunker base ----
-  const bunkerW = 62;
+  const bunkerW = 48;
   const bunkerH = 18;
   const bunkerX = sx - bunkerW / 2;
   const bunkerTop = baseY - bunkerH;
@@ -83,16 +83,16 @@ function drawShieldBattery(ctx: CanvasRenderingContext2D, cityX: number, hw: num
   ctx.strokeStyle = "rgba(60, 120, 180, 0.2)";
   ctx.lineWidth = 0.5;
   ctx.beginPath();
-  ctx.moveTo(bunkerX + 14, bunkerTop + 3);
-  ctx.lineTo(bunkerX + 14, baseY);
-  ctx.moveTo(bunkerX + bunkerW - 14, bunkerTop + 3);
-  ctx.lineTo(bunkerX + bunkerW - 14, baseY);
+  ctx.moveTo(bunkerX + 10, bunkerTop + 3);
+  ctx.lineTo(bunkerX + 10, baseY);
+  ctx.moveTo(bunkerX + bunkerW - 10, bunkerTop + 3);
+  ctx.lineTo(bunkerX + bunkerW - 10, baseY);
   ctx.stroke();
 
   // Energy intake vent slots on front face
   ctx.fillStyle = "rgba(60, 140, 220, 0.25)";
-  for (let i = 0; i < 4; i++) {
-    ctx.fillRect(bunkerX + 18 + i * 7, bunkerTop + 9, 4, 5);
+  for (let i = 0; i < 3; i++) {
+    ctx.fillRect(bunkerX + 12 + i * 8, bunkerTop + 9, 4, 5);
   }
 
   // ---- Platform collar ----
@@ -109,7 +109,7 @@ function drawShieldBattery(ctx: CanvasRenderingContext2D, cityX: number, hw: num
   ctx.stroke();
 
   // ---- Three capacitor cylinders ----
-  const capPositions = [-18, 0, 18];
+  const capPositions = [-12, 0, 12];
   const capH = 24;
   const capR = 6;
   const energyPulse = 0.5 + Math.sin(now * 0.004) * 0.5;
