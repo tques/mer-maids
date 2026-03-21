@@ -363,7 +363,7 @@ let bombardSpawnTimer = 45;
 
 const BOMBARD_RISE_SPEED = 1.2;
 const BOMBARD_SINK_SPEED = 1.8;
-const BOMBARD_SPAWN_DEPTH = 300; // px below surface to spawn
+const BOMBARD_SPAWN_DEPTH = 600; // far below screen so it always rises from off-screen
 const BOMBARD_X_OFFSET = 220; // offset outward from city center past platform edge
 const AIM_DURATION = 3.0;
 const MORTAR_GRAVITY = 0.18;
