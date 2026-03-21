@@ -187,6 +187,7 @@ export function pollGamepad(): GamepadState {
     dpadDown,
     fire,
     thrust,
+    boost,
     start,
     faceA,
     connected: true,
