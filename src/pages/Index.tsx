@@ -779,6 +779,7 @@ const Index = () => {
           (cityStructHPs[bomberTargetRef.current]?.hp ?? 0) > 0
             ? getStructureWorldPos(cities[bomberTargetRef.current], viewH)
             : null;
+        const bomberCityX = cities[bomberTargetRef.current]?.x ?? 0;
         updateBombardSubs(
           dt,
           viewH,
@@ -788,6 +789,7 @@ const Index = () => {
           wave.enemiesFleeing,
           performance.now() / 1000,
           bomberTargetStructPos,
+          bomberCityX,
         );
         const bombardResult = checkBulletHitsBombardSub(bulletsRef.current);
         bulletsRef.current = bombardResult.remaining;
