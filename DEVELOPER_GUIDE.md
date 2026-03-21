@@ -102,24 +102,27 @@ Each city has unique building layouts. Bombers rotate targets between waves so t
 
 This is the heart of the game. It contains:
 
-- **Constants** (lines 43-100): Tuning values for speed, gravity, ammo, fuel, etc.
-- **Refs** (lines 100-160): All mutable game state stored in React refs.
-- **Input handling** (lines 190-258): Mouse, keyboard, and gamepad event listeners.
-- **Game loop** (lines 266-1140): The main `requestAnimationFrame` loop containing:
+- **Constants** (lines 81-110): Tuning values for speed, gravity, ammo, fuel, etc.
+- **Refs** (lines 110-180): All mutable game state stored in React refs.
+- **Input handling** (lines 200-270): Mouse, keyboard, and gamepad event listeners.
+- **Game loop** (lines 280-1300): The main `requestAnimationFrame` loop containing:
   - Input processing and aim calculation
   - Barrel roll mechanics
   - Physics (thrust, gravity, buoyancy, air drag)
+  - Buoyancy suppression while thrusting or firing (player stays submerged)
   - Fuel and ammo management
-  - Enemy/submarine/powerup updates
-  - Collision detection
-  - Canvas rendering (sky, water, entities, player, HUD)
-- **Player rendering** (~lines 1010-1140): Frutiger Aero mech with swept-back fighter jet ram wings.
-- **HUD rendering** (~lines 1140-1540): Analog instrument panel with unique indicator styles per stat:
+  - Multi-city enemy/submarine/powerup updates
+  - Nearest-city powerup drop targeting
+  - Bullet-platform collision blocking
+  - Collision detection (with boost damage immunity for normal bullets)
+  - Canvas rendering (sky → water → entities → player → HUD)
+- **Player rendering** (~lines 1100-1250): Frutiger Aero mech with swept-back fighter jet ram wings.
+- **HUD rendering** (~lines 1250-1700): Analog instrument panel with unique indicator styles per stat:
   - **Lives**: Green round bulb lights with metal bezels
   - **HP**: Amber diamond/gem-shaped indicator lights
   - **Ammo**: Silver light strip with colored glass panel segments
   - **Fuel**: Vertical glass tubes with animated liquid fill, wobbling meniscus, tick marks, and glass reflections
-- **Menus** (lines 1580+): React JSX for start screen, pause menu, and game over screen.
+- **Menus** (lines 1750+): React JSX for start screen, pause menu, and game over screen.
 
 ### `src/game/water.ts` — Water System
 
