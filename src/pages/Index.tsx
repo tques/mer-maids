@@ -2036,7 +2036,10 @@ const Index = () => {
                   <span style={{ color: "#ccc" }}>Y / LB / LT</span> — Thrust
                 </p>
                 <p>
-                  <span style={{ color: "#ccc" }}>A / B / X / RB / RT</span> — Fire
+                  <span style={{ color: "#ccc" }}>A / X / RB / RT</span> — Fire
+                </p>
+                <p>
+                  <span style={{ color: "#ccc" }}>B</span> — Boost
                 </p>
                 <p>
                   <span style={{ color: "#ccc" }}>D-Pad ◄►</span> — Barrel Roll
