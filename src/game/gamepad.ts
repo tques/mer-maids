@@ -76,6 +76,7 @@ let lastState: GamepadState = {
   dpadDown: false,
   fire: false,
   thrust: false,
+  boost: false,
   start: false,
   faceA: false,
   connected: false,
