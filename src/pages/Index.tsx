@@ -43,6 +43,12 @@ import {
   fleeSubmarines,
   getSubmarines,
   setSubmarineTargetCity,
+  resetBombardSubs,
+  updateBombardSubs,
+  checkBulletHitsBombardSub,
+  checkMortarHitsStructure,
+  getMortars,
+  drawBombardSubs,
 } from "../game/submarine";
 import {
   resetPickups,
@@ -635,6 +641,7 @@ const Index = () => {
           fleeSubmarines();
           fleeGunboats();
           fleeMinelayers();
+          // Bombardment subs retreat naturally via fleeing flag in updateBombardSubs
         }
         if (waveResult.newLife) {
           playerLivesRef.current = Math.min(playerLivesRef.current + 1, PLAYER_LIVES + 5);
@@ -643,6 +650,7 @@ const Index = () => {
         if (waveResult.startNextWave) {
           resetEnemies();
           resetSubmarines();
+          resetBombardSubs();
           resetGunboats();
           resetPickups(WORLD_WIDTH);
           const prev = bomberTargetRef.current;
@@ -666,12 +674,16 @@ const Index = () => {
         const samAlive = (cityStructHPs[havenIdx]?.hp ?? STRUCTURE_MAX_HP) > 0;
         const shieldAlive = (cityStructHPs[novaMareIdx]?.hp ?? STRUCTURE_MAX_HP) > 0;
 
-        // Build list of alive structure world X positions for bomber retargeting
+        // Build alive structure position lists
         const aliveStructureXs: number[] = [];
+        const aliveStructurePositions: { x: number; y: number }[] = [];
         for (let ci = 0; ci < cities.length; ci++) {
           if ((cityStructHPs[ci]?.hp ?? 0) > 0) {
             const sp = getStructureWorldPos(cities[ci], viewH);
-            if (sp) aliveStructureXs.push(sp.x);
+            if (sp) {
+              aliveStructureXs.push(sp.x);
+              aliveStructurePositions.push(sp);
+            }
           }
         }
 
@@ -752,6 +764,34 @@ const Index = () => {
         const subResult = checkBulletHitsSubmarine(bulletsRef.current);
         bulletsRef.current = subResult.remaining;
         scoreRef.current += subResult.score;
+
+        // ---- Bombardment submarines ----
+        updateBombardSubs(
+          dt,
+          viewH,
+          pos.x,
+          viewW / 2,
+          waveDiff,
+          wave.enemiesFleeing,
+          performance.now() / 1000,
+          aliveStructurePositions,
+        );
+        const bombardResult = checkBulletHitsBombardSub(bulletsRef.current);
+        bulletsRef.current = bombardResult.remaining;
+        scoreRef.current += bombardResult.score;
+
+        // Check mortars hitting structures
+        const currentMortars = getMortars();
+        for (let ci = 0; ci < cities.length; ci++) {
+          const struct = cityStructHPs[ci];
+          if (!struct || struct.hp <= 0) continue;
+          const structPos = getStructureWorldPos(cities[ci], viewH);
+          const hits = checkMortarHitsStructure(currentMortars, structPos, STRUCTURE_HIT_RADIUS);
+          if (hits > 0) {
+            struct.hp = Math.max(struct.hp - hits, 0);
+            shake(0.5, 0.5);
+          }
+        }
         const gunboatResult = checkBulletHitsGunboat(bulletsRef.current, viewH);
         bulletsRef.current = gunboatResult.remaining;
         scoreRef.current += gunboatResult.score;
@@ -989,6 +1029,7 @@ const Index = () => {
         const localVisEnd = drawCamX + viewW - offset;
         drawWater(ctx, WORLD_WIDTH, viewH, localVisStart, localVisEnd);
         drawSubmarines(ctx);
+        drawBombardSubs(ctx);
         drawEnemies(ctx);
         drawGunboats(ctx, viewH);
         drawMinelayer(ctx, viewH);
@@ -1875,6 +1916,7 @@ const Index = () => {
         cityStructureHPRef.current = citiesRef.current.map(() => createCityStructureState());
         resetEnemies();
         resetSubmarines();
+        resetBombardSubs();
         resetMinelayer();
         resetPickups(WORLD_WIDTH);
         resetJetTrail();
@@ -1955,12 +1997,11 @@ const Index = () => {
             cityStructureHPRef.current = citiesRef.current.map(() => createCityStructureState());
             resetEnemies();
             resetSubmarines();
+            resetBombardSubs();
             resetMinelayer();
             resetPickups(WORLD_WIDTH);
             resetJetTrail();
             fuelRef.current = MAX_FUEL;
-
-            const initialBomberTarget = Math.floor(Math.random() * NUM_CITIES);
             setBomberTargetCity(initialBomberTarget);
             bomberTargetRef.current = initialBomberTarget;
             const initialSubTarget = pickDifferentCity(initialBomberTarget);
