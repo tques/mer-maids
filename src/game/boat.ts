@@ -29,7 +29,7 @@ export function createBoat(worldWidth: number): Boat {
  */
 export function createCities(worldWidth: number): Boat[] {
   return [
-    { x: Math.floor(worldWidth * 0.17), width: 580, hullDepth: 36, name: "PORT ASTRA" },
+    { x: Math.floor(worldWidth * 0.17), width: 780, hullDepth: 36, name: "PORT ASTRA" },
     { x: Math.floor(worldWidth * 0.5), width: 960, hullDepth: 36, name: "HAVEN" },
     { x: Math.floor(worldWidth * 0.83), width: 800, hullDepth: 36, name: "NOVA MARE" },
   ];
@@ -39,6 +39,237 @@ export function getBoatTopY(boat: Boat, viewH: number): number {
   const surfaceY = getWaterSurfaceY(viewH);
   const waveY = getWaveY(boat.x, surfaceY);
   return waveY - 22;
+}
+
+/**
+ * Draw a Sonar Detection array on the left side of Port Astra.
+ * Industrial naval aesthetic — a thick base housing, a large circular
+ * dish face, signal emitter rods, and animated sonar ping rings.
+ */
+function drawSonarArray(ctx: CanvasRenderingContext2D, cityX: number, hw: number, topY: number, now: number) {
+  // hw=390, barrier=390*0.85=331px. Center at cityX - hw + 40 = cityX - 350px.
+  // Structure is ~60px wide so right edge at cityX - 320px — 11px clear of barrier.
+  // Left edge at cityX - 380px — well outside.
+  const sx = cityX - hw + 40;
+  const baseY = topY;
+
+  ctx.save();
+
+  // ---- Heavy base housing ----
+  const baseW = 58;
+  const baseH = 24;
+  const baseX = sx - baseW / 2;
+  const baseTop = baseY - baseH;
+
+  // Main housing block — chunkier and lower than the SAM bunker
+  ctx.beginPath();
+  ctx.moveTo(baseX + 4, baseTop);
+  ctx.lineTo(baseX + baseW - 4, baseTop);
+  ctx.lineTo(baseX + baseW + 2, baseTop + 6);
+  ctx.lineTo(baseX + baseW + 2, baseY);
+  ctx.lineTo(baseX - 2, baseY);
+  ctx.lineTo(baseX - 2, baseTop + 6);
+  ctx.closePath();
+  const baseGrad = ctx.createLinearGradient(baseX, baseTop, baseX, baseY);
+  baseGrad.addColorStop(0, "#252830");
+  baseGrad.addColorStop(0.5, "#181a22");
+  baseGrad.addColorStop(1, "#0e1018");
+  ctx.fillStyle = baseGrad;
+  ctx.fill();
+  ctx.strokeStyle = "#353840";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Housing rivet details — two rows of dots
+  ctx.fillStyle = "rgba(80, 90, 100, 0.6)";
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    ctx.arc(baseX + 8 + i * 10, baseTop + 5, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(baseX + 8 + i * 10, baseY - 5, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Cooling vent strip along bottom of housing
+  ctx.fillStyle = "rgba(40, 50, 65, 0.8)";
+  ctx.fillRect(baseX + 6, baseY - 8, baseW - 12, 5);
+  ctx.strokeStyle = "rgba(60, 80, 100, 0.4)";
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < 6; i++) {
+    ctx.beginPath();
+    ctx.moveTo(baseX + 9 + i * 7, baseY - 8);
+    ctx.lineTo(baseX + 9 + i * 7, baseY - 3);
+    ctx.stroke();
+  }
+
+  // ---- Platform collar ----
+  ctx.beginPath();
+  ctx.moveTo(baseX - 7, baseY);
+  ctx.lineTo(baseX + baseW + 7, baseY);
+  ctx.lineTo(baseX + baseW + 5, baseY - 4);
+  ctx.lineTo(baseX - 5, baseY - 4);
+  ctx.closePath();
+  ctx.fillStyle = "#1a1c24";
+  ctx.fill();
+  ctx.strokeStyle = "#2a2e38";
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  // ---- Sonar dish face (large circle, front-facing) ----
+  const dishR = 18;
+  const dishX = sx - 4; // slightly left of center
+  const dishY = baseTop - dishR - 2;
+
+  // Dish mounting arm from base top
+  ctx.beginPath();
+  ctx.moveTo(dishX - 4, baseTop);
+  ctx.lineTo(dishX - 4, dishY + dishR);
+  ctx.lineTo(dishX + 4, dishY + dishR);
+  ctx.lineTo(dishX + 4, baseTop);
+  ctx.closePath();
+  ctx.fillStyle = "#252830";
+  ctx.fill();
+  ctx.strokeStyle = "#353840";
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  // Outer dish ring
+  ctx.beginPath();
+  ctx.arc(dishX, dishY, dishR + 3, 0, Math.PI * 2);
+  ctx.fillStyle = "#1a1c24";
+  ctx.fill();
+  ctx.strokeStyle = "#3a3e50";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Dish face — dark with subtle grid
+  ctx.beginPath();
+  ctx.arc(dishX, dishY, dishR, 0, Math.PI * 2);
+  const dishGrad = ctx.createRadialGradient(dishX, dishY, 0, dishX, dishY, dishR);
+  dishGrad.addColorStop(0, "#1a2030");
+  dishGrad.addColorStop(0.6, "#141820");
+  dishGrad.addColorStop(1, "#0e1018");
+  ctx.fillStyle = dishGrad;
+  ctx.fill();
+
+  // Dish crosshair lines
+  ctx.strokeStyle = "rgba(60, 90, 120, 0.35)";
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(dishX - dishR, dishY);
+  ctx.lineTo(dishX + dishR, dishY);
+  ctx.moveTo(dishX, dishY - dishR);
+  ctx.lineTo(dishX, dishY + dishR);
+  ctx.stroke();
+
+  // Dish concentric rings (range markers)
+  for (const r of [6, 11, 16]) {
+    ctx.beginPath();
+    ctx.arc(dishX, dishY, r, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(60, 90, 120, 0.25)";
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+
+  // ---- Animated sonar ping rings ----
+  // Two pings offset in time so there's always one fading in/out
+  const pingCycle = 3500; // ms per full ping cycle
+  for (let p = 0; p < 2; p++) {
+    const t = ((now + p * pingCycle * 0.5) % pingCycle) / pingCycle;
+    const pingR = t * (dishR + 22);
+    const pingAlpha = Math.max(0, (1 - t) * 0.7);
+    if (pingAlpha > 0.02) {
+      ctx.beginPath();
+      ctx.arc(dishX, dishY, pingR, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(50, 200, 160, ${pingAlpha})`;
+      ctx.lineWidth = 1.5 * (1 - t);
+      ctx.stroke();
+    }
+  }
+
+  // Dish center dot — bright ping origin
+  const centerPulse = 0.6 + Math.sin(now * 0.005) * 0.4;
+  ctx.beginPath();
+  ctx.arc(dishX, dishY, 3, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(50, 220, 170, ${centerPulse})`;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(dishX, dishY, 1.2, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(200, 255, 240, 0.9)";
+  ctx.fill();
+
+  // ---- Two signal emitter rods (right side of base) ----
+  const rodBaseX = sx + 16;
+  const rodBaseY = baseTop;
+
+  // Rod mounting block
+  ctx.beginPath();
+  ctx.roundRect(rodBaseX - 6, rodBaseY - 5, 14, 6, 1);
+  ctx.fillStyle = "#252830";
+  ctx.fill();
+  ctx.strokeStyle = "#353840";
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  // Tall rod
+  ctx.beginPath();
+  ctx.moveTo(rodBaseX - 2, rodBaseY - 4);
+  ctx.lineTo(rodBaseX - 2, rodBaseY - 22);
+  ctx.lineTo(rodBaseX + 2, rodBaseY - 22);
+  ctx.lineTo(rodBaseX + 2, rodBaseY - 4);
+  ctx.closePath();
+  ctx.fillStyle = "#2e3240";
+  ctx.fill();
+
+  // Short rod beside it
+  ctx.beginPath();
+  ctx.moveTo(rodBaseX + 5, rodBaseY - 4);
+  ctx.lineTo(rodBaseX + 5, rodBaseY - 14);
+  ctx.lineTo(rodBaseX + 7, rodBaseY - 14);
+  ctx.lineTo(rodBaseX + 7, rodBaseY - 4);
+  ctx.closePath();
+  ctx.fillStyle = "#2e3240";
+  ctx.fill();
+
+  // Horizontal crossbar connecting both rods
+  ctx.beginPath();
+  ctx.moveTo(rodBaseX - 2, rodBaseY - 18);
+  ctx.lineTo(rodBaseX + 7, rodBaseY - 18);
+  ctx.strokeStyle = "#3a3e50";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Blinking tip lights
+  const blink1 = Math.sin(now * 0.007) > 0;
+  const blink2 = Math.sin(now * 0.007 + Math.PI) > 0; // opposite phase
+  ctx.beginPath();
+  ctx.arc(rodBaseX, rodBaseY - 22, 2, 0, Math.PI * 2);
+  ctx.fillStyle = blink1 ? "rgba(50, 220, 170, 0.95)" : "rgba(20, 80, 60, 0.5)";
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(rodBaseX + 6, rodBaseY - 14, 1.5, 0, Math.PI * 2);
+  ctx.fillStyle = blink2 ? "rgba(50, 220, 170, 0.8)" : "rgba(20, 80, 60, 0.4)";
+  ctx.fill();
+
+  // ---- Status light on base ----
+  const statusPulse = 0.6 + Math.sin(now * 0.003 + 1) * 0.4;
+  ctx.beginPath();
+  ctx.arc(sx + 10, baseTop + 7, 3, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(50, 220, 170, ${statusPulse})`;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(sx + 10, baseTop + 7, 5, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(50, 220, 170, ${statusPulse * 0.2})`;
+  ctx.fill();
+
+  // ---- Label ----
+  ctx.font = "bold 7px monospace";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(50, 200, 160, 0.6)";
+  ctx.fillText("SONAR", sx, dishY - dishR - 10);
+
+  ctx.restore();
 }
 
 /**
@@ -880,6 +1111,11 @@ export function drawBoat(
   // Shield Battery on right side of Nova Mare
   if (boat.name === "NOVA MARE") {
     drawShieldBattery(ctx, boat.x, hw, topY, now);
+  }
+
+  // Sonar Array on left side of Port Astra
+  if (boat.name === "PORT ASTRA") {
+    drawSonarArray(ctx, boat.x, hw, topY, now);
   }
 
   if (exposed) {
