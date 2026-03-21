@@ -98,7 +98,7 @@ Each city has unique building layouts. Bombers rotate targets between waves so t
 
 ## File-by-File Guide
 
-### `src/pages/Index.tsx` — Main Game Component (~1700+ lines)
+### `src/pages/Index.tsx` — Main Game Component (~2200 lines)
 
 This is the heart of the game. It contains:
 
