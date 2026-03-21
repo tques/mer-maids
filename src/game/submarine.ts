@@ -360,7 +360,7 @@ export interface Mortar {
 
 let bombardSubs: BombardSub[] = [];
 let mortars: Mortar[] = [];
-let bombardSpawnTimer = 90;
+let bombardSpawnTimer = 45; // first one at 45s
 
 const BOMBARD_SPEED = 1.8;
 const BOMBARD_CRUISE_DEPTH = 120;
@@ -397,11 +397,11 @@ export function updateBombardSubs(
 ): void {
   const waterY = getWaterSurfaceY(viewH);
 
-  if (!fleeing && gameTime > 60 && bomberTargetStructure !== null) {
+  if (!fleeing && gameTime > 30 && bomberTargetStructure !== null) {
     bombardSpawnTimer -= dt;
-    const interval = Math.max(55 - waveDifficulty * 6, 28);
+    const interval = Math.max(30 - waveDifficulty * 4, 15);
     if (bombardSpawnTimer <= 0 && bombardSubs.filter((s) => s.alive).length === 0) {
-      bombardSpawnTimer = interval + Math.random() * 20;
+      bombardSpawnTimer = interval + Math.random() * 12;
 
       const target = bomberTargetStructure;
 
@@ -476,7 +476,8 @@ export function updateBombardSubs(
       case "retreating": {
         if (s.y < s.targetY + 80) s.y += BOMBARD_SURFACE_SPEED;
         s.x -= s.dir * s.speed * 2.5;
-        if (Math.abs(s.x - playerX) > viewHalfW * 4) s.alive = false;
+        // Despawn when off world edge OR far from player — whichever comes first
+        if (s.x < -200 || s.x > 9200 || Math.abs(s.x - playerX) > viewHalfW * 5) s.alive = false;
         break;
       }
     }
