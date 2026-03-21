@@ -76,41 +76,53 @@ loop() {
 
 ### Coordinate System
 
-- **World space**: The game world is `WORLD_WIDTH` (3000) pixels wide and wraps horizontally.
+- **World space**: The game world is `WORLD_WIDTH` (9000) pixels wide and wraps horizontally. Three named cities are spread across the world.
 - **View space**: The camera follows the player. `viewW = canvas.width / ZOOM`, `viewH = canvas.height / ZOOM`.
 - **Screen space**: Raw pixel coordinates on the canvas (used for HUD drawing).
 - The camera offset is `camX = playerX - viewW / 2`.
 
 ### World Wrapping
 
-The world wraps seamlessly — when the player crosses `x=3000`, they appear at `x=0`. The renderer draws 3 copies of the world (offset by `±WORLD_WIDTH`) to handle the seam.
+The world wraps seamlessly — when the player crosses `x=9000`, they appear at `x=0`. The renderer draws 3 copies of the world (offset by `±WORLD_WIDTH`) to handle the seam.
+
+### Multiple Cities
+
+The game features three named floating cities spread across the 9000-wide world:
+- **Port Zenith** (left)
+- **Haven** (center)
+- **New Bastion** (right)
+
+Each city has unique building layouts. Bombers rotate targets between waves so the same city is never attacked twice in a row. Submarines always target a different city than the bombers. Score-based powerup drops spawn at whichever city is nearest to the player.
 
 ---
 
 ## File-by-File Guide
 
-### `src/pages/Index.tsx` — Main Game Component (~1700+ lines)
+### `src/pages/Index.tsx` — Main Game Component (~2200 lines)
 
 This is the heart of the game. It contains:
 
-- **Constants** (lines 43-100): Tuning values for speed, gravity, ammo, fuel, etc.
-- **Refs** (lines 100-160): All mutable game state stored in React refs.
-- **Input handling** (lines 190-258): Mouse, keyboard, and gamepad event listeners.
-- **Game loop** (lines 266-1140): The main `requestAnimationFrame` loop containing:
+- **Constants** (lines 81-110): Tuning values for speed, gravity, ammo, fuel, etc.
+- **Refs** (lines 110-180): All mutable game state stored in React refs.
+- **Input handling** (lines 200-270): Mouse, keyboard, and gamepad event listeners.
+- **Game loop** (lines 280-1300): The main `requestAnimationFrame` loop containing:
   - Input processing and aim calculation
   - Barrel roll mechanics
   - Physics (thrust, gravity, buoyancy, air drag)
+  - Buoyancy suppression while thrusting or firing (player stays submerged)
   - Fuel and ammo management
-  - Enemy/submarine/powerup updates
-  - Collision detection
-  - Canvas rendering (sky, water, entities, player, HUD)
-- **Player rendering** (~lines 1010-1140): Frutiger Aero mech with swept-back fighter jet ram wings.
-- **HUD rendering** (~lines 1140-1540): Analog instrument panel with unique indicator styles per stat:
+  - Multi-city enemy/submarine/powerup updates
+  - Nearest-city powerup drop targeting
+  - Bullet-platform collision blocking
+  - Collision detection (with boost damage immunity for normal bullets)
+  - Canvas rendering (sky → water → entities → player → HUD)
+- **Player rendering** (~lines 1100-1250): Frutiger Aero mech with swept-back fighter jet ram wings.
+- **HUD rendering** (~lines 1250-1700): Analog instrument panel with unique indicator styles per stat:
   - **Lives**: Green round bulb lights with metal bezels
   - **HP**: Amber diamond/gem-shaped indicator lights
   - **Ammo**: Silver light strip with colored glass panel segments
   - **Fuel**: Vertical glass tubes with animated liquid fill, wobbling meniscus, tick marks, and glass reflections
-- **Menus** (lines 1580+): React JSX for start screen, pause menu, and game over screen.
+- **Menus** (lines 1750+): React JSX for start screen, pause menu, and game over screen.
 
 ### `src/game/water.ts` — Water System
 
@@ -121,12 +133,13 @@ This is the heart of the game. It contains:
 - `updateParticles()`: Advances wave time and updates splash/ripple physics.
 - `drawWater()`: Renders the ocean with gradient, caustic lights, wave highlights, foam caps, ripples, and splashes.
 
-### `src/game/boat.ts` — Floating City
+### `src/game/boat.ts` — Floating Cities
 
-- `createBoat()`: Initializes the city platform at world center.
-- `getBoatTopY()`: Returns the top Y of the platform (follows waves).
+- `createCities()`: Creates all three cities (Port Zenith, Haven, New Bastion) with unique building layouts.
+- `createBoat()`: Initializes a single city platform (used internally).
+- `getBoatTopY()`: Returns the top Y of a platform (follows waves).
 - `drawBoat()`: Renders the full city — platform base, buildings with lights, dome barrier with cracks, smoke/fire effects when damaged.
-- `collideWithBoat()`: Pushes the player away from the city platform.
+- `collideWithBoat()`: Pushes the player away from the city platform. Also blocks bullets from passing through platforms.
 
 ### `src/game/effects.ts` — Shared Visual Effects
 
@@ -138,12 +151,13 @@ This is the heart of the game. It contains:
 
 ### `src/game/enemies.ts` — Air Enemies
 
-- **Bombers**: Fly across the screen, drop dark hexagonal tumbling bombs with pulsing toxic green cores on the city.
-- **Chasers**: Aggressive fighters that pursue the player and fire bullets + homing missiles.
-- **Homing Missiles**: Track the player with turn rate limiting. Can be deflected by barrel rolls.
+- **Bombers**: Fly across the screen, drop dark hexagonal tumbling bombs with pulsing toxic green cores on a targeted city. Target city rotates each wave (never the same city twice in a row).
+- **Chasers**: Aggressive fighters that pursue the player and fire bullets + homing missiles. Spawn at 3x the normal rate but fire missiles at 1/3rd rate and bullets at 1/2 rate.
+- **Homing Missiles**: Track the player with turn rate limiting. Can be deflected by barrel rolls into an erratic lethal swerve that can destroy any enemy, mine, or minelayer. Explode on contact with the water surface.
 - `updateEnemies()`: Spawns and updates all air enemies based on wave difficulty. Also calls `updateEffects()`.
 - `checkBulletCollisions()`: Tests player bullets against all enemy types.
 - `drawEnemies()`: Renders all air enemy types, their projectiles, and calls `drawEffects()`.
+- `setBomberTargetCity()` / `getBomberTargetCityIndex()`: Controls which city bombers attack each wave.
 - Enemies use a **dark industrial robotic** aesthetic — metal paneling, mechanical details, pulsing red/green sensor eyes.
 
 ### `src/game/gunboat.ts` — Gunboat (Armored Surface Enemy)
@@ -153,7 +167,7 @@ This is the heart of the game. It contains:
 - Can **only be destroyed by attacking from below** (underwater shots or rams).
 - Fires bullets rapidly (0.35s interval) at the player within a **180° upper hemisphere** arc (far left to far right, but never into the water).
 - **Will not fire** when the player is submerged — diving underwater is both the attack strategy and a way to avoid its fire.
-- **Reverses direction** when approaching the city platform or ammo depot, maintaining safe distance.
+- **Reverses direction** when approaching any city platform or ammo depot, maintaining safe distance.
 - First spawns after 30 seconds, then every 45–60 seconds. Max 1–3 active depending on wave difficulty.
 - Awards 300 points on destruction.
 - `updateGunboats()`: Handles spawning, movement, platform avoidance, firing AI, and bullet updates.
@@ -164,20 +178,24 @@ This is the heart of the game. It contains:
 
 ### `src/game/submarine.ts` — Underwater Enemies
 
-- Submarines approach the city from underwater, charge up, then detonate to damage it.
+- Submarines approach a targeted city from underwater, charge up, then detonate to damage it.
+- Limited to **maximum 1 active** at a time with long respawn delays (20–35+ seconds) to serve as occasional strategic threats.
+- Target city is always different from the bomber target, forcing the player to leave the bombed city.
 - The player must dive underwater to intercept them.
 - `updateSubmarinesWithDamage()`: Handles spawning, movement, attack charging, and returns damage dealt.
+- `setSubmarineTargetCity()`: Sets which city subs target each wave.
 - `drawSubmarines()`: Renders menacing dark hull with crimson accents, pulsing red eye, and attack warning effects.
 
 ### `src/game/minelayer.ts` — Mine-Layer Plane & Floating Mines
 
 - A fast plane that flies edge-to-edge dropping naval mines.
-- **Mines** have buoyancy — they sink initially then float on the water surface. Never despawn naturally.
+- **Mines** have buoyancy — they sink initially then float on the water surface. Despawn after 60 seconds once settled. Maximum 40 active mines.
 - Players can shoot mines (explosion + score) but touching one deals 1 damage.
 - Mines use a **dark industrial aesthetic** — rust-toned orbs with slow rotation, red danger glow, energy spikes with glowing tips, and a central robotic eye.
+- Deflected missiles can destroy mines and minelayer planes.
 - `updateMinelayer()`: Handles plane spawning, mine dropping, and mine physics.
-- `checkBulletHitsMines()`: Tests player bullets against floating mines.
-- `checkPlayerHitsMine()`: Tests player collision with mines.
+- `checkBulletHitsMine()`: Tests player bullets against floating mines.
+- `checkMineHitsPlayer()` / `checkRamMine()`: Tests player collision with mines.
 - `drawMinelayer()`: Renders the plane and all active mines.
 
 ### `src/game/pickups.ts` — Collectible Pickups
@@ -185,9 +203,10 @@ This is the heart of the game. It contains:
 All collectible items in one place:
 - **Health Kit** ("HP"): Restores 1 player HP. Spawns every 1500 points. Sinks underwater from city waterline.
 - **Barrier Repair** ("Barrier"): Restores 3 city HP. Spawns every 1200 points. Sinks underwater from city waterline.
-- **Ammo Crate** (gold): Fully restores ammo. Spawns at world edges when ammo drops below threshold.
+- **Ammo Crate** (gold): Fully restores ammo. Launched from the nearest ammo depot toward the player's position; lands on the water surface and bobs on waves.
 - **Rare Ammo Drop** (blue, "+20"): Grants 20 ammo. Spawns periodically every 40–80 seconds, despawns after 20s.
 - Underwater pickups bob gently when settled and blink before despawning (18 seconds).
+- Score-based pickups drop from the city nearest to the player (not always Haven).
 - Only one of each type can exist at a time.
 
 ### `src/game/waves.ts` — Wave System
@@ -195,6 +214,8 @@ All collectible items in one place:
 - Each wave has a score threshold and time limit.
 - When a wave is completed, enemies flee the screen before the next wave begins.
 - Difficulty multiplier increases each wave (affects spawn rates and enemy counts).
+- Bomber target city rotates each wave (never the same city twice in a row).
+- Submarine target city is always different from the bomber target.
 - Extra life awarded every 3 waves.
 
 ### `src/game/jettrail.ts` — Jet Propulsion Effects
@@ -231,6 +252,19 @@ npm run build
 # 5. Run tests
 npm test
 ```
+
+---
+
+## Key Gameplay Mechanics
+
+### Buoyancy Suppression
+Buoyancy is suppressed while the player is thrusting (holding movement keys) or firing. This allows the player to stay submerged easily during combat without fighting against upward buoyancy force.
+
+### Boost Damage Immunity
+While boosting forward, the player is immune to normal enemy bullets (but not missiles, bombs, or rams). This encourages aggressive play.
+
+### Bullet-Platform Collision
+Player bullets are blocked by city platforms — they cannot pass through the hull of any city.
 
 ---
 
