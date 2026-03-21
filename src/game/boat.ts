@@ -41,12 +41,37 @@ export function getBoatTopY(boat: Boat, viewH: number): number {
   return waveY - 22;
 }
 
+export interface CityStructureState {
+  hp: number;
+  maxHp: number;
+}
+
+export function createCityStructureState(): CityStructureState {
+  return { hp: 3, maxHp: 3 };
+}
+
+export function getStructureWorldPos(boat: Boat, viewH: number): { x: number; y: number } | null {
+  const topY = getBoatTopY(boat, viewH);
+  const hw = boat.width / 2;
+  if (boat.name === "PORT ASTRA") return { x: boat.x - hw + 40, y: topY - 20 };
+  if (boat.name === "HAVEN") return { x: boat.x - hw + 55, y: topY - 20 };
+  if (boat.name === "NOVA MARE") return { x: boat.x + hw - 28, y: topY - 20 };
+  return null;
+}
+
 /**
  * Draw a Sonar Detection array on the left side of Port Astra.
  * Industrial naval aesthetic — a thick base housing, a large circular
  * dish face, signal emitter rods, and animated sonar ping rings.
  */
-function drawSonarArray(ctx: CanvasRenderingContext2D, cityX: number, hw: number, topY: number, now: number) {
+function drawSonarArray(
+  ctx: CanvasRenderingContext2D,
+  cityX: number,
+  hw: number,
+  topY: number,
+  now: number,
+  alive: boolean,
+) {
   // hw=390, barrier=390*0.85=331px. Center at cityX - hw + 40 = cityX - 350px.
   // Structure is ~60px wide so right edge at cityX - 320px — 11px clear of barrier.
   // Left edge at cityX - 380px — well outside.
@@ -240,34 +265,80 @@ function drawSonarArray(ctx: CanvasRenderingContext2D, cityX: number, hw: number
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // Blinking tip lights
-  const blink1 = Math.sin(now * 0.007) > 0;
-  const blink2 = Math.sin(now * 0.007 + Math.PI) > 0; // opposite phase
-  ctx.beginPath();
-  ctx.arc(rodBaseX, rodBaseY - 22, 2, 0, Math.PI * 2);
-  ctx.fillStyle = blink1 ? "rgba(50, 220, 170, 0.95)" : "rgba(20, 80, 60, 0.5)";
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(rodBaseX + 6, rodBaseY - 14, 1.5, 0, Math.PI * 2);
-  ctx.fillStyle = blink2 ? "rgba(50, 220, 170, 0.8)" : "rgba(20, 80, 60, 0.4)";
-  ctx.fill();
+  if (!alive) {
+    // ---- Destroyed overlay: darken everything, kill lights, add smoke ----
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = "#080a0c";
+    ctx.beginPath();
+    ctx.arc(dishX, dishY, dishR + 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
 
-  // ---- Status light on base ----
-  const statusPulse = 0.6 + Math.sin(now * 0.003 + 1) * 0.4;
-  ctx.beginPath();
-  ctx.arc(sx + 10, baseTop + 7, 3, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(50, 220, 170, ${statusPulse})`;
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(sx + 10, baseTop + 7, 5, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(50, 220, 170, ${statusPulse * 0.2})`;
-  ctx.fill();
+    // Scorch marks on base
+    ctx.fillStyle = "rgba(20, 10, 8, 0.7)";
+    ctx.fillRect(baseX, baseTop, baseW, baseH);
 
-  // ---- Label ----
-  ctx.font = "bold 7px monospace";
-  ctx.textAlign = "center";
-  ctx.fillStyle = "rgba(50, 200, 160, 0.6)";
-  ctx.fillText("SONAR", sx, dishY - dishR - 10);
+    // Toppled rod — draw it tilted
+    ctx.save();
+    ctx.translate(rodBaseX, rodBaseY - 4);
+    ctx.rotate(0.9);
+    ctx.fillStyle = "#1a1c22";
+    ctx.fillRect(-2, -22, 4, 22);
+    ctx.restore();
+
+    // Smoke puffs rising from wreckage
+    for (let i = 0; i < 4; i++) {
+      const smokeX = sx - 10 + i * 14 + Math.sin(now * 0.001 + i * 1.4) * 5;
+      const smokeY = baseTop - 8 - ((now * 0.03 + i * 18) % 40);
+      const smokeR = 4 + i * 2 + Math.sin(now * 0.002 + i) * 2;
+      const smokeAlpha = Math.max(0, 0.35 - (((now * 0.03 + i * 18) % 40) / 40) * 0.35);
+      ctx.beginPath();
+      ctx.arc(smokeX, smokeY, smokeR, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(40, 35, 30, ${smokeAlpha})`;
+      ctx.fill();
+    }
+
+    // Dead status light
+    ctx.beginPath();
+    ctx.arc(sx + 10, baseTop + 7, 3, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(60, 20, 10, 0.6)";
+    ctx.fill();
+
+    // Destroyed label
+    ctx.font = "bold 7px monospace";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(200, 60, 40, 0.7)";
+    ctx.fillText("OFFLINE", sx, dishY - dishR - 10);
+  } else {
+    // Blinking tip lights
+    const blink1 = Math.sin(now * 0.007) > 0;
+    const blink2 = Math.sin(now * 0.007 + Math.PI) > 0;
+    ctx.beginPath();
+    ctx.arc(rodBaseX, rodBaseY - 22, 2, 0, Math.PI * 2);
+    ctx.fillStyle = blink1 ? "rgba(50, 220, 170, 0.95)" : "rgba(20, 80, 60, 0.5)";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(rodBaseX + 6, rodBaseY - 14, 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = blink2 ? "rgba(50, 220, 170, 0.8)" : "rgba(20, 80, 60, 0.4)";
+    ctx.fill();
+
+    // Status light
+    const statusPulse = 0.6 + Math.sin(now * 0.003 + 1) * 0.4;
+    ctx.beginPath();
+    ctx.arc(sx + 10, baseTop + 7, 3, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(50, 220, 170, ${statusPulse})`;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(sx + 10, baseTop + 7, 5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(50, 220, 170, ${statusPulse * 0.2})`;
+    ctx.fill();
+
+    // Label
+    ctx.font = "bold 7px monospace";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(50, 200, 160, 0.6)";
+    ctx.fillText("SONAR", sx, dishY - dishR - 10);
+  }
 
   ctx.restore();
 }
@@ -277,7 +348,14 @@ function drawSonarArray(ctx: CanvasRenderingContext2D, cityX: number, hw: number
  * Simpler than the SAM site — a squat reinforced base with
  * three capacitor cylinders and pulsing energy conduits between them.
  */
-function drawShieldBattery(ctx: CanvasRenderingContext2D, cityX: number, hw: number, topY: number, now: number) {
+function drawShieldBattery(
+  ctx: CanvasRenderingContext2D,
+  cityX: number,
+  hw: number,
+  topY: number,
+  now: number,
+  alive: boolean,
+) {
   // hw=400, barrier radius = 400*0.85 = 340px.
   // bunkerW=62, so left edge of bunker = sx - 31. Need sx - 31 > 340, so sx > 371.
   // sx = cityX + hw - 28 = cityX + 372 — left edge at 341px, just clear.
@@ -414,44 +492,96 @@ function drawShieldBattery(ctx: CanvasRenderingContext2D, cityX: number, hw: num
   }
 
   // ---- Energy conduit lines between capacitors ----
-  // Drawn as arcing lines with animated dash offset for a "live wire" feel
-  const dashOffset = (now * 0.05) % 12;
-  ctx.setLineDash([4, 8]);
-  ctx.lineDashOffset = -dashOffset;
+  if (alive) {
+    const dashOffset = (now * 0.05) % 12;
+    ctx.setLineDash([4, 8]);
+    ctx.lineDashOffset = -dashOffset;
 
-  for (let i = 0; i < capPositions.length - 1; i++) {
-    const x1 = sx + capPositions[i];
-    const x2 = sx + capPositions[i + 1];
-    const arcY = bunkerTop - capH - 6;
-    const conduitAlpha = 0.3 + energyPulse * 0.4;
+    for (let i = 0; i < capPositions.length - 1; i++) {
+      const x1 = sx + capPositions[i];
+      const x2 = sx + capPositions[i + 1];
+      const arcY = bunkerTop - capH - 6;
+      const conduitAlpha = 0.3 + energyPulse * 0.4;
+      ctx.beginPath();
+      ctx.moveTo(x1, bunkerTop - capH);
+      ctx.quadraticCurveTo((x1 + x2) / 2, arcY, x2, bunkerTop - capH);
+      ctx.strokeStyle = `rgba(60, 160, 255, ${conduitAlpha})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
 
+    ctx.setLineDash([]);
+    ctx.lineDashOffset = 0;
+
+    // Status light
+    const statusPulse = 0.6 + Math.sin(now * 0.003) * 0.4;
     ctx.beginPath();
-    ctx.moveTo(x1, bunkerTop - capH);
-    ctx.quadraticCurveTo((x1 + x2) / 2, arcY, x2, bunkerTop - capH);
-    ctx.strokeStyle = `rgba(60, 160, 255, ${conduitAlpha})`;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    ctx.arc(sx, bunkerTop + 6, 3, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(60, 160, 255, ${statusPulse})`;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(sx, bunkerTop + 6, 5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(60, 160, 255, ${statusPulse * 0.2})`;
+    ctx.fill();
+
+    // Label
+    ctx.font = "bold 7px monospace";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(80, 160, 220, 0.6)";
+    ctx.fillText("SHIELD-B", sx, bunkerTop - capH - 14);
+  } else {
+    // Dead conduits — dark broken lines
+    ctx.setLineDash([3, 10]);
+    for (let i = 0; i < capPositions.length - 1; i++) {
+      const x1 = sx + capPositions[i];
+      const x2 = sx + capPositions[i + 1];
+      const arcY = bunkerTop - capH - 6;
+      ctx.beginPath();
+      ctx.moveTo(x1, bunkerTop - capH);
+      ctx.quadraticCurveTo((x1 + x2) / 2, arcY, x2, bunkerTop - capH);
+      ctx.strokeStyle = "rgba(60, 30, 20, 0.4)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    ctx.lineDashOffset = 0;
+
+    // Darken capacitors
+    ctx.globalAlpha = 0.6;
+    ctx.fillStyle = "#080a0c";
+    for (const ox of capPositions) {
+      ctx.beginPath();
+      ctx.roundRect(sx + ox - capR, bunkerTop - capH, capR * 2, capH, 3);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Smoke from each cap
+    for (let i = 0; i < capPositions.length; i++) {
+      const cx = sx + capPositions[i];
+      for (let s = 0; s < 2; s++) {
+        const smokeX = cx + Math.sin(now * 0.001 + i * 2 + s) * 4;
+        const smokeY = bunkerTop - capH - 6 - ((now * 0.025 + i * 12 + s * 8) % 30);
+        const smokeAlpha = Math.max(0, 0.3 - (((now * 0.025 + i * 12 + s * 8) % 30) / 30) * 0.3);
+        ctx.beginPath();
+        ctx.arc(smokeX, smokeY, 3 + s * 2, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(40, 30, 25, ${smokeAlpha})`;
+        ctx.fill();
+      }
+    }
+
+    // Dead status light
+    ctx.beginPath();
+    ctx.arc(sx, bunkerTop + 6, 3, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(60, 20, 10, 0.6)";
+    ctx.fill();
+
+    // Offline label
+    ctx.font = "bold 7px monospace";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(200, 60, 40, 0.7)";
+    ctx.fillText("OFFLINE", sx, bunkerTop - capH - 14);
   }
-
-  ctx.setLineDash([]);
-  ctx.lineDashOffset = 0;
-
-  // ---- Status light ----
-  const statusPulse = 0.6 + Math.sin(now * 0.003) * 0.4;
-  ctx.beginPath();
-  ctx.arc(sx, bunkerTop + 6, 3, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(60, 160, 255, ${statusPulse})`;
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(sx, bunkerTop + 6, 5, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(60, 160, 255, ${statusPulse * 0.2})`;
-  ctx.fill();
-
-  // ---- Label ----
-  ctx.font = "bold 7px monospace";
-  ctx.textAlign = "center";
-  ctx.fillStyle = "rgba(80, 160, 220, 0.6)";
-  ctx.fillText("SHIELD-B", sx, bunkerTop - capH - 14);
 
   ctx.restore();
 }
@@ -461,7 +591,14 @@ function drawShieldBattery(ctx: CanvasRenderingContext2D, cityX: number, hw: num
  * Industrial-alien aesthetic matching the rest of the game.
  * Consists of: a reinforced bunker base, rotating radar dish, and two missile tubes.
  */
-function drawSAMSite(ctx: CanvasRenderingContext2D, cityX: number, hw: number, topY: number, now: number) {
+function drawSAMSite(
+  ctx: CanvasRenderingContext2D,
+  cityX: number,
+  hw: number,
+  topY: number,
+  now: number,
+  alive: boolean,
+) {
   // hw * 0.85 = barrier radius. Place SAM clearly outside: cityX - hw + 50 puts it ~430px
   // from center when hw=480, well beyond the ~408px barrier radius.
   const sx = cityX - hw + 55;
@@ -656,23 +793,67 @@ function drawSAMSite(ctx: CanvasRenderingContext2D, cityX: number, hw: number, t
 
   ctx.restore();
 
-  // ---- Status light on bunker front ----
-  const statusPulse = 0.6 + Math.sin(now * 0.003) * 0.4;
-  ctx.beginPath();
-  ctx.arc(sx, bunkerTop + 6, 3, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(80, 220, 100, ${statusPulse})`;
-  ctx.fill();
-  // Status light halo
-  ctx.beginPath();
-  ctx.arc(sx, bunkerTop + 6, 5, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(80, 220, 100, ${statusPulse * 0.2})`;
-  ctx.fill();
+  if (!alive) {
+    // Darken bunker
+    ctx.fillStyle = "rgba(8, 6, 4, 0.65)";
+    ctx.beginPath();
+    ctx.moveTo(bunkerX + 6, bunkerTop);
+    ctx.lineTo(bunkerX + bunkerW - 6, bunkerTop);
+    ctx.lineTo(bunkerX + bunkerW, bunkerTop + 8);
+    ctx.lineTo(bunkerX + bunkerW, baseY);
+    ctx.lineTo(bunkerX, baseY);
+    ctx.lineTo(bunkerX, bunkerTop + 8);
+    ctx.closePath();
+    ctx.fill();
 
-  // ---- "SAM" label ----
-  ctx.font = "bold 7px monospace";
-  ctx.textAlign = "center";
-  ctx.fillStyle = "rgba(100, 200, 180, 0.6)";
-  ctx.fillText("SAM-7", sx, baseY - bunkerH - 32);
+    // Toppled antenna — draw arm fallen sideways
+    ctx.save();
+    ctx.translate(antennaX, antennaBaseY - 4);
+    ctx.rotate(0.75);
+    ctx.fillStyle = "#1a2030";
+    ctx.fillRect(-2, -26, 4, 26);
+    ctx.restore();
+
+    // Smoke from wreckage
+    for (let i = 0; i < 4; i++) {
+      const smokeX = sx + Math.sin(now * 0.001 + i * 1.7) * 8 + (i - 2) * 8;
+      const smokeY = bunkerTop - 5 - ((now * 0.028 + i * 14) % 38);
+      const smokeAlpha = Math.max(0, 0.35 - (((now * 0.028 + i * 14) % 38) / 38) * 0.35);
+      ctx.beginPath();
+      ctx.arc(smokeX, smokeY, 4 + i * 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(35, 28, 22, ${smokeAlpha})`;
+      ctx.fill();
+    }
+
+    // Dead light
+    ctx.beginPath();
+    ctx.arc(sx, bunkerTop + 6, 3, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(60, 20, 10, 0.6)";
+    ctx.fill();
+
+    // Offline label
+    ctx.font = "bold 7px monospace";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(200, 60, 40, 0.7)";
+    ctx.fillText("OFFLINE", sx, baseY - bunkerH - 32);
+  } else {
+    // Status light
+    const statusPulse = 0.6 + Math.sin(now * 0.003) * 0.4;
+    ctx.beginPath();
+    ctx.arc(sx, bunkerTop + 6, 3, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(80, 220, 100, ${statusPulse})`;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(sx, bunkerTop + 6, 5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(80, 220, 100, ${statusPulse * 0.2})`;
+    ctx.fill();
+
+    // Label
+    ctx.font = "bold 7px monospace";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(100, 200, 180, 0.6)";
+    ctx.fillText("SAM-7", sx, baseY - bunkerH - 32);
+  }
 
   ctx.restore();
 }
@@ -683,6 +864,7 @@ export function drawBoat(
   viewH: number,
   hpRatio: number = 1,
   barrierUp: boolean = true,
+  structureHp: number = 3,
 ) {
   const surfaceY = getWaterSurfaceY(viewH);
   const waveY = getWaveY(boat.x, surfaceY);
@@ -1105,17 +1287,17 @@ export function drawBoat(
     ctx.fill();
 
     // ---- SAM site on left side of Haven ----
-    drawSAMSite(ctx, boat.x, hw, topY, now);
+    drawSAMSite(ctx, boat.x, hw, topY, now, structureHp > 0);
   }
 
   // Shield Battery on right side of Nova Mare
   if (boat.name === "NOVA MARE") {
-    drawShieldBattery(ctx, boat.x, hw, topY, now);
+    drawShieldBattery(ctx, boat.x, hw, topY, now, structureHp > 0);
   }
 
   // Sonar Array on left side of Port Astra
   if (boat.name === "PORT ASTRA") {
-    drawSonarArray(ctx, boat.x, hw, topY, now);
+    drawSonarArray(ctx, boat.x, hw, topY, now, structureHp > 0);
   }
 
   if (exposed) {
