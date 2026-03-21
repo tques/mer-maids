@@ -178,9 +178,12 @@ This is the heart of the game. It contains:
 
 ### `src/game/submarine.ts` — Underwater Enemies
 
-- Submarines approach the city from underwater, charge up, then detonate to damage it.
+- Submarines approach a targeted city from underwater, charge up, then detonate to damage it.
+- Limited to **maximum 1 active** at a time with long respawn delays (20–35+ seconds) to serve as occasional strategic threats.
+- Target city is always different from the bomber target, forcing the player to leave the bombed city.
 - The player must dive underwater to intercept them.
 - `updateSubmarinesWithDamage()`: Handles spawning, movement, attack charging, and returns damage dealt.
+- `setSubmarineTargetCity()`: Sets which city subs target each wave.
 - `drawSubmarines()`: Renders menacing dark hull with crimson accents, pulsing red eye, and attack warning effects.
 
 ### `src/game/minelayer.ts` — Mine-Layer Plane & Floating Mines
