@@ -2015,6 +2015,7 @@ const Index = () => {
             resetPickups(WORLD_WIDTH);
             resetJetTrail();
             fuelRef.current = MAX_FUEL;
+            const initialBomberTarget = Math.floor(Math.random() * NUM_CITIES);
             setBomberTargetCity(initialBomberTarget);
             bomberTargetRef.current = initialBomberTarget;
             const initialSubTarget = pickDifferentCity(initialBomberTarget);
