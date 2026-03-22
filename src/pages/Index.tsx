@@ -1417,6 +1417,8 @@ const Index = () => {
       ctx.fill();
 
       // Border with subtle warm amber tint mixed with cyan
+      ctx.beginPath();
+      drawPanel(hudX, hudY, panelW, panelH);
       ctx.strokeStyle = "rgba(0,200,230,0.25)";
       ctx.lineWidth = 1.5;
       ctx.stroke();
