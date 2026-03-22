@@ -517,10 +517,8 @@ export function checkBulletHitsBombardSub(bullets: { x: number; y: number; dx: n
   for (const b of bullets) {
     let hit = false;
 
-    // Only shootable while surfaced (aiming phase) — it's underwater otherwise
     for (const s of bombardSubs) {
       if (!s.alive) continue;
-      if (s.phase !== "aiming" && s.phase !== "firing") continue;
       if (Math.hypot(b.x - s.x, b.y - s.y) < SUB_WIDTH / 2 + 5) {
         s.alive = false;
         spawnExplosion(s.x, s.y, 40, SCORE_BOMBARD_SUB);
@@ -612,8 +610,11 @@ export function drawBombardSubs(ctx: CanvasRenderingContext2D) {
 
     // Only draw when near or at surface — fade in as it rises
     const distFromSurface = s.y - s.surfaceY;
+    const visibility = Math.max(0, Math.min(1, 1 - distFromSurface / 80));
+    if (visibility <= 0) continue;
 
     ctx.save();
+    ctx.globalAlpha = visibility;
     ctx.translate(s.x, s.y);
 
     const hw = SUB_WIDTH / 2 + 4;
