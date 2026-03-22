@@ -2214,10 +2214,8 @@ const Index = () => {
 
             initAudio();
             sfxJetStart();
-            if (musicRef.current) {
-              musicRef.current.currentTime = 0;
-              musicRef.current.play().catch(() => {});
-            }
+
+
           }}
         >
           <div
