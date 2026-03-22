@@ -1538,12 +1538,12 @@ const Index = () => {
       // HP
       ly += 24;
       ctx.font = "bold 10px monospace";
-      ctx.fillStyle = "rgba(255,180,60,0.7)";
+      ctx.fillStyle = "rgba(255,80,80,0.7)";
       ctx.textAlign = "right";
       ctx.fillText("HP", labelX - 4, ly);
       ctx.textAlign = "left";
       for (let i = 0; i < PLAYER_MAX_HP; i++)
-        drawDiamondLight(labelX + 8 + i * 26, ly - 3, 7, i < playerHPRef.current, "#ffb830", "#996600");
+        drawDiamondLight(labelX + 8 + i * 26, ly - 3, 7, i < playerHPRef.current, "#ff4444", "#991111");
 
       // AMMO
       ly += 24;
