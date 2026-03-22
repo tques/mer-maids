@@ -2149,7 +2149,7 @@ const Index = () => {
             const newVal = !useRightStickRef.current;
             useRightStickRef.current = newVal;
             setUseRightStick(newVal);
-          } else if (pauseMenuIndexRef.current === 3) window.location.reload();
+          } else if (pauseMenuIndexRef.current === 2) window.location.reload();
         }
         if (startPressed) {
           pausedRef.current = false;
