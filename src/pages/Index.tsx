@@ -224,7 +224,6 @@ const Index = () => {
   const [pauseMenuIndex, setPauseMenuIndex] = useState(0);
   const pauseMenuIndexRef = useRef(0);
 
-
   const gamepadAimingRef = useRef(false);
   const lastGamepadAngleRef = useRef(0);
   const loopRef = useRef<(() => void) | null>(null);
@@ -290,9 +289,6 @@ const Index = () => {
     };
     resize();
     window.addEventListener("resize", resize);
-
-
-
 
     const onMouseMove = (e: MouseEvent) => {
       if (gamepadAimingRef.current) return;
@@ -2264,8 +2260,6 @@ const Index = () => {
 
             initAudio();
             sfxJetStart();
-
-
           }}
         >
           <div
@@ -2288,7 +2282,7 @@ const Index = () => {
               <p className="text-sm leading-relaxed" style={{ color: "#ccc" }}>
                 Protect three floating cities: <span style={{ color: "#ff7f50" }}>PORT ASTRA</span>,{" "}
                 <span style={{ color: "#00dcff" }}>HAVEN</span>, and <span style={{ color: "#a0ff80" }}>NOVA MARE</span>
-                . Each city has a unique sub-structure — protect them or face escalating consequences!
+                . Each city has a unique sub-structure — protect them and the city's barriers.
               </p>
             </div>
             <div className="mb-4 px-4 py-3 rounded" style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
@@ -2300,11 +2294,11 @@ const Index = () => {
                 style={{ color: "#ccc", display: "grid", gridTemplateColumns: "auto 1fr", gap: "4px 10px" }}
               >
                 <span style={{ color: "#ff7f50", textAlign: "right" }}>PORT ASTRA</span>
-                <span>Sonar Array — destroyed subs spawn much closer with less warning</span>
+                <span>Sonar Array: if destroyed subs spawn much closer with less warning</span>
                 <span style={{ color: "#00dcff", textAlign: "right" }}>HAVEN</span>
-                <span>SAM-7 — destroyed causes minelayer planes to begin attacks</span>
+                <span>SAM-7: if destroyed minelayer planes begin attacks</span>
                 <span style={{ color: "#a0ff80", textAlign: "right" }}>NOVA MARE</span>
-                <span>Shield Battery — destroyed means bombs deal 2× damage to the dome</span>
+                <span>Shield Battery: if destroyed bombs deal 2× damage to the dome</span>
               </div>
             </div>
             <div className="mb-4 px-4 py-3 rounded" style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
@@ -2322,9 +2316,9 @@ const Index = () => {
                 <span style={{ color: "#5a9", textAlign: "right" }}>BARREL ROLL</span>
                 <span>Dodge enemy fire with a quick lateral roll. Breaks missile lock-on.</span>
                 <span style={{ color: "#ff7675", textAlign: "right" }}>BOOST</span>
-                <span>High-speed dash. Uses more fuel, locks steering, deflects missiles.</span>
+                <span>High-speed dash. Uses more fuel, locks steering.</span>
                 <span style={{ color: "#64ffeb", textAlign: "right" }}>RAM BLADES</span>
-                <span>At full HP, blades extend. Boost into enemies to destroy them!</span>
+                <span>At full HP, blades extend. Boost into enemies to destroy them</span>
                 <span style={{ color: "#ffb830", textAlign: "right" }}>CITY REPAIR</span>
                 <span>Repair pickups heal the most damaged city automatically.</span>
               </div>
