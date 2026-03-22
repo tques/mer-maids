@@ -1573,8 +1573,8 @@ const Index = () => {
           segW,
           segH,
           i < litAmmo,
-          ammoLow ? "#ffcc00" : "#c0c8d0",
-          ammoLow ? "#ff9900" : "#8890a0",
+          ammoLow ? "#ffcc00" : "#ffd640",
+          ammoLow ? "#ff9900" : "#b89520",
           i === 0,
           i === ammoLights - 1,
         );
