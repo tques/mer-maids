@@ -43,10 +43,16 @@ const SUB_SPAWN_DIST_NORMAL_MAX = 1000; // random(400) added
 const SUB_SPAWN_DIST_NO_SONAR_MIN = 120;
 const SUB_SPAWN_DIST_NO_SONAR_MAX = 240;
 
-export function getSubmarines() { return submarines; }
+export function getSubmarines() {
+  return submarines;
+}
 
-export function setSubmarineTargetCity(index: number) { subTargetCityIndex = index; }
-export function getSubmarineTargetCityIndex() { return subTargetCityIndex; }
+export function setSubmarineTargetCity(index: number) {
+  subTargetCityIndex = index;
+}
+export function getSubmarineTargetCityIndex() {
+  return subTargetCityIndex;
+}
 
 export function resetSubmarines() {
   submarines = [];
@@ -89,7 +95,8 @@ export function updateSubmarinesWithDamage(
       if (sonarAlive) {
         spawnDist = SUB_SPAWN_DIST_NORMAL_MIN + Math.random() * (SUB_SPAWN_DIST_NORMAL_MAX - SUB_SPAWN_DIST_NORMAL_MIN);
       } else {
-        spawnDist = SUB_SPAWN_DIST_NO_SONAR_MIN + Math.random() * (SUB_SPAWN_DIST_NO_SONAR_MAX - SUB_SPAWN_DIST_NO_SONAR_MIN);
+        spawnDist =
+          SUB_SPAWN_DIST_NO_SONAR_MIN + Math.random() * (SUB_SPAWN_DIST_NO_SONAR_MAX - SUB_SPAWN_DIST_NO_SONAR_MIN);
       }
 
       const spawnX = fromLeft ? boatX - hw - spawnDist : boatX + hw + spawnDist;
@@ -195,49 +202,93 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
     hullGrad.addColorStop(0, "#2a2a2a");
     hullGrad.addColorStop(0.5, "#151515");
     hullGrad.addColorStop(1, "#1a1a1a");
-    ctx.fillStyle = hullGrad; ctx.fill();
-    ctx.strokeStyle = "#444"; ctx.lineWidth = 1.5; ctx.stroke();
-
-    ctx.strokeStyle = "rgba(100, 100, 100, 0.25)"; ctx.lineWidth = 0.5;
-    ctx.beginPath();
-    ctx.moveTo(-hw * 0.5, -hh); ctx.lineTo(-hw * 0.5, hh);
-    ctx.moveTo(hw * 0.2, -hh); ctx.lineTo(hw * 0.2, hh);
+    ctx.fillStyle = hullGrad;
+    ctx.fill();
+    ctx.strokeStyle = "#444";
+    ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    ctx.beginPath(); ctx.ellipse(0, 0, hw * 0.92, hh * 0.55, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#5a0000"; ctx.fill();
-    ctx.beginPath(); ctx.ellipse(0, 0, hw * 0.75, hh * 0.35, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#151515"; ctx.fill();
+    ctx.strokeStyle = "rgba(100, 100, 100, 0.25)";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(-hw * 0.5, -hh);
+    ctx.lineTo(-hw * 0.5, hh);
+    ctx.moveTo(hw * 0.2, -hh);
+    ctx.lineTo(hw * 0.2, hh);
+    ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(-8, -hh); ctx.lineTo(-6, -hh - 10); ctx.lineTo(6, -hh - 10); ctx.lineTo(8, -hh); ctx.closePath();
-    ctx.fillStyle = "#222"; ctx.fill(); ctx.strokeStyle = "#600"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.ellipse(0, 0, hw * 0.92, hh * 0.55, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#5a0000";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(0, 0, hw * 0.75, hh * 0.35, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#151515";
+    ctx.fill();
 
-    ctx.beginPath(); ctx.moveTo(0, -hh - 10); ctx.lineTo(0, -hh - 16);
-    ctx.strokeStyle = "#888"; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-8, -hh);
+    ctx.lineTo(-6, -hh - 10);
+    ctx.lineTo(6, -hh - 10);
+    ctx.lineTo(8, -hh);
+    ctx.closePath();
+    ctx.fillStyle = "#222";
+    ctx.fill();
+    ctx.strokeStyle = "#600";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0, -hh - 10);
+    ctx.lineTo(0, -hh - 16);
+    ctx.strokeStyle = "#888";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
     const sensorBlink = Math.sin(performance.now() * 0.008 + sub.x) > 0;
     if (sensorBlink) {
-      ctx.beginPath(); ctx.arc(0, -hh - 16, 1.5, 0, Math.PI * 2); ctx.fillStyle = "#ff0000"; ctx.fill();
+      ctx.beginPath();
+      ctx.arc(0, -hh - 16, 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = "#ff0000";
+      ctx.fill();
     }
 
     const noseX = sub.dir * hw;
     ctx.beginPath();
-    ctx.moveTo(noseX, -hh * 0.6); ctx.lineTo(noseX + sub.dir * 10, 0); ctx.lineTo(noseX, hh * 0.6); ctx.closePath();
-    ctx.fillStyle = "#333"; ctx.fill(); ctx.strokeStyle = "#555"; ctx.lineWidth = 0.5; ctx.stroke();
+    ctx.moveTo(noseX, -hh * 0.6);
+    ctx.lineTo(noseX + sub.dir * 10, 0);
+    ctx.lineTo(noseX, hh * 0.6);
+    ctx.closePath();
+    ctx.fillStyle = "#333";
+    ctx.fill();
+    ctx.strokeStyle = "#555";
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
 
     const eyeX = sub.dir * hw * 0.35;
-    ctx.beginPath(); ctx.arc(eyeX, 0, 4, 0, Math.PI * 2); ctx.fillStyle = "#111"; ctx.fill();
-    ctx.beginPath(); ctx.arc(eyeX, 0, 3, 0, Math.PI * 2);
+    ctx.beginPath();
+    ctx.arc(eyeX, 0, 4, 0, Math.PI * 2);
+    ctx.fillStyle = "#111";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(eyeX, 0, 3, 0, Math.PI * 2);
     const eyePulse = 0.6 + Math.sin(performance.now() * 0.006) * 0.4;
-    ctx.fillStyle = sub.attacking ? "#ff0000" : `rgba(255, 30, 10, ${eyePulse})`; ctx.fill();
-    ctx.beginPath(); ctx.arc(eyeX, 0, 1.2, 0, Math.PI * 2); ctx.fillStyle = "#fff"; ctx.fill();
+    ctx.fillStyle = sub.attacking ? "#ff0000" : `rgba(255, 30, 10, ${eyePulse})`;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(eyeX, 0, 1.2, 0, Math.PI * 2);
+    ctx.fillStyle = "#fff";
+    ctx.fill();
 
     const tailX = -sub.dir * hw * 0.85;
     ctx.beginPath();
-    ctx.moveTo(tailX, -hh * 0.4); ctx.lineTo(tailX - sub.dir * 9, -hh - 6);
-    ctx.lineTo(tailX - sub.dir * 5, -hh * 0.1); ctx.lineTo(tailX - sub.dir * 9, hh + 6);
-    ctx.lineTo(tailX, hh * 0.4); ctx.closePath();
-    ctx.fillStyle = "#3a0000"; ctx.fill();
+    ctx.moveTo(tailX, -hh * 0.4);
+    ctx.lineTo(tailX - sub.dir * 9, -hh - 6);
+    ctx.lineTo(tailX - sub.dir * 5, -hh * 0.1);
+    ctx.lineTo(tailX - sub.dir * 9, hh + 6);
+    ctx.lineTo(tailX, hh * 0.4);
+    ctx.closePath();
+    ctx.fillStyle = "#3a0000";
+    ctx.fill();
 
     const tubeX = sub.dir * hw * 0.6;
     ctx.fillStyle = "#333";
@@ -247,14 +298,19 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
     if (sub.attacking) {
       const flash = Math.sin(sub.flashTimer * 10) > 0;
       if (flash) {
-        ctx.beginPath(); ctx.ellipse(0, 0, hw + 6, hh + 6, 0, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(255, 0, 0, 0.7)"; ctx.lineWidth = 2.5; ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(0, 0, hw + 6, hh + 6, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255, 0, 0, 0.7)";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
       }
       for (let i = 0; i < 4; i++) {
         const bx = (i - 1.5) * 8 + Math.sin(sub.flashTimer * 4 + i) * 4;
         const by = -hh - 12 - ((sub.flashTimer * 35 + i * 12) % 50);
-        ctx.beginPath(); ctx.arc(bx, by, 1.5 + Math.random() * 1.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 80, 50, ${0.3 + Math.random() * 0.3})`; ctx.fill();
+        ctx.beginPath();
+        ctx.arc(bx, by, 1.5 + Math.random() * 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 80, 50, ${0.3 + Math.random() * 0.3})`;
+        ctx.fill();
       }
     }
 
@@ -263,7 +319,9 @@ export function drawSubmarines(ctx: CanvasRenderingContext2D) {
 }
 
 export function fleeSubmarines() {
-  for (const sub of submarines) { if (sub.alive) sub.attacking = false; }
+  for (const sub of submarines) {
+    if (sub.alive) sub.attacking = false;
+  }
 }
 
 export function areSubmarinesGone(): boolean {
@@ -281,7 +339,7 @@ export interface BombardSub {
   x: number;
   y: number;
   alive: boolean;
-  phase: 'rising' | 'aiming' | 'firing' | 'sinking';
+  phase: "rising" | "aiming" | "firing" | "sinking";
   phaseTimer: number;
   targetStructureX: number;
   targetStructureY: number;
@@ -305,8 +363,8 @@ let bombardSpawnTimer = 45;
 
 const BOMBARD_RISE_SPEED = 1.2;
 const BOMBARD_SINK_SPEED = 1.8;
-const BOMBARD_SPAWN_DEPTH = 600; // far below screen so it always rises from off-screen
-const BOMBARD_X_OFFSET = 220;   // offset outward from city center past platform edge
+const BOMBARD_SPAWN_BELOW_SCREEN = 120; // px below the bottom of the visible screen
+const BOMBARD_X_OFFSET = 220; // offset outward from city center past platform edge
 const AIM_DURATION = 3.0;
 const MORTAR_GRAVITY = 0.18;
 const SCORE_BOMBARD_SUB = 350;
@@ -317,8 +375,12 @@ export function resetBombardSubs() {
   bombardSpawnTimer = 45;
 }
 
-export function getBombardSubs() { return bombardSubs; }
-export function getMortars() { return mortars; }
+export function getBombardSubs() {
+  return bombardSubs;
+}
+export function getMortars() {
+  return mortars;
+}
 
 export function updateBombardSubs(
   dt: number,
@@ -339,7 +401,7 @@ export function updateBombardSubs(
   if (!fleeing && gameTime > 30 && bomberTargetStructure !== null) {
     bombardSpawnTimer -= dt;
     const interval = Math.max(30 - waveDifficulty * 4, 15);
-    if (bombardSpawnTimer <= 0 && bombardSubs.filter(s => s.alive).length === 0) {
+    if (bombardSpawnTimer <= 0 && bombardSubs.filter((s) => s.alive).length === 0) {
       bombardSpawnTimer = interval + Math.random() * 12;
 
       // Always offset outward from the city center so sub spawns outside the platform
@@ -348,9 +410,9 @@ export function updateBombardSubs(
 
       bombardSubs.push({
         x: spawnX,
-        y: waterY + BOMBARD_SPAWN_DEPTH,
+        y: viewH + BOMBARD_SPAWN_BELOW_SCREEN,
         alive: true,
-        phase: 'rising',
+        phase: "rising",
         phaseTimer: 0,
         targetStructureX: bomberTargetStructure.x,
         targetStructureY: bomberTargetStructure.y,
@@ -364,25 +426,25 @@ export function updateBombardSubs(
     if (!s.alive) continue;
 
     // Fleeing — just sink immediately
-    if (fleeing && s.phase !== 'sinking') s.phase = 'sinking';
+    if (fleeing && s.phase !== "sinking") s.phase = "sinking";
 
     switch (s.phase) {
-      case 'rising': {
+      case "rising": {
         s.y -= BOMBARD_RISE_SPEED;
         if (s.y <= s.surfaceY) {
           s.y = s.surfaceY;
-          s.phase = 'aiming';
+          s.phase = "aiming";
           s.phaseTimer = AIM_DURATION;
         }
         break;
       }
-      case 'aiming': {
+      case "aiming": {
         s.y = s.surfaceY;
         s.phaseTimer -= dt;
-        if (s.phaseTimer <= 0) s.phase = 'firing';
+        if (s.phaseTimer <= 0) s.phase = "firing";
         break;
       }
-      case 'firing': {
+      case "firing": {
         // Arc mortar to structure position
         const dx = s.targetStructureX - s.x;
         const dy = s.targetStructureY - s.y;
@@ -392,19 +454,20 @@ export function updateBombardSubs(
         mortars.push({
           x: s.x,
           y: s.y - 10,
-          vx, vy,
+          vx,
+          vy,
           alive: true,
           trail: [],
           targetX: s.targetStructureX,
           targetY: s.targetStructureY,
         });
-        s.phase = 'sinking';
+        s.phase = "sinking";
         break;
       }
-      case 'sinking': {
+      case "sinking": {
         s.y += BOMBARD_SINK_SPEED;
         // Despawn once well below screen
-        if (s.y > waterY + BOMBARD_SPAWN_DEPTH + 50) s.alive = false;
+        if (s.y > viewH + BOMBARD_SPAWN_BELOW_SCREEN + 50) s.alive = false;
         break;
       }
     }
@@ -422,8 +485,8 @@ export function updateBombardSubs(
     if (Math.abs(m.x - playerX) > viewHalfW * 4) m.alive = false;
   }
 
-  bombardSubs = bombardSubs.filter(s => s.alive);
-  mortars = mortars.filter(m => m.alive);
+  bombardSubs = bombardSubs.filter((s) => s.alive);
+  mortars = mortars.filter((m) => m.alive);
 }
 
 export function checkMortarHitsStructure(
@@ -444,9 +507,10 @@ export function checkMortarHitsStructure(
   return hits;
 }
 
-export function checkBulletHitsBombardSub(
-  bullets: { x: number; y: number; dx: number; dy: number; id: number }[]
-): { remaining: typeof bullets; score: number } {
+export function checkBulletHitsBombardSub(bullets: { x: number; y: number; dx: number; dy: number; id: number }[]): {
+  remaining: typeof bullets;
+  score: number;
+} {
   const remaining: typeof bullets = [];
   let score = 0;
 
@@ -456,7 +520,7 @@ export function checkBulletHitsBombardSub(
     // Only shootable while surfaced (aiming phase) — it's underwater otherwise
     for (const s of bombardSubs) {
       if (!s.alive) continue;
-      if (s.phase !== 'aiming' && s.phase !== 'firing') continue;
+      if (s.phase !== "aiming" && s.phase !== "firing") continue;
       if (Math.hypot(b.x - s.x, b.y - s.y) < SUB_WIDTH / 2 + 5) {
         s.alive = false;
         spawnExplosion(s.x, s.y, 40, SCORE_BOMBARD_SUB);
@@ -515,9 +579,13 @@ export function drawBombardSubs(ctx: CanvasRenderingContext2D) {
       else ctx.lineTo(Math.cos(a) * ms, Math.sin(a) * ms);
     }
     ctx.closePath();
-    ctx.fillStyle = "#2a1a0a"; ctx.fill();
-    ctx.strokeStyle = "#ff6030"; ctx.lineWidth = 1.5; ctx.stroke();
-    ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = "#2a1a0a";
+    ctx.fill();
+    ctx.strokeStyle = "#ff6030";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(255, 120, 40, ${0.7 + Math.sin(now * 0.02) * 0.3})`;
     ctx.fill();
     ctx.restore();
@@ -529,8 +597,10 @@ export function drawBombardSubs(ctx: CanvasRenderingContext2D) {
     ctx.lineWidth = 1.5;
     const xs = 9;
     ctx.beginPath();
-    ctx.moveTo(m.targetX - xs, m.targetY - xs); ctx.lineTo(m.targetX + xs, m.targetY + xs);
-    ctx.moveTo(m.targetX + xs, m.targetY - xs); ctx.lineTo(m.targetX - xs, m.targetY + xs);
+    ctx.moveTo(m.targetX - xs, m.targetY - xs);
+    ctx.lineTo(m.targetX + xs, m.targetY + xs);
+    ctx.moveTo(m.targetX + xs, m.targetY - xs);
+    ctx.lineTo(m.targetX - xs, m.targetY + xs);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
@@ -559,75 +629,98 @@ export function drawBombardSubs(ctx: CanvasRenderingContext2D) {
     hullGrad.addColorStop(0, "#3a2010");
     hullGrad.addColorStop(0.5, "#201008");
     hullGrad.addColorStop(1, "#2a1808");
-    ctx.fillStyle = hullGrad; ctx.fill();
-    ctx.strokeStyle = "#664422"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = hullGrad;
+    ctx.fill();
+    ctx.strokeStyle = "#664422";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
 
     // Danger stripe
-    ctx.beginPath(); ctx.ellipse(0, 0, hw * 0.9, hh * 0.5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#6a2000"; ctx.fill();
-    ctx.beginPath(); ctx.ellipse(0, 0, hw * 0.7, hh * 0.3, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#1a0800"; ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(0, 0, hw * 0.9, hh * 0.5, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#6a2000";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(0, 0, hw * 0.7, hh * 0.3, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#1a0800";
+    ctx.fill();
 
     // Mortar barrel — angled toward target, visible when aiming
-    if (s.phase === 'aiming' || s.phase === 'firing') {
-      const barrelAngle = Math.atan2(
-        s.targetStructureY - s.y,
-        s.targetStructureX - s.x,
-      ) - Math.PI * 0.25;
+    if (s.phase === "aiming" || s.phase === "firing") {
+      const barrelAngle = Math.atan2(s.targetStructureY - s.y, s.targetStructureX - s.x) - Math.PI * 0.25;
       ctx.save();
       ctx.translate(0, -hh);
       ctx.rotate(barrelAngle);
       ctx.fillStyle = "#443322";
       ctx.fillRect(-2, -14, 4, 14);
-      ctx.strokeStyle = "#886644"; ctx.lineWidth = 1;
+      ctx.strokeStyle = "#886644";
+      ctx.lineWidth = 1;
       ctx.strokeRect(-2, -14, 4, 14);
-      if (s.phase === 'firing') {
-        ctx.beginPath(); ctx.arc(0, -14, 6, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255, 160, 60, 0.9)"; ctx.fill();
+      if (s.phase === "firing") {
+        ctx.beginPath();
+        ctx.arc(0, -14, 6, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255, 160, 60, 0.9)";
+        ctx.fill();
       }
       ctx.restore();
     }
 
     // Conning tower
     ctx.beginPath();
-    ctx.moveTo(-6, -hh); ctx.lineTo(-4, -hh - 9);
-    ctx.lineTo(4, -hh - 9); ctx.lineTo(6, -hh); ctx.closePath();
-    ctx.fillStyle = "#2a1808"; ctx.fill();
-    ctx.strokeStyle = "#884422"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.moveTo(-6, -hh);
+    ctx.lineTo(-4, -hh - 9);
+    ctx.lineTo(4, -hh - 9);
+    ctx.lineTo(6, -hh);
+    ctx.closePath();
+    ctx.fillStyle = "#2a1808";
+    ctx.fill();
+    ctx.strokeStyle = "#884422";
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
     // Eye — orange
     const eyeDir = s.targetStructureX > s.x ? 1 : -1;
     const eyeX = eyeDir * hw * 0.35;
-    ctx.beginPath(); ctx.arc(eyeX, 0, 4, 0, Math.PI * 2);
-    ctx.fillStyle = "#111"; ctx.fill();
+    ctx.beginPath();
+    ctx.arc(eyeX, 0, 4, 0, Math.PI * 2);
+    ctx.fillStyle = "#111";
+    ctx.fill();
     const eyePulse = 0.6 + Math.sin(now * 0.006) * 0.4;
-    ctx.beginPath(); ctx.arc(eyeX, 0, 3, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 120, 20, ${eyePulse})`; ctx.fill();
-    ctx.beginPath(); ctx.arc(eyeX, 0, 1.2, 0, Math.PI * 2);
-    ctx.fillStyle = "#fff"; ctx.fill();
+    ctx.beginPath();
+    ctx.arc(eyeX, 0, 3, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 120, 20, ${eyePulse})`;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(eyeX, 0, 1.2, 0, Math.PI * 2);
+    ctx.fillStyle = "#fff";
+    ctx.fill();
 
     // Aiming flash ring + countdown arc
-    if (s.phase === 'aiming') {
+    if (s.phase === "aiming") {
       if (Math.sin(now * 0.012) > 0) {
-        ctx.beginPath(); ctx.ellipse(0, 0, hw + 8, hh + 8, 0, 0, Math.PI * 2);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, hw + 8, hh + 8, 0, 0, Math.PI * 2);
         ctx.strokeStyle = "rgba(255, 120, 40, 0.8)";
-        ctx.lineWidth = 2; ctx.stroke();
+        ctx.lineWidth = 2;
+        ctx.stroke();
       }
       const fraction = s.phaseTimer / AIM_DURATION;
       ctx.beginPath();
       ctx.arc(0, -hh - 14, 8, -Math.PI / 2, -Math.PI / 2 + fraction * Math.PI * 2);
       ctx.strokeStyle = "rgba(255, 160, 40, 0.9)";
-      ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
     }
 
     // Rising water disturbance — ripples while coming up
-    if (s.phase === 'rising' && distFromSurface < 60) {
+    if (s.phase === "rising" && distFromSurface < 60) {
       const rippleAlpha = (1 - distFromSurface / 60) * 0.4;
       for (const r of [12, 22, 34]) {
         ctx.beginPath();
         ctx.ellipse(0, -hh, r, r * 0.3, 0, Math.PI, 0);
         ctx.strokeStyle = `rgba(100, 200, 220, ${rippleAlpha * (1 - r / 40)})`;
-        ctx.lineWidth = 1; ctx.stroke();
+        ctx.lineWidth = 1;
+        ctx.stroke();
       }
     }
 
