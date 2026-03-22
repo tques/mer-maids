@@ -2282,12 +2282,13 @@ const Index = () => {
               <p className="text-sm leading-relaxed" style={{ color: "#ccc" }}>
                 Protect three floating cities: <span style={{ color: "#ff7f50" }}>PORT ASTRA</span>,{" "}
                 <span style={{ color: "#00dcff" }}>HAVEN</span>, and <span style={{ color: "#a0ff80" }}>NOVA MARE</span>
-                . Each city has a unique sub-structure — protect them and the city's barriers.
+                . Each city has a unique sub-structure — protect the structures and the city barrier from subs and
+                bombers.
               </p>
             </div>
             <div className="mb-4 px-4 py-3 rounded" style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
               <div className="text-xs tracking-widest uppercase mb-2" style={{ color: "#74b9ff" }}>
-                CITY STRUCTURES
+                CITY STRUCTURES - Defend them from bombardment submarines.
               </div>
               <div
                 className="text-sm leading-relaxed"
