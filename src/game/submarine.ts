@@ -610,11 +610,8 @@ export function drawBombardSubs(ctx: CanvasRenderingContext2D) {
 
     // Only draw when near or at surface — fade in as it rises
     const distFromSurface = s.y - s.surfaceY;
-    const visibility = Math.max(0, Math.min(1, 1 - distFromSurface / 80));
-    if (visibility <= 0) continue;
 
     ctx.save();
-    ctx.globalAlpha = visibility;
     ctx.translate(s.x, s.y);
 
     const hw = SUB_WIDTH / 2 + 4;

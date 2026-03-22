@@ -60,8 +60,8 @@ export function getStructureWorldPos(boat: Boat, viewH: number): { x: number; y:
     // Sonar Array — tall mast on left side of platform
     return { x: boat.x - hw * 0.55, y: topY - 80 };
   } else if (boat.name === "HAVEN") {
-    // SAM-7 — right side of platform
-    return { x: boat.x + hw - 60, y: topY - 90 };
+    // SAM-7 — left side of platform (matches samX = boat.x - hw + 65)
+    return { x: boat.x - hw + 65, y: topY - 25 };
   } else if (boat.name === "NOVA MARE") {
     // Shield Battery — center-right spire
     return { x: boat.x + hw * 0.4, y: topY - 75 };
