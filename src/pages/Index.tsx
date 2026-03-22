@@ -223,8 +223,8 @@ const Index = () => {
   const useRightStickRef = useRef(false);
   const [pauseMenuIndex, setPauseMenuIndex] = useState(0);
   const pauseMenuIndexRef = useRef(0);
-  const [musicVolume, setMusicVolume] = useState(0.4);
-  const musicRef = useRef<HTMLAudioElement | null>(null);
+
+
   const gamepadAimingRef = useRef(false);
   const lastGamepadAngleRef = useRef(0);
   const loopRef = useRef<(() => void) | null>(null);
