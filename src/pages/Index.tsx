@@ -211,6 +211,14 @@ const Index = () => {
   const subTargetRef = useRef(1);
   const samWasAliveRef = useRef(true);
 
+  // Intro camera state: 'panning' = slow drift on title, 'scrolling' = lerp to target, 'playing' = follows player
+  type IntroCamState = "panning" | "scrolling" | "playing";
+  const introCamRef = useRef<IntroCamState>("panning");
+  const introCamXRef = useRef(0); // current camera X during intro
+  const introCamTargetXRef = useRef(0); // destination X during 'scrolling'
+  const [introOverlayAlpha, setIntroOverlayAlpha] = useState(1);
+  const introOverlayAlphaRef = useRef(1); // ref copy for use inside loop
+
   const getWorldMouse = useCallback(() => {
     const mouse = mouseRef.current;
     const canvas = canvasRef.current;
@@ -592,7 +600,37 @@ const Index = () => {
       }
       if (hitY) shake(0, hitY);
 
-      const finalCamX = pos.x - viewW / 2;
+      // ---- Intro camera state machine ----
+      let finalCamX: number;
+      const introState = introCamRef.current;
+      if (introState === "panning") {
+        // Slow rightward drift across the world during title screen
+        introCamXRef.current = (introCamXRef.current + 0.4 * dtScale) % WORLD_WIDTH;
+        finalCamX = introCamXRef.current;
+      } else if (introState === "scrolling") {
+        // Lerp toward bomber target city, then transition to playing
+        const target = introCamTargetXRef.current;
+        let delta = target - introCamXRef.current;
+        // Shortest path wrap
+        if (delta > WORLD_WIDTH / 2) delta -= WORLD_WIDTH;
+        if (delta < -WORLD_WIDTH / 2) delta += WORLD_WIDTH;
+        const lerpSpeed = 1 - Math.pow(0.012, dtScale / 60);
+        introCamXRef.current = (((introCamXRef.current + delta * lerpSpeed) % WORLD_WIDTH) + WORLD_WIDTH) % WORLD_WIDTH;
+        finalCamX = introCamXRef.current;
+        // Fade out overlay
+        const newAlpha = Math.max(0, introOverlayAlphaRef.current - 0.025 * dtScale);
+        introOverlayAlphaRef.current = newAlpha;
+        setIntroOverlayAlpha(newAlpha);
+        // Arrive when close enough and overlay is gone
+        if (Math.abs(delta) < 2 && newAlpha <= 0) {
+          introCamRef.current = "playing";
+          gameStartedRef.current = true;
+          setGameStarted(true);
+        }
+      } else {
+        // Normal gameplay — camera follows player
+        finalCamX = pos.x - viewW / 2;
+      }
 
       if ((rightMouseRef.current || gp.fire) && ammoRef.current > 0) {
         shootCooldownRef.current -= frameDelta;
@@ -1091,7 +1129,8 @@ const Index = () => {
         }
 
         const isInvuln = invulnRef.current > 0;
-        const showPlayer = !isInvuln || Math.floor(performance.now() / 80) % 2 === 0;
+        const showPlayer =
+          introCamRef.current === "playing" && (!isInvuln || Math.floor(performance.now() / 80) % 2 === 0);
         if (showPlayer) {
           const pitchOffset = getShipPitch(
             throttleRef.current,
@@ -1922,8 +1961,7 @@ const Index = () => {
       gpStartPrev.current = gp.start;
 
       if (!gameStartedRef.current && !gameOverRef.current && (faceAPressed || startPressed)) {
-        gameStartedRef.current = true;
-        setGameStarted(true);
+        if (introCamRef.current !== "panning") return;
         setShowHint(false);
         scoreRef.current = 0;
         waveRef.current = createWaveState();
@@ -1949,7 +1987,9 @@ const Index = () => {
           const spawnViewH = (canvasRef.current?.height ?? 600) / ZOOM;
           posRef.current = { x: spawnCity.x - 420, y: getWaterSurfaceY(spawnViewH) + 30 };
           velRef.current = { x: 0, y: 0 };
+          introCamTargetXRef.current = spawnCity.x - (canvasRef.current?.width ?? 800) / ZOOM / 2;
         }
+        introCamRef.current = "scrolling";
 
         if (musicRef.current) {
           musicRef.current.currentTime = 0;
@@ -2005,13 +2045,17 @@ const Index = () => {
       style={{ transition: "transform 150ms cubic-bezier(0.22, 1, 0.36, 1)", cursor: "crosshair" }}
     >
       <canvas ref={canvasRef} className="absolute inset-0" />
-      {!gameStarted && !gameOver && (
+      {introCamRef.current !== "playing" && !gameOver && (
         <div
           className="absolute inset-0 flex flex-col items-center justify-center"
-          style={{ backgroundColor: "rgba(0,0,0,0.75)", cursor: "pointer" }}
+          style={{
+            backgroundColor: `rgba(0,0,0,${introOverlayAlpha * 0.75})`,
+            cursor: introCamRef.current === "panning" ? "pointer" : "default",
+            pointerEvents: introCamRef.current === "panning" ? "auto" : "none",
+            transition: "none",
+          }}
           onClick={() => {
-            gameStartedRef.current = true;
-            setGameStarted(true);
+            if (introCamRef.current !== "panning") return; // already scrolling
             setShowHint(false);
             scoreRef.current = 0;
             waveRef.current = createWaveState();
@@ -2031,12 +2075,16 @@ const Index = () => {
             setSubmarineTargetCity(initialSubTarget);
             subTargetRef.current = initialSubTarget;
 
+            // Position player near target city (off screen until scroll completes)
             const spawnCity = citiesRef.current[initialBomberTarget];
             if (spawnCity) {
               const spawnViewH = (canvasRef.current?.height ?? 600) / ZOOM;
               posRef.current = { x: spawnCity.x - 420, y: getWaterSurfaceY(spawnViewH) + 30 };
               velRef.current = { x: 0, y: 0 };
+              // Camera scrolls to slightly left of the city so player is in frame on arrival
+              introCamTargetXRef.current = spawnCity.x - (canvasRef.current?.width ?? 800) / ZOOM / 2;
             }
+            introCamRef.current = "scrolling";
 
             if (musicRef.current) {
               musicRef.current.currentTime = 0;
@@ -2046,7 +2094,7 @@ const Index = () => {
         >
           <div
             className="text-5xl font-bold tracking-widest uppercase mb-4"
-            style={{ color: "#D93636", fontFamily: "var(--font-mono)" }}
+            style={{ color: "#D93636", fontFamily: "var(--font-mono)", opacity: introOverlayAlpha }}
           >
             M.E.R. MAIDS
           </div>
