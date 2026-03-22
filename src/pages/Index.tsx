@@ -1384,21 +1384,69 @@ const Index = () => {
 
       ctx.save();
       drawPanel(hudX, hudY, panelW, panelH);
+      // Dashboard background - layered dark panel with subtle instrument bezels
       const panelGrad = ctx.createLinearGradient(hudX, hudY, hudX, hudY + panelH);
-      panelGrad.addColorStop(0, "rgba(0,20,40,0.75)");
-      panelGrad.addColorStop(0.5, "rgba(0,40,60,0.6)");
-      panelGrad.addColorStop(1, "rgba(0,10,30,0.8)");
+      panelGrad.addColorStop(0, "rgba(15,15,20,0.88)");
+      panelGrad.addColorStop(0.15, "rgba(25,28,35,0.85)");
+      panelGrad.addColorStop(0.5, "rgba(18,22,28,0.82)");
+      panelGrad.addColorStop(0.85, "rgba(12,14,18,0.88)");
+      panelGrad.addColorStop(1, "rgba(8,8,12,0.92)");
       ctx.fillStyle = panelGrad;
       ctx.fill();
-      ctx.strokeStyle = "rgba(0,220,255,0.3)";
+
+      // Subtle horizontal grooves like a cockpit instrument panel
+      for (let gy = hudY + 18; gy < hudY + panelH - 4; gy += 22) {
+        ctx.beginPath();
+        ctx.moveTo(hudX + 6, gy);
+        ctx.lineTo(hudX + panelW - 6, gy);
+        ctx.strokeStyle = "rgba(40,50,60,0.35)";
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+
+      // Top highlight strip - brushed metal sheen
+      const sheenGrad = ctx.createLinearGradient(hudX, hudY, hudX + panelW, hudY);
+      sheenGrad.addColorStop(0, "rgba(80,90,100,0)");
+      sheenGrad.addColorStop(0.3, "rgba(100,110,120,0.12)");
+      sheenGrad.addColorStop(0.5, "rgba(140,150,160,0.08)");
+      sheenGrad.addColorStop(0.7, "rgba(100,110,120,0.12)");
+      sheenGrad.addColorStop(1, "rgba(80,90,100,0)");
+      ctx.beginPath();
+      ctx.rect(hudX + 2, hudY + 1, panelW - 4, 3);
+      ctx.fillStyle = sheenGrad;
+      ctx.fill();
+
+      // Border with subtle warm amber tint mixed with cyan
+      ctx.strokeStyle = "rgba(0,200,230,0.25)";
       ctx.lineWidth = 1.5;
       ctx.stroke();
+
+      // Inner border - faint warm line
       ctx.beginPath();
-      ctx.moveTo(hudX + 14, hudY + 1);
-      ctx.lineTo(hudX + panelW - 2, hudY + 1);
-      ctx.strokeStyle = "rgba(0,220,255,0.15)";
-      ctx.lineWidth = 1;
+      drawPanel(hudX + 2, hudY + 2, panelW - 4, panelH - 4);
+      ctx.strokeStyle = "rgba(60,50,40,0.15)";
+      ctx.lineWidth = 0.5;
       ctx.stroke();
+
+      // Rivets / screw details at corners
+      const rivetR = 2;
+      const rivetOff = 8;
+      const rivetPositions = [
+        [hudX + rivetOff, hudY + rivetOff],
+        [hudX + panelW - rivetOff, hudY + rivetOff],
+        [hudX + rivetOff, hudY + panelH - rivetOff],
+        [hudX + panelW - rivetOff, hudY + panelH - rivetOff],
+      ];
+      for (const [rx, ry] of rivetPositions) {
+        ctx.beginPath();
+        ctx.arc(rx, ry, rivetR, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(80,90,100,0.5)";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(rx - 0.5, ry - 0.5, rivetR * 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(140,150,160,0.3)";
+        ctx.fill();
+      }
 
       const lx = hudX + 10;
       let ly = hudY + 20;
@@ -1538,18 +1586,18 @@ const Index = () => {
       // HP
       ly += 24;
       ctx.font = "bold 10px monospace";
-      ctx.fillStyle = "rgba(255,180,60,0.7)";
+      ctx.fillStyle = "rgba(255,80,80,0.7)";
       ctx.textAlign = "right";
       ctx.fillText("HP", labelX - 4, ly);
       ctx.textAlign = "left";
       for (let i = 0; i < PLAYER_MAX_HP; i++)
-        drawDiamondLight(labelX + 8 + i * 26, ly - 3, 7, i < playerHPRef.current, "#ffb830", "#996600");
+        drawDiamondLight(labelX + 8 + i * 26, ly - 3, 7, i < playerHPRef.current, "#ff4444", "#991111");
 
       // AMMO
       ly += 24;
       const ammoLow = ammo <= AMMO_LOW_THRESHOLD;
       ctx.font = "bold 10px monospace";
-      ctx.fillStyle = ammoLow ? "#ffcc00" : "rgba(180,190,200,0.7)";
+      ctx.fillStyle = ammoLow ? "#ffcc00" : "rgba(255,210,60,0.7)";
       ctx.textAlign = "right";
       ctx.fillText("AMMO", labelX - 4, ly);
       ctx.textAlign = "left";
@@ -1573,8 +1621,8 @@ const Index = () => {
           segW,
           segH,
           i < litAmmo,
-          ammoLow ? "#ffcc00" : "#c0c8d0",
-          ammoLow ? "#ff9900" : "#8890a0",
+          ammoLow ? "#ffcc00" : "#ffd640",
+          ammoLow ? "#ff9900" : "#b89520",
           i === 0,
           i === ammoLights - 1,
         );
