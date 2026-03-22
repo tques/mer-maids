@@ -2114,7 +2114,7 @@ const Index = () => {
           const spawnX = spawnCity.x - spawnCity.width / 2 - 180;
           posRef.current = { x: spawnX, y: getWaterSurfaceY(spawnViewH) - 60 };
           velRef.current = { x: 0, y: 0 };
-          introCamTargetXRef.current = spawnCity.x - (canvasRef.current?.width ?? 800) / ZOOM / 2;
+          introCamTargetXRef.current = spawnX - (canvasRef.current?.width ?? 800) / ZOOM / 3;
         }
         introCamRef.current = "scrolling";
 
