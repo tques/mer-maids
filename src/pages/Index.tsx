@@ -2282,7 +2282,7 @@ const Index = () => {
               <p className="text-sm leading-relaxed" style={{ color: "#ccc" }}>
                 Protect three floating cities: <span style={{ color: "#ff7f50" }}>PORT ASTRA</span>,{" "}
                 <span style={{ color: "#00dcff" }}>HAVEN</span>, and <span style={{ color: "#a0ff80" }}>NOVA MARE</span>
-                . Each city has a unique sub-structure — protect the structures and the city barrier from subs and
+                . Each city has a unique sub-structure. Protect the structures and the city barrier from subs and
                 bombers.
               </p>
             </div>
@@ -2315,7 +2315,7 @@ const Index = () => {
                 <span style={{ color: "#f0c830", textAlign: "right" }}>AMMO</span>
                 <span>Limited ammo. Collect ammo crates that drop during combat.</span>
                 <span style={{ color: "#5a9", textAlign: "right" }}>BARREL ROLL</span>
-                <span>Dodge enemy fire with a quick lateral roll. Breaks missile lock-on.</span>
+                <span>Dodge enemy fire with a quick roll. Breaks missile lock-on.</span>
                 <span style={{ color: "#ff7675", textAlign: "right" }}>BOOST</span>
                 <span>High-speed dash. Uses more fuel, locks steering.</span>
                 <span style={{ color: "#64ffeb", textAlign: "right" }}>RAM BLADES</span>
