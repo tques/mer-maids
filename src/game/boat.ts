@@ -1,10 +1,19 @@
 /**
- * boat.ts — Floating City (the thing you're defending!)
+ * boat.ts — Floating City Platform System
  *
- * Now supports multiple named cities spread across the world.
+ * Three cities, same civilization (near-future oceanic), each visually distinct:
+ *
+ * PORT ASTRA  (index 0, left)   — Industrial harbor. Cranes, containers, brutalist.
+ *                                  Structure: Sonar Array (tall mast + dish)
+ * HAVEN       (index 1, center) — Elegant city-state. Tall towers, statue, dome.
+ *                                  Structure: SAM-7 launcher
+ * NOVA MARE   (index 2, right)  — Research platform. Geodesic domes, solar panels.
+ *                                  Structure: Shield Battery emitter tower
  */
 
 import { getWaveY, getWaterSurfaceY } from "./water";
+
+// ==================== INTERFACES ====================
 
 export interface Boat {
   x: number;
@@ -13,27 +22,26 @@ export interface Boat {
   name: string;
 }
 
-export function createBoat(worldWidth: number): Boat {
-  return {
-    x: worldWidth / 2,
-    width: 700,
-    hullDepth: 36,
-    name: "HAVEN",
-  };
+export interface CityStructureState {
+  hp: number;
+  maxHp: number;
 }
 
-/**
- * Create all three cities spread across the world.
- * Left city, Center city, Right city.
- * Haven is wider to accommodate the SAM site on the left.
- */
+// ==================== FACTORIES ====================
+
 export function createCities(worldWidth: number): Boat[] {
   return [
-    { x: Math.floor(worldWidth * 0.17), width: 780, hullDepth: 36, name: "PORT ASTRA" },
-    { x: Math.floor(worldWidth * 0.5), width: 960, hullDepth: 36, name: "HAVEN" },
-    { x: Math.floor(worldWidth * 0.83), width: 800, hullDepth: 36, name: "NOVA MARE" },
+    { x: Math.floor(worldWidth * 0.17), width: 580, hullDepth: 36, name: "PORT ASTRA" },
+    { x: Math.floor(worldWidth * 0.5), width: 700, hullDepth: 36, name: "HAVEN" },
+    { x: Math.floor(worldWidth * 0.83), width: 580, hullDepth: 36, name: "NOVA MARE" },
   ];
 }
+
+export function createCityStructureState(): CityStructureState {
+  return { hp: 3, maxHp: 3 };
+}
+
+// ==================== HELPERS ====================
 
 export function getBoatTopY(boat: Boat, viewH: number): number {
   const surfaceY = getWaterSurfaceY(viewH);
@@ -41,843 +49,34 @@ export function getBoatTopY(boat: Boat, viewH: number): number {
   return waveY - 22;
 }
 
-export interface CityStructureState {
-  hp: number;
-  maxHp: number;
-}
-
-export function createCityStructureState(): CityStructureState {
-  return { hp: 3, maxHp: 3 };
-}
-
+/**
+ * Returns the world position of a city's unique structure.
+ * Used for mortar targeting and collision detection.
+ */
 export function getStructureWorldPos(boat: Boat, viewH: number): { x: number; y: number } | null {
   const topY = getBoatTopY(boat, viewH);
   const hw = boat.width / 2;
-  if (boat.name === "PORT ASTRA") return { x: boat.x - hw + 40, y: topY - 20 };
-  if (boat.name === "HAVEN") return { x: boat.x - hw + 55, y: topY - 20 };
-  if (boat.name === "NOVA MARE") return { x: boat.x + hw - 28, y: topY - 20 };
+  if (boat.name === "PORT ASTRA") {
+    // Sonar Array — tall mast on left side of platform
+    return { x: boat.x - hw * 0.55, y: topY - 80 };
+  } else if (boat.name === "HAVEN") {
+    // SAM-7 — right side of platform
+    return { x: boat.x + hw - 60, y: topY - 90 };
+  } else if (boat.name === "NOVA MARE") {
+    // Shield Battery — center-right spire
+    return { x: boat.x + hw * 0.4, y: topY - 75 };
+  }
   return null;
 }
 
-/**
- * Draw a Sonar Detection array on the left side of Port Astra.
- * Industrial naval aesthetic — a thick base housing, a large circular
- * dish face, signal emitter rods, and animated sonar ping rings.
- */
-function drawSonarArray(
-  ctx: CanvasRenderingContext2D,
-  cityX: number,
-  hw: number,
-  topY: number,
-  now: number,
-  alive: boolean,
-) {
-  // hw=390, barrier=390*0.85=331px. Center at cityX - hw + 40 = cityX - 350px.
-  // Structure is ~60px wide so right edge at cityX - 320px — 11px clear of barrier.
-  // Left edge at cityX - 380px — well outside.
-  const sx = cityX - hw + 40;
-  const baseY = topY;
+// ==================== SHARED PLATFORM BASE ====================
 
-  ctx.save();
-
-  // ---- Heavy base housing ----
-  const baseW = 58;
-  const baseH = 24;
-  const baseX = sx - baseW / 2;
-  const baseTop = baseY - baseH;
-
-  // Main housing block — chunkier and lower than the SAM bunker
-  ctx.beginPath();
-  ctx.moveTo(baseX + 4, baseTop);
-  ctx.lineTo(baseX + baseW - 4, baseTop);
-  ctx.lineTo(baseX + baseW + 2, baseTop + 6);
-  ctx.lineTo(baseX + baseW + 2, baseY);
-  ctx.lineTo(baseX - 2, baseY);
-  ctx.lineTo(baseX - 2, baseTop + 6);
-  ctx.closePath();
-  const baseGrad = ctx.createLinearGradient(baseX, baseTop, baseX, baseY);
-  baseGrad.addColorStop(0, "#252830");
-  baseGrad.addColorStop(0.5, "#181a22");
-  baseGrad.addColorStop(1, "#0e1018");
-  ctx.fillStyle = baseGrad;
-  ctx.fill();
-  ctx.strokeStyle = "#353840";
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  // Housing rivet details — two rows of dots
-  ctx.fillStyle = "rgba(80, 90, 100, 0.6)";
-  for (let i = 0; i < 5; i++) {
-    ctx.beginPath();
-    ctx.arc(baseX + 8 + i * 10, baseTop + 5, 1.2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(baseX + 8 + i * 10, baseY - 5, 1.2, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Cooling vent strip along bottom of housing
-  ctx.fillStyle = "rgba(40, 50, 65, 0.8)";
-  ctx.fillRect(baseX + 6, baseY - 8, baseW - 12, 5);
-  ctx.strokeStyle = "rgba(60, 80, 100, 0.4)";
-  ctx.lineWidth = 0.5;
-  for (let i = 0; i < 6; i++) {
-    ctx.beginPath();
-    ctx.moveTo(baseX + 9 + i * 7, baseY - 8);
-    ctx.lineTo(baseX + 9 + i * 7, baseY - 3);
-    ctx.stroke();
-  }
-
-  // ---- Platform collar ----
-  ctx.beginPath();
-  ctx.moveTo(baseX - 7, baseY);
-  ctx.lineTo(baseX + baseW + 7, baseY);
-  ctx.lineTo(baseX + baseW + 5, baseY - 4);
-  ctx.lineTo(baseX - 5, baseY - 4);
-  ctx.closePath();
-  ctx.fillStyle = "#1a1c24";
-  ctx.fill();
-  ctx.strokeStyle = "#2a2e38";
-  ctx.lineWidth = 0.5;
-  ctx.stroke();
-
-  // ---- Sonar dish face (large circle, front-facing) ----
-  const dishR = 18;
-  const dishX = sx - 4; // slightly left of center
-  const dishY = baseTop - dishR - 2;
-
-  // Dish mounting arm from base top
-  ctx.beginPath();
-  ctx.moveTo(dishX - 4, baseTop);
-  ctx.lineTo(dishX - 4, dishY + dishR);
-  ctx.lineTo(dishX + 4, dishY + dishR);
-  ctx.lineTo(dishX + 4, baseTop);
-  ctx.closePath();
-  ctx.fillStyle = "#252830";
-  ctx.fill();
-  ctx.strokeStyle = "#353840";
-  ctx.lineWidth = 0.5;
-  ctx.stroke();
-
-  // Outer dish ring
-  ctx.beginPath();
-  ctx.arc(dishX, dishY, dishR + 3, 0, Math.PI * 2);
-  ctx.fillStyle = "#1a1c24";
-  ctx.fill();
-  ctx.strokeStyle = "#3a3e50";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // Dish face — dark with subtle grid
-  ctx.beginPath();
-  ctx.arc(dishX, dishY, dishR, 0, Math.PI * 2);
-  const dishGrad = ctx.createRadialGradient(dishX, dishY, 0, dishX, dishY, dishR);
-  dishGrad.addColorStop(0, "#1a2030");
-  dishGrad.addColorStop(0.6, "#141820");
-  dishGrad.addColorStop(1, "#0e1018");
-  ctx.fillStyle = dishGrad;
-  ctx.fill();
-
-  // Dish crosshair lines
-  ctx.strokeStyle = "rgba(60, 90, 120, 0.35)";
-  ctx.lineWidth = 0.5;
-  ctx.beginPath();
-  ctx.moveTo(dishX - dishR, dishY);
-  ctx.lineTo(dishX + dishR, dishY);
-  ctx.moveTo(dishX, dishY - dishR);
-  ctx.lineTo(dishX, dishY + dishR);
-  ctx.stroke();
-
-  // Dish concentric rings (range markers)
-  for (const r of [6, 11, 16]) {
-    ctx.beginPath();
-    ctx.arc(dishX, dishY, r, 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(60, 90, 120, 0.25)";
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
-  }
-
-  // ---- Animated sonar ping rings ----
-  // Two pings offset in time so there's always one fading in/out
-  const pingCycle = 3500; // ms per full ping cycle
-  for (let p = 0; p < 2; p++) {
-    const t = ((now + p * pingCycle * 0.5) % pingCycle) / pingCycle;
-    const pingR = t * (dishR + 22);
-    const pingAlpha = Math.max(0, (1 - t) * 0.7);
-    if (pingAlpha > 0.02) {
-      ctx.beginPath();
-      ctx.arc(dishX, dishY, pingR, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(50, 200, 160, ${pingAlpha})`;
-      ctx.lineWidth = 1.5 * (1 - t);
-      ctx.stroke();
-    }
-  }
-
-  // Dish center dot — bright ping origin
-  const centerPulse = 0.6 + Math.sin(now * 0.005) * 0.4;
-  ctx.beginPath();
-  ctx.arc(dishX, dishY, 3, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(50, 220, 170, ${centerPulse})`;
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(dishX, dishY, 1.2, 0, Math.PI * 2);
-  ctx.fillStyle = "rgba(200, 255, 240, 0.9)";
-  ctx.fill();
-
-  // ---- Two signal emitter rods (right side of base) ----
-  const rodBaseX = sx + 16;
-  const rodBaseY = baseTop;
-
-  // Rod mounting block
-  ctx.beginPath();
-  ctx.roundRect(rodBaseX - 6, rodBaseY - 5, 14, 6, 1);
-  ctx.fillStyle = "#252830";
-  ctx.fill();
-  ctx.strokeStyle = "#353840";
-  ctx.lineWidth = 0.5;
-  ctx.stroke();
-
-  // Tall rod
-  ctx.beginPath();
-  ctx.moveTo(rodBaseX - 2, rodBaseY - 4);
-  ctx.lineTo(rodBaseX - 2, rodBaseY - 22);
-  ctx.lineTo(rodBaseX + 2, rodBaseY - 22);
-  ctx.lineTo(rodBaseX + 2, rodBaseY - 4);
-  ctx.closePath();
-  ctx.fillStyle = "#2e3240";
-  ctx.fill();
-
-  // Short rod beside it
-  ctx.beginPath();
-  ctx.moveTo(rodBaseX + 5, rodBaseY - 4);
-  ctx.lineTo(rodBaseX + 5, rodBaseY - 14);
-  ctx.lineTo(rodBaseX + 7, rodBaseY - 14);
-  ctx.lineTo(rodBaseX + 7, rodBaseY - 4);
-  ctx.closePath();
-  ctx.fillStyle = "#2e3240";
-  ctx.fill();
-
-  // Horizontal crossbar connecting both rods
-  ctx.beginPath();
-  ctx.moveTo(rodBaseX - 2, rodBaseY - 18);
-  ctx.lineTo(rodBaseX + 7, rodBaseY - 18);
-  ctx.strokeStyle = "#3a3e50";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  if (!alive) {
-    // ---- Destroyed overlay: darken everything, kill lights, add smoke ----
-    ctx.globalAlpha = 0.55;
-    ctx.fillStyle = "#080a0c";
-    ctx.beginPath();
-    ctx.arc(dishX, dishY, dishR + 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-
-    // Scorch marks on base
-    ctx.fillStyle = "rgba(20, 10, 8, 0.7)";
-    ctx.fillRect(baseX, baseTop, baseW, baseH);
-
-    // Toppled rod — draw it tilted
-    ctx.save();
-    ctx.translate(rodBaseX, rodBaseY - 4);
-    ctx.rotate(0.9);
-    ctx.fillStyle = "#1a1c22";
-    ctx.fillRect(-2, -22, 4, 22);
-    ctx.restore();
-
-    // Smoke puffs rising from wreckage
-    for (let i = 0; i < 4; i++) {
-      const smokeX = sx - 10 + i * 14 + Math.sin(now * 0.001 + i * 1.4) * 5;
-      const smokeY = baseTop - 8 - ((now * 0.03 + i * 18) % 40);
-      const smokeR = 4 + i * 2 + Math.sin(now * 0.002 + i) * 2;
-      const smokeAlpha = Math.max(0, 0.35 - (((now * 0.03 + i * 18) % 40) / 40) * 0.35);
-      ctx.beginPath();
-      ctx.arc(smokeX, smokeY, smokeR, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(40, 35, 30, ${smokeAlpha})`;
-      ctx.fill();
-    }
-
-    // Dead status light
-    ctx.beginPath();
-    ctx.arc(sx + 10, baseTop + 7, 3, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(60, 20, 10, 0.6)";
-    ctx.fill();
-
-    // Destroyed label
-    ctx.font = "bold 7px monospace";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(200, 60, 40, 0.7)";
-    ctx.fillText("OFFLINE", sx, dishY - dishR - 10);
-  } else {
-    // Blinking tip lights
-    const blink1 = Math.sin(now * 0.007) > 0;
-    const blink2 = Math.sin(now * 0.007 + Math.PI) > 0;
-    ctx.beginPath();
-    ctx.arc(rodBaseX, rodBaseY - 22, 2, 0, Math.PI * 2);
-    ctx.fillStyle = blink1 ? "rgba(50, 220, 170, 0.95)" : "rgba(20, 80, 60, 0.5)";
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(rodBaseX + 6, rodBaseY - 14, 1.5, 0, Math.PI * 2);
-    ctx.fillStyle = blink2 ? "rgba(50, 220, 170, 0.8)" : "rgba(20, 80, 60, 0.4)";
-    ctx.fill();
-
-    // Status light
-    const statusPulse = 0.6 + Math.sin(now * 0.003 + 1) * 0.4;
-    ctx.beginPath();
-    ctx.arc(sx + 10, baseTop + 7, 3, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(50, 220, 170, ${statusPulse})`;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(sx + 10, baseTop + 7, 5, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(50, 220, 170, ${statusPulse * 0.2})`;
-    ctx.fill();
-
-    // Label
-    ctx.font = "bold 7px monospace";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(50, 200, 160, 0.6)";
-    ctx.fillText("SONAR", sx, dishY - dishR - 10);
-  }
-
-  ctx.restore();
-}
-
-/**
- * Draw a Shield Battery on the right side of Nova Mare.
- * Simpler than the SAM site — a squat reinforced base with
- * three capacitor cylinders and pulsing energy conduits between them.
- */
-function drawShieldBattery(
-  ctx: CanvasRenderingContext2D,
-  cityX: number,
-  hw: number,
-  topY: number,
-  now: number,
-  alive: boolean,
-) {
-  // hw=400, barrier radius = 400*0.85 = 340px.
-  // bunkerW=62, so left edge of bunker = sx - 31. Need sx - 31 > 340, so sx > 371.
-  // sx = cityX + hw - 28 = cityX + 372 — left edge at 341px, just clear.
-  const sx = cityX + hw - 28;
-  const baseY = topY;
-
-  ctx.save();
-
-  // ---- Squat bunker base ----
-  const bunkerW = 48;
-  const bunkerH = 18;
-  const bunkerX = sx - bunkerW / 2;
-  const bunkerTop = baseY - bunkerH;
-
-  ctx.beginPath();
-  ctx.moveTo(bunkerX + 5, bunkerTop);
-  ctx.lineTo(bunkerX + bunkerW - 5, bunkerTop);
-  ctx.lineTo(bunkerX + bunkerW, bunkerTop + 7);
-  ctx.lineTo(bunkerX + bunkerW, baseY);
-  ctx.lineTo(bunkerX, baseY);
-  ctx.lineTo(bunkerX, bunkerTop + 7);
-  ctx.closePath();
-  const bunkerGrad = ctx.createLinearGradient(bunkerX, bunkerTop, bunkerX, baseY);
-  bunkerGrad.addColorStop(0, "#1e2a3a");
-  bunkerGrad.addColorStop(0.5, "#131c28");
-  bunkerGrad.addColorStop(1, "#0a1018");
-  ctx.fillStyle = bunkerGrad;
-  ctx.fill();
-  ctx.strokeStyle = "#2a3a50";
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  // Bunker panel line
-  ctx.strokeStyle = "rgba(60, 120, 180, 0.2)";
-  ctx.lineWidth = 0.5;
-  ctx.beginPath();
-  ctx.moveTo(bunkerX + 10, bunkerTop + 3);
-  ctx.lineTo(bunkerX + 10, baseY);
-  ctx.moveTo(bunkerX + bunkerW - 10, bunkerTop + 3);
-  ctx.lineTo(bunkerX + bunkerW - 10, baseY);
-  ctx.stroke();
-
-  // Energy intake vent slots on front face
-  ctx.fillStyle = "rgba(60, 140, 220, 0.25)";
-  for (let i = 0; i < 3; i++) {
-    ctx.fillRect(bunkerX + 12 + i * 8, bunkerTop + 9, 4, 5);
-  }
-
-  // ---- Platform collar ----
-  ctx.beginPath();
-  ctx.moveTo(bunkerX - 5, baseY);
-  ctx.lineTo(bunkerX + bunkerW + 5, baseY);
-  ctx.lineTo(bunkerX + bunkerW + 3, baseY - 4);
-  ctx.lineTo(bunkerX - 3, baseY - 4);
-  ctx.closePath();
-  ctx.fillStyle = "#1a2230";
-  ctx.fill();
-  ctx.strokeStyle = "#334455";
-  ctx.lineWidth = 0.5;
-  ctx.stroke();
-
-  // ---- Three capacitor cylinders ----
-  const capPositions = [-12, 0, 12];
-  const capH = 24;
-  const capR = 6;
-  const energyPulse = 0.5 + Math.sin(now * 0.004) * 0.5;
-
-  for (let i = 0; i < capPositions.length; i++) {
-    const cx = sx + capPositions[i];
-    const capTop = bunkerTop - capH;
-    const phase = (i / capPositions.length) * Math.PI * 2;
-    const capGlow = 0.4 + Math.sin(now * 0.004 + phase) * 0.3;
-
-    // Cylinder body
-    ctx.beginPath();
-    ctx.roundRect(cx - capR, capTop, capR * 2, capH, 3);
-    const capGrad = ctx.createLinearGradient(cx - capR, capTop, cx + capR, capTop);
-    capGrad.addColorStop(0, "#1a2535");
-    capGrad.addColorStop(0.4, "#253545");
-    capGrad.addColorStop(0.6, "#253545");
-    capGrad.addColorStop(1, "#1a2535");
-    ctx.fillStyle = capGrad;
-    ctx.fill();
-    ctx.strokeStyle = "#2a3a50";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Cylinder highlight strip
-    ctx.beginPath();
-    ctx.roundRect(cx - capR + 2, capTop + 2, 3, capH - 4, 1);
-    ctx.fillStyle = "rgba(100, 160, 220, 0.15)";
-    ctx.fill();
-
-    // Band rings on cylinder
-    for (const bandY of [capTop + 5, capTop + 13, capTop + 20]) {
-      ctx.beginPath();
-      ctx.roundRect(cx - capR - 1, bandY, capR * 2 + 2, 2, 1);
-      ctx.fillStyle = "#2a3a50";
-      ctx.fill();
-      ctx.strokeStyle = "#3a4a60";
-      ctx.lineWidth = 0.5;
-      ctx.stroke();
-    }
-
-    // Top cap with energy glow
-    ctx.beginPath();
-    ctx.ellipse(cx, capTop, capR, 3, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#1e2e42";
-    ctx.fill();
-    ctx.strokeStyle = "#3a5a70";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Energy core glow inside top cap
-    ctx.beginPath();
-    ctx.ellipse(cx, capTop, capR - 2, 2, 0, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(60, 160, 255, ${capGlow * 0.8})`;
-    ctx.fill();
-
-    // Outer glow halo above cap
-    ctx.beginPath();
-    ctx.arc(cx, capTop, capR + 3, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(40, 120, 255, ${capGlow * 0.12})`;
-    ctx.fill();
-
-    // Base connector stub into bunker top
-    ctx.beginPath();
-    ctx.roundRect(cx - capR + 1, bunkerTop - 3, (capR - 1) * 2, 5, 1);
-    ctx.fillStyle = "#2a3a4a";
-    ctx.fill();
-    ctx.strokeStyle = "#3a4a5a";
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
-  }
-
-  // ---- Energy conduit lines between capacitors ----
-  if (alive) {
-    const dashOffset = (now * 0.05) % 12;
-    ctx.setLineDash([4, 8]);
-    ctx.lineDashOffset = -dashOffset;
-
-    for (let i = 0; i < capPositions.length - 1; i++) {
-      const x1 = sx + capPositions[i];
-      const x2 = sx + capPositions[i + 1];
-      const arcY = bunkerTop - capH - 6;
-      const conduitAlpha = 0.3 + energyPulse * 0.4;
-      ctx.beginPath();
-      ctx.moveTo(x1, bunkerTop - capH);
-      ctx.quadraticCurveTo((x1 + x2) / 2, arcY, x2, bunkerTop - capH);
-      ctx.strokeStyle = `rgba(60, 160, 255, ${conduitAlpha})`;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    }
-
-    ctx.setLineDash([]);
-    ctx.lineDashOffset = 0;
-
-    // Status light
-    const statusPulse = 0.6 + Math.sin(now * 0.003) * 0.4;
-    ctx.beginPath();
-    ctx.arc(sx, bunkerTop + 6, 3, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(60, 160, 255, ${statusPulse})`;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(sx, bunkerTop + 6, 5, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(60, 160, 255, ${statusPulse * 0.2})`;
-    ctx.fill();
-
-    // Label
-    ctx.font = "bold 7px monospace";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(80, 160, 220, 0.6)";
-    ctx.fillText("SHIELD-B", sx, bunkerTop - capH - 14);
-  } else {
-    // Dead conduits — dark broken lines
-    ctx.setLineDash([3, 10]);
-    for (let i = 0; i < capPositions.length - 1; i++) {
-      const x1 = sx + capPositions[i];
-      const x2 = sx + capPositions[i + 1];
-      const arcY = bunkerTop - capH - 6;
-      ctx.beginPath();
-      ctx.moveTo(x1, bunkerTop - capH);
-      ctx.quadraticCurveTo((x1 + x2) / 2, arcY, x2, bunkerTop - capH);
-      ctx.strokeStyle = "rgba(60, 30, 20, 0.4)";
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-    ctx.setLineDash([]);
-    ctx.lineDashOffset = 0;
-
-    // Darken capacitors
-    ctx.globalAlpha = 0.6;
-    ctx.fillStyle = "#080a0c";
-    for (const ox of capPositions) {
-      ctx.beginPath();
-      ctx.roundRect(sx + ox - capR, bunkerTop - capH, capR * 2, capH, 3);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-
-    // Smoke from each cap
-    for (let i = 0; i < capPositions.length; i++) {
-      const cx = sx + capPositions[i];
-      for (let s = 0; s < 2; s++) {
-        const smokeX = cx + Math.sin(now * 0.001 + i * 2 + s) * 4;
-        const smokeY = bunkerTop - capH - 6 - ((now * 0.025 + i * 12 + s * 8) % 30);
-        const smokeAlpha = Math.max(0, 0.3 - (((now * 0.025 + i * 12 + s * 8) % 30) / 30) * 0.3);
-        ctx.beginPath();
-        ctx.arc(smokeX, smokeY, 3 + s * 2, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(40, 30, 25, ${smokeAlpha})`;
-        ctx.fill();
-      }
-    }
-
-    // Dead status light
-    ctx.beginPath();
-    ctx.arc(sx, bunkerTop + 6, 3, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(60, 20, 10, 0.6)";
-    ctx.fill();
-
-    // Offline label
-    ctx.font = "bold 7px monospace";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(200, 60, 40, 0.7)";
-    ctx.fillText("OFFLINE", sx, bunkerTop - capH - 14);
-  }
-
-  ctx.restore();
-}
-
-/**
- * Draw a SAM (Surface-to-Air Missile) site on the left side of Haven.
- * Industrial-alien aesthetic matching the rest of the game.
- * Consists of: a reinforced bunker base, rotating radar dish, and two missile tubes.
- */
-function drawSAMSite(
-  ctx: CanvasRenderingContext2D,
-  cityX: number,
-  hw: number,
-  topY: number,
-  now: number,
-  alive: boolean,
-) {
-  // hw * 0.85 = barrier radius. Place SAM clearly outside: cityX - hw + 50 puts it ~430px
-  // from center when hw=480, well beyond the ~408px barrier radius.
-  const sx = cityX - hw + 55;
-  const baseY = topY;
-
-  ctx.save();
-
-  // ---- Bunker base ----
-  const bunkerW = 70;
-  const bunkerH = 22;
-  const bunkerX = sx - bunkerW / 2;
-  const bunkerTop = baseY - bunkerH;
-
-  ctx.beginPath();
-  ctx.moveTo(bunkerX + 6, bunkerTop);
-  ctx.lineTo(bunkerX + bunkerW - 6, bunkerTop);
-  ctx.lineTo(bunkerX + bunkerW, bunkerTop + 8);
-  ctx.lineTo(bunkerX + bunkerW, baseY);
-  ctx.lineTo(bunkerX, baseY);
-  ctx.lineTo(bunkerX, bunkerTop + 8);
-  ctx.closePath();
-  const bunkerGrad = ctx.createLinearGradient(bunkerX, bunkerTop, bunkerX, baseY);
-  bunkerGrad.addColorStop(0, "#2a3040");
-  bunkerGrad.addColorStop(0.5, "#1a2030");
-  bunkerGrad.addColorStop(1, "#0f1520");
-  ctx.fillStyle = bunkerGrad;
-  ctx.fill();
-  ctx.strokeStyle = "#3a4a5a";
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  // Bunker panel lines
-  ctx.strokeStyle = "rgba(80, 140, 160, 0.2)";
-  ctx.lineWidth = 0.5;
-  ctx.beginPath();
-  ctx.moveTo(bunkerX + 16, bunkerTop + 4);
-  ctx.lineTo(bunkerX + 16, baseY);
-  ctx.moveTo(bunkerX + bunkerW - 16, bunkerTop + 4);
-  ctx.lineTo(bunkerX + bunkerW - 16, baseY);
-  ctx.stroke();
-
-  // Bunker warning stripe
-  ctx.fillStyle = "rgba(200, 60, 30, 0.35)";
-  ctx.fillRect(bunkerX + 4, bunkerTop + 10, bunkerW - 8, 4);
-
-  // ---- Reinforced platform collar ----
-  ctx.beginPath();
-  ctx.moveTo(bunkerX - 6, baseY);
-  ctx.lineTo(bunkerX + bunkerW + 6, baseY);
-  ctx.lineTo(bunkerX + bunkerW + 4, baseY - 5);
-  ctx.lineTo(bunkerX - 4, baseY - 5);
-  ctx.closePath();
-  ctx.fillStyle = "#222a35";
-  ctx.fill();
-  ctx.strokeStyle = "#445566";
-  ctx.lineWidth = 0.5;
-  ctx.stroke();
-
-  // ---- Static antenna mast (replaces rotating dish) ----
-  // Mast base sits on bunker top and is drawn as part of the bunker visually.
-  // A cross-brace connects it to the bunker body so there's no floating gap.
-  const antennaX = sx + 14; // right side of bunker top
-  const antennaBaseY = bunkerTop; // flush with bunker top surface
-
-  // Cross-brace from bunker body up to antenna base — eliminates any gap
-  ctx.beginPath();
-  ctx.moveTo(antennaX - 10, antennaBaseY);
-  ctx.lineTo(antennaX, antennaBaseY - 6);
-  ctx.lineTo(antennaX + 4, antennaBaseY);
-  ctx.closePath();
-  ctx.fillStyle = "#2a3a4a";
-  ctx.fill();
-  ctx.strokeStyle = "#445566";
-  ctx.lineWidth = 0.5;
-  ctx.stroke();
-
-  // Antenna base collar — sits flush on bunker top
-  ctx.beginPath();
-  ctx.roundRect(antennaX - 5, antennaBaseY - 5, 10, 6, 1);
-  ctx.fillStyle = "#334455";
-  ctx.fill();
-  ctx.strokeStyle = "#445566";
-  ctx.lineWidth = 0.5;
-  ctx.stroke();
-
-  // Main mast shaft
-  ctx.beginPath();
-  ctx.moveTo(antennaX - 2, antennaBaseY - 4);
-  ctx.lineTo(antennaX - 2, antennaBaseY - 28);
-  ctx.lineTo(antennaX + 2, antennaBaseY - 28);
-  ctx.lineTo(antennaX + 2, antennaBaseY - 4);
-  ctx.closePath();
-  ctx.fillStyle = "#334455";
-  ctx.fill();
-
-  // Mid brace ring
-  ctx.beginPath();
-  ctx.roundRect(antennaX - 4, antennaBaseY - 18, 8, 3, 1);
-  ctx.fillStyle = "#2a3a4a";
-  ctx.fill();
-  ctx.strokeStyle = "#445566";
-  ctx.lineWidth = 0.5;
-  ctx.stroke();
-
-  // Horizontal crossbar at top
-  ctx.beginPath();
-  ctx.moveTo(antennaX - 10, antennaBaseY - 28);
-  ctx.lineTo(antennaX + 10, antennaBaseY - 28);
-  ctx.strokeStyle = "#445566";
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // Short vertical nubs on crossbar ends
-  ctx.beginPath();
-  ctx.moveTo(antennaX - 10, antennaBaseY - 28);
-  ctx.lineTo(antennaX - 10, antennaBaseY - 33);
-  ctx.moveTo(antennaX + 10, antennaBaseY - 28);
-  ctx.lineTo(antennaX + 10, antennaBaseY - 33);
-  ctx.strokeStyle = "#556677";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // Tip spike
-  ctx.beginPath();
-  ctx.moveTo(antennaX, antennaBaseY - 28);
-  ctx.lineTo(antennaX, antennaBaseY - 36);
-  ctx.strokeStyle = "#667788";
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  // Blinking tip light
-  const blinkPulse = Math.sin(now * 0.006) > 0.2;
-  ctx.beginPath();
-  ctx.arc(antennaX, antennaBaseY - 36, 2, 0, Math.PI * 2);
-  ctx.fillStyle = blinkPulse ? "rgba(255, 80, 60, 0.95)" : "rgba(120, 30, 20, 0.5)";
-  ctx.fill();
-
-  // ---- Single missile tube (left side, angled outward) ----
-  // Tube extends well into the bunker body (positive tubeOverlap) so
-  // the base is visually buried in the structure — no floating gap.
-  const tubeLen = 38;
-  const tubeOverlap = 10; // how many px the tube base sinks into the bunker
-  const tx = sx - 8;
-  const ty = bunkerTop + tubeOverlap; // sink base down into bunker top
-  const angle = -0.62; // angled left-upward
-
-  ctx.save();
-  ctx.translate(tx, ty);
-  ctx.rotate(angle);
-
-  // Tube outer shell — base at y=+tubeOverlap (inside bunker), tip at y=-(tubeLen)
-  ctx.beginPath();
-  ctx.roundRect(-5, -tubeLen, 10, tubeLen + tubeOverlap, 2);
-  ctx.fillStyle = "#1e2a38";
-  ctx.fill();
-  ctx.strokeStyle = "#3a4a5a";
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  // Tube inner barrel
-  ctx.beginPath();
-  ctx.roundRect(-3, -tubeLen + 2, 6, tubeLen - 2, 1);
-  ctx.fillStyle = "#0f1820";
-  ctx.fill();
-
-  // Missile tip
-  ctx.beginPath();
-  ctx.moveTo(0, -tubeLen + 2);
-  ctx.lineTo(-2.5, -tubeLen + 9);
-  ctx.lineTo(2.5, -tubeLen + 9);
-  ctx.closePath();
-  ctx.fillStyle = "#cc3322";
-  ctx.fill();
-
-  // Band rings along tube
-  for (const bandY of [-tubeLen + 11, -tubeLen + 22, -10]) {
-    ctx.beginPath();
-    ctx.roundRect(-6, bandY, 12, 3, 1);
-    ctx.fillStyle = "#2a3a4a";
-    ctx.fill();
-    ctx.strokeStyle = "#445566";
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
-  }
-
-  // Warhead glow
-  const missilePulse = 0.4 + Math.sin(now * 0.005) * 0.3;
-  ctx.beginPath();
-  ctx.arc(0, -tubeLen + 4, 3, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(255, 60, 30, ${missilePulse * 0.6})`;
-  ctx.fill();
-
-  ctx.restore();
-
-  if (!alive) {
-    // Darken bunker
-    ctx.fillStyle = "rgba(8, 6, 4, 0.65)";
-    ctx.beginPath();
-    ctx.moveTo(bunkerX + 6, bunkerTop);
-    ctx.lineTo(bunkerX + bunkerW - 6, bunkerTop);
-    ctx.lineTo(bunkerX + bunkerW, bunkerTop + 8);
-    ctx.lineTo(bunkerX + bunkerW, baseY);
-    ctx.lineTo(bunkerX, baseY);
-    ctx.lineTo(bunkerX, bunkerTop + 8);
-    ctx.closePath();
-    ctx.fill();
-
-    // Toppled antenna — draw arm fallen sideways
-    ctx.save();
-    ctx.translate(antennaX, antennaBaseY - 4);
-    ctx.rotate(0.75);
-    ctx.fillStyle = "#1a2030";
-    ctx.fillRect(-2, -26, 4, 26);
-    ctx.restore();
-
-    // Smoke from wreckage
-    for (let i = 0; i < 4; i++) {
-      const smokeX = sx + Math.sin(now * 0.001 + i * 1.7) * 8 + (i - 2) * 8;
-      const smokeY = bunkerTop - 5 - ((now * 0.028 + i * 14) % 38);
-      const smokeAlpha = Math.max(0, 0.35 - (((now * 0.028 + i * 14) % 38) / 38) * 0.35);
-      ctx.beginPath();
-      ctx.arc(smokeX, smokeY, 4 + i * 1.5, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(35, 28, 22, ${smokeAlpha})`;
-      ctx.fill();
-    }
-
-    // Dead light
-    ctx.beginPath();
-    ctx.arc(sx, bunkerTop + 6, 3, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(60, 20, 10, 0.6)";
-    ctx.fill();
-
-    // Offline label
-    ctx.font = "bold 7px monospace";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(200, 60, 40, 0.7)";
-    ctx.fillText("OFFLINE", sx, baseY - bunkerH - 32);
-  } else {
-    // Status light
-    const statusPulse = 0.6 + Math.sin(now * 0.003) * 0.4;
-    ctx.beginPath();
-    ctx.arc(sx, bunkerTop + 6, 3, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(80, 220, 100, ${statusPulse})`;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(sx, bunkerTop + 6, 5, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(80, 220, 100, ${statusPulse * 0.2})`;
-    ctx.fill();
-
-    // Label
-    ctx.font = "bold 7px monospace";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(100, 200, 180, 0.6)";
-    ctx.fillText("SAM-7", sx, baseY - bunkerH - 32);
-  }
-
-  ctx.restore();
-}
-
-export function drawBoat(
-  ctx: CanvasRenderingContext2D,
-  boat: Boat,
-  viewH: number,
-  hpRatio: number = 1,
-  barrierUp: boolean = true,
-  structureHp: number = 3,
-) {
-  const surfaceY = getWaterSurfaceY(viewH);
-  const waveY = getWaveY(boat.x, surfaceY);
-  const topY = waveY - 22;
-
+function drawPlatformBase(ctx: CanvasRenderingContext2D, boat: Boat, topY: number, hpRatio: number, exposed: boolean) {
   const hw = boat.width / 2;
   const hd = boat.hullDepth;
-
-  ctx.save();
-
-  // --- Platform base ---
-  ctx.beginPath();
   const baseR = 20;
+
+  ctx.beginPath();
   ctx.moveTo(boat.x - hw + baseR, topY + hd);
   ctx.lineTo(boat.x + hw - baseR, topY + hd);
   ctx.quadraticCurveTo(boat.x + hw, topY + hd, boat.x + hw, topY + hd - baseR);
@@ -888,14 +87,20 @@ export function drawBoat(
   ctx.lineTo(boat.x - hw, topY + hd - baseR);
   ctx.quadraticCurveTo(boat.x - hw, topY + hd, boat.x - hw + baseR, topY + hd);
   ctx.closePath();
+
   const baseGrad = ctx.createLinearGradient(boat.x, topY, boat.x, topY + hd);
-  baseGrad.addColorStop(0, "rgba(20, 60, 80, 0.9)");
-  baseGrad.addColorStop(0.5, "rgba(10, 40, 60, 0.95)");
-  baseGrad.addColorStop(1, "rgba(5, 25, 45, 0.95)");
+  if (exposed) {
+    baseGrad.addColorStop(0, "rgba(30,15,10,0.9)");
+    baseGrad.addColorStop(1, "rgba(20,8,5,0.95)");
+  } else {
+    baseGrad.addColorStop(0, "rgba(20,60,80,0.9)");
+    baseGrad.addColorStop(0.5, "rgba(10,40,60,0.95)");
+    baseGrad.addColorStop(1, "rgba(5,25,45,0.95)");
+  }
   ctx.fillStyle = baseGrad;
   ctx.fill();
 
-  // --- Platform surface highlight ---
+  // Surface highlight
   ctx.beginPath();
   ctx.moveTo(boat.x - hw + baseR, topY);
   ctx.lineTo(boat.x + hw - baseR, topY);
@@ -903,11 +108,11 @@ export function drawBoat(
   ctx.lineTo(boat.x - hw + 5, topY + 5);
   ctx.quadraticCurveTo(boat.x - hw, topY, boat.x - hw + baseR, topY);
   ctx.closePath();
-  ctx.fillStyle = "rgba(100, 220, 210, 0.25)";
+  ctx.fillStyle = exposed ? "rgba(80,30,10,0.2)" : "rgba(100,220,210,0.25)";
   ctx.fill();
 
-  // --- Hull lines ---
-  ctx.strokeStyle = "rgba(80, 200, 190, 0.15)";
+  // Hull lines
+  ctx.strokeStyle = exposed ? "rgba(100,40,20,0.15)" : "rgba(80,200,190,0.15)";
   ctx.lineWidth = 1;
   for (let i = 1; i <= 3; i++) {
     const ly = topY + (hd * i) / 4;
@@ -918,16 +123,454 @@ export function drawBoat(
     ctx.stroke();
   }
 
-  // --- City name label ---
+  // City name
   ctx.save();
   ctx.font = "bold 11px monospace";
   ctx.textAlign = "center";
-  ctx.fillStyle = "rgba(100,220,210,0.85)";
+  ctx.fillStyle = exposed ? "rgba(200,80,40,0.7)" : "rgba(100,220,210,0.85)";
   ctx.fillText(boat.name, boat.x, topY + hd - 6);
   ctx.restore();
 
-  // Seeded random for windows
-  const seededRand = (seed: number) => {
+  // Waterline
+  ctx.beginPath();
+  ctx.moveTo(boat.x - hw + 10, topY + hd);
+  ctx.lineTo(boat.x + hw - 10, topY + hd);
+  ctx.strokeStyle = "rgba(100,160,200,0.2)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+// ==================== SHARED DOME BARRIER ====================
+
+function drawDomeBarrier(ctx: CanvasRenderingContext2D, boat: Boat, topY: number, hpRatio: number, barrierUp: boolean) {
+  const hw = boat.width / 2;
+  const domeRadius = hw * 0.85;
+  const domeCenterY = topY;
+  const now = performance.now();
+  const damaged = hpRatio < 1;
+  const critical = hpRatio <= 0.3;
+  const flickerRate = critical ? 80 : 200;
+  const flickering = damaged && Math.sin(now / flickerRate) > 0;
+
+  if (barrierUp) {
+    const domeR = Math.round(30 + (1 - hpRatio) * 200);
+    const domeG = Math.round(200 * hpRatio + 40);
+    const domeB = Math.round(220 * hpRatio + 30);
+    const domeAlphaBase = 0.1 + (1 - hpRatio) * 0.15;
+
+    const domeGrad = ctx.createRadialGradient(boat.x, domeCenterY, domeRadius * 0.3, boat.x, domeCenterY, domeRadius);
+    domeGrad.addColorStop(0, `rgba(${domeR},${domeG},${domeB},0.01)`);
+    domeGrad.addColorStop(0.6, `rgba(${domeR},${domeG},${domeB},${domeAlphaBase * 0.4})`);
+    domeGrad.addColorStop(0.85, `rgba(${domeR},${domeG},${domeB},${domeAlphaBase * 0.7})`);
+    domeGrad.addColorStop(1, `rgba(${domeR},${domeG},${domeB},${domeAlphaBase})`);
+
+    ctx.beginPath();
+    ctx.arc(boat.x, domeCenterY, domeRadius, Math.PI, 0);
+    ctx.closePath();
+    ctx.fillStyle = domeGrad;
+    ctx.fill();
+
+    const outlineAlpha = critical ? (flickering ? 0.6 : 0.15) : 0.25 + (1 - hpRatio) * 0.2;
+    ctx.beginPath();
+    ctx.arc(boat.x, domeCenterY, domeRadius, Math.PI, 0);
+    ctx.strokeStyle = `rgba(${domeR + 60},${Math.min(domeG + 40, 255)},${Math.min(domeB + 55, 255)},${outlineAlpha})`;
+    ctx.lineWidth = damaged ? 3 : 2;
+    ctx.stroke();
+
+    if (damaged) {
+      const crackCount = Math.ceil((1 - hpRatio) * 8);
+      ctx.strokeStyle = critical
+        ? `rgba(255,80,40,${0.3 + Math.sin(now / 150) * 0.15})`
+        : `rgba(200,220,255,${0.15 + (1 - hpRatio) * 0.15})`;
+      ctx.lineWidth = critical ? 2 : 1;
+      for (let i = 0; i < crackCount; i++) {
+        const baseAngle = Math.PI + i * 0.9 + 0.4;
+        const r1 = domeRadius * (0.5 + (i % 3) * 0.15);
+        const r2 = domeRadius * (0.7 + (i % 2) * 0.2);
+        const cx1 = boat.x + Math.cos(baseAngle) * r1;
+        const cy1 = domeCenterY + Math.sin(baseAngle) * r1;
+        const cx2 = boat.x + Math.cos(baseAngle + 0.08) * r2;
+        const cy2 = domeCenterY + Math.sin(baseAngle + 0.08) * r2;
+        const midR = (r1 + r2) / 2;
+        const cmx = boat.x + Math.cos(baseAngle + 0.15) * midR;
+        const cmy = domeCenterY + Math.sin(baseAngle - 0.05) * midR;
+        if (cy1 < domeCenterY && cy2 < domeCenterY) {
+          ctx.beginPath();
+          ctx.moveTo(cx1, cy1);
+          ctx.quadraticCurveTo(cmx, cmy, cx2, cy2);
+          ctx.stroke();
+        }
+      }
+    }
+  } else {
+    ctx.beginPath();
+    ctx.arc(boat.x, domeCenterY, domeRadius, Math.PI, 0);
+    ctx.setLineDash([8, 12]);
+    ctx.strokeStyle = "rgba(255,80,40,0.15)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+// ==================== SEEDED RAND ====================
+function seededRand(seed: number): number {
+  let s = seed | 0;
+  s = ((s >>> 16) ^ s) * 0x45d9f3b;
+  s = ((s >>> 16) ^ s) * 0x45d9f3b;
+  s = (s >>> 16) ^ s;
+  return (s & 0xffff) / 0xffff;
+}
+
+// ==================== PORT ASTRA ====================
+// Industrial harbor — brutalist, heavy, utilitarian
+// Cranes, stacked containers, comm towers, smokestacks
+
+function drawPortAstra(
+  ctx: CanvasRenderingContext2D,
+  boat: Boat,
+  viewH: number,
+  hpRatio: number,
+  barrierUp: boolean,
+  structHp: number,
+) {
+  const surfaceY = getWaterSurfaceY(viewH);
+  const waveY = getWaveY(boat.x, surfaceY);
+  const topY = waveY - 22;
+  const hw = boat.width / 2;
+  const now = performance.now();
+  const exposed = !barrierUp;
+  const critical = hpRatio <= 0.3;
+  const damaged = hpRatio < 1;
+
+  ctx.save();
+
+  // Platform base first
+  drawPlatformBase(ctx, boat, topY, hpRatio, exposed);
+
+  const scale = boat.width / 700;
+
+  // ---- Colour palette ----
+  const steelDark = exposed ? "#1e1008" : "#1e2a30";
+  const steelMid = exposed ? "#2e1810" : "#2e3e48";
+  const steelLight = exposed ? "#3e2818" : "#3e5060";
+  const accent = exposed ? "#8a3010" : "#4a7080";
+  const rustRed = "#8a3020";
+  const yellow = exposed ? "#6a3010" : "#c8a030";
+  const glowG = exposed ? "rgba(200,80,40,0.7)" : "rgba(80,200,180,0.7)";
+
+  type BldDef = { ox: number; w: number; h: number; style: "block" | "tower" | "warehouse" };
+  const buildings: BldDef[] = (
+    [
+      { ox: -240, w: 60, h: 30, style: "warehouse" },
+      { ox: -170, w: 40, h: 50, style: "block" },
+      { ox: -118, w: 32, h: 65, style: "tower" },
+      { ox: -75, w: 50, h: 40, style: "warehouse" },
+      { ox: -15, w: 36, h: 72, style: "block" },
+      { ox: 32, w: 44, h: 55, style: "block" },
+      { ox: 90, w: 36, h: 48, style: "tower" },
+      { ox: 140, w: 55, h: 35, style: "warehouse" },
+      { ox: 205, w: 38, h: 58, style: "block" },
+    ] as const
+  ).map((b) => ({ ...b, ox: b.ox * scale, w: b.w * scale, h: b.h * scale }));
+
+  for (const b of buildings) {
+    const bx = boat.x + b.ox;
+    const by = topY - b.h;
+    ctx.fillStyle = steelMid;
+    if (b.style === "warehouse") {
+      // Wide low warehouse with sawtooth roof
+      ctx.fillRect(bx - b.w / 2, by, b.w, b.h);
+      ctx.fillStyle = steelDark;
+      // Roof ridges
+      const ridges = 3;
+      for (let r = 0; r < ridges; r++) {
+        const rx = bx - b.w / 2 + (r / ridges) * b.w;
+        ctx.beginPath();
+        ctx.moveTo(rx, by);
+        ctx.lineTo(rx + b.w / ridges / 2, by - 6 * scale);
+        ctx.lineTo(rx + b.w / ridges, by);
+        ctx.closePath();
+        ctx.fill();
+      }
+      // Windows as slits
+      ctx.fillStyle = glowG;
+      const winCount = Math.floor(b.w / (10 * scale));
+      for (let wi = 0; wi < winCount; wi++) {
+        ctx.fillRect(bx - b.w / 2 + 4 * scale + wi * 10 * scale, by + b.h * 0.4, 4 * scale, b.h * 0.25);
+      }
+    } else if (b.style === "block") {
+      ctx.fillRect(bx - b.w / 2, by, b.w, b.h);
+      // Horizontal band stripes
+      ctx.fillStyle = steelDark;
+      ctx.fillRect(bx - b.w / 2, by + b.h * 0.33, b.w, 3 * scale);
+      ctx.fillRect(bx - b.w / 2, by + b.h * 0.66, b.w, 3 * scale);
+      // Windows
+      ctx.fillStyle = glowG;
+      const rows = 3,
+        cols = Math.max(2, Math.floor(b.w / (10 * scale)));
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (seededRand(b.ox * 100 + r * 10 + c) > 0.4) {
+            ctx.fillRect(
+              bx - b.w / 2 + 4 * scale + (c * (b.w - 8 * scale)) / cols,
+              by + 6 * scale + (r * (b.h - 12 * scale)) / rows,
+              4 * scale,
+              4 * scale,
+            );
+          }
+        }
+      }
+    } else {
+      // Tower — narrower, taller, stepped top
+      ctx.fillRect(bx - b.w / 2, by, b.w, b.h);
+      ctx.fillStyle = steelLight;
+      ctx.fillRect(bx - b.w / 4, by - 8 * scale, b.w / 2, 8 * scale);
+      // Antenna
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 2 * scale;
+      ctx.beginPath();
+      ctx.moveTo(bx, by - 8 * scale);
+      ctx.lineTo(bx, by - 22 * scale);
+      ctx.stroke();
+      ctx.fillStyle = exposed ? "#ff4000" : "#00ffcc";
+      ctx.beginPath();
+      ctx.arc(bx, by - 22 * scale, 2.5 * scale, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Rust streaks on all buildings
+    ctx.strokeStyle = `rgba(100,40,20,0.2)`;
+    ctx.lineWidth = 1;
+    for (let rs = 0; rs < 2; rs++) {
+      const rx = bx - b.w / 4 + (seededRand(b.ox * 200 + rs) * b.w) / 2;
+      ctx.beginPath();
+      ctx.moveTo(rx, by);
+      ctx.lineTo(rx + 2, by + b.h * 0.4);
+      ctx.stroke();
+    }
+  }
+
+  // ---- Cranes (2 large industrial cranes) ----
+  const cranes = [
+    { ox: -200 * scale, h: 90 * scale, dir: 1 },
+    { ox: 170 * scale, h: 80 * scale, dir: -1 },
+  ];
+  for (const cr of cranes) {
+    const cx = boat.x + cr.ox;
+    const cy = topY;
+    ctx.strokeStyle = exposed ? "#5a2010" : "#5a8090";
+    ctx.lineWidth = 4 * scale;
+    // Vertical mast
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx, cy - cr.h);
+    ctx.stroke();
+    // Horizontal boom
+    ctx.lineWidth = 3 * scale;
+    ctx.beginPath();
+    ctx.moveTo(cx - 15 * scale * cr.dir, cy - cr.h);
+    ctx.lineTo(cx + 45 * scale * cr.dir, cy - cr.h);
+    ctx.stroke();
+    // Diagonal support
+    ctx.lineWidth = 2 * scale;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - cr.h * 0.6);
+    ctx.lineTo(cx + 45 * scale * cr.dir, cy - cr.h);
+    ctx.stroke();
+    // Cable
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = exposed ? "#3a1008" : "#3a6070";
+    ctx.beginPath();
+    ctx.moveTo(cx + 30 * scale * cr.dir, cy - cr.h);
+    ctx.lineTo(cx + 30 * scale * cr.dir, cy - cr.h * 0.35);
+    ctx.stroke();
+    // Hook
+    ctx.beginPath();
+    ctx.arc(cx + 30 * scale * cr.dir, cy - cr.h * 0.3, 4 * scale, 0, Math.PI * 2);
+    ctx.strokeStyle = exposed ? "#5a2010" : "#5a8090";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // ---- Stacked containers ----
+  const containerColors = [
+    exposed ? "#5a1010" : "#c84040",
+    exposed ? "#1a2a10" : "#208040",
+    exposed ? "#1a1a3a" : "#2040a0",
+    exposed ? "#4a3010" : "#c89030",
+  ];
+  const containers = [
+    { ox: -60 * scale, row: 0 },
+    { ox: -30 * scale, row: 0 },
+    { ox: 0, row: 0 },
+    { ox: -45 * scale, row: 1 },
+    { ox: -15 * scale, row: 1 },
+    { ox: -30 * scale, row: 2 },
+  ];
+  const cw = 26 * scale,
+    ch = 12 * scale;
+  for (const c of containers) {
+    const cx2 = boat.x + hw * 0.3 + c.ox;
+    const cy2 = topY - c.row * (ch + 1) - ch;
+    const col = containerColors[(Math.abs(c.ox / scale) + c.row * 3) % 4];
+    ctx.fillStyle = col;
+    ctx.fillRect(cx2, cy2, cw, ch);
+    ctx.strokeStyle = "rgba(0,0,0,0.4)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(cx2, cy2, cw, ch);
+    // Container ridges
+    ctx.strokeStyle = "rgba(255,255,255,0.1)";
+    ctx.beginPath();
+    ctx.moveTo(cx2 + cw * 0.33, cy2);
+    ctx.lineTo(cx2 + cw * 0.33, cy2 + ch);
+    ctx.moveTo(cx2 + cw * 0.66, cy2);
+    ctx.lineTo(cx2 + cw * 0.66, cy2 + ch);
+    ctx.stroke();
+  }
+
+  // ---- Smokestack ----
+  const sx = boat.x - hw * 0.15;
+  ctx.fillStyle = steelDark;
+  ctx.fillRect(sx - 8 * scale, topY - 55 * scale, 16 * scale, 55 * scale);
+  ctx.fillStyle = steelLight;
+  ctx.fillRect(sx - 10 * scale, topY - 58 * scale, 20 * scale, 6 * scale);
+  // Smoke puffs
+  if (!exposed) {
+    ctx.globalAlpha = 0.18;
+    for (let p = 0; p < 4; p++) {
+      const py = topY - 65 * scale - p * 14 * scale - ((now / 40) % 14) * scale;
+      const pr = (4 + p * 3) * scale;
+      ctx.beginPath();
+      ctx.arc(sx + Math.sin(now * 0.001 + p) * 4 * scale, py, pr, 0, Math.PI * 2);
+      ctx.fillStyle = "#aab0b8";
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ---- Sonar Array Structure ----
+  const sonarX = boat.x - hw * 0.55;
+  const sonarBaseY = topY;
+  const sonarAlive = structHp > 0;
+  const mastH = 90 * scale;
+
+  if (sonarAlive) {
+    // Mast
+    ctx.strokeStyle = exposed ? "#5a2010" : "#6a9aaa";
+    ctx.lineWidth = 4 * scale;
+    ctx.beginPath();
+    ctx.moveTo(sonarX, sonarBaseY);
+    ctx.lineTo(sonarX, sonarBaseY - mastH);
+    ctx.stroke();
+    // Cross braces
+    ctx.lineWidth = 2 * scale;
+    for (let br = 1; br <= 3; br++) {
+      const by2 = sonarBaseY - (mastH * br) / 4;
+      ctx.beginPath();
+      ctx.moveTo(sonarX - 12 * scale, by2);
+      ctx.lineTo(sonarX + 12 * scale, by2);
+      ctx.stroke();
+    }
+    // Dish
+    const dishY = sonarBaseY - mastH;
+    const dishR = 22 * scale;
+    const wobble = Math.sin(now * 0.0008) * 0.3;
+    ctx.save();
+    ctx.translate(sonarX, dishY);
+    ctx.rotate(wobble);
+    ctx.beginPath();
+    ctx.arc(0, 0, dishR, Math.PI * 0.2, Math.PI * 0.8);
+    ctx.lineTo(0, 0);
+    ctx.closePath();
+    ctx.fillStyle = exposed ? "#3a1808" : "#2a4a5a";
+    ctx.fill();
+    ctx.strokeStyle = exposed ? "#6a3020" : "#5a9aaa";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Dish inner ribs
+    for (let r = 1; r <= 3; r++) {
+      ctx.beginPath();
+      ctx.arc(0, 0, (dishR * r) / 3.5, Math.PI * 0.2, Math.PI * 0.8);
+      ctx.strokeStyle = `rgba(90,160,180,0.3)`;
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+    // Centre emitter
+    ctx.beginPath();
+    ctx.arc(0, 0, 3 * scale, 0, Math.PI * 2);
+    const pulse = 0.6 + Math.sin(now * 0.004) * 0.4;
+    ctx.fillStyle = exposed ? `rgba(255,80,40,${pulse})` : `rgba(80,220,200,${pulse})`;
+    ctx.fill();
+    // Rotating scan beam
+    const scanAngle = (now * 0.0015) % (Math.PI * 2);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(scanAngle) * dishR * 0.85, Math.sin(scanAngle) * dishR * 0.85);
+    ctx.strokeStyle = exposed ? "rgba(255,80,40,0.4)" : "rgba(80,220,200,0.4)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  } else {
+    // Destroyed — toppled mast stub
+    ctx.save();
+    ctx.translate(sonarX, sonarBaseY);
+    ctx.rotate(0.5);
+    ctx.strokeStyle = "#5a3020";
+    ctx.lineWidth = 4 * scale;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -mastH * 0.5);
+    ctx.stroke();
+    ctx.restore();
+    // Debris
+    ctx.fillStyle = "#4a3020";
+    ctx.fillRect(sonarX - 18 * scale, sonarBaseY - 6 * scale, 8 * scale, 5 * scale);
+    ctx.fillRect(sonarX + 6 * scale, sonarBaseY - 4 * scale, 10 * scale, 4 * scale);
+  }
+
+  // Damage smoke
+  if (exposed) {
+    ctx.globalAlpha = 0.3 + Math.sin(now / 200) * 0.1;
+    for (let i = 0; i < 5; i++) {
+      const smokeX = boat.x + Math.sin(now / 800 + i * 1.3) * hw * 0.5;
+      const smokeY = topY - 20 - ((now / 50 + i * 30) % 60);
+      ctx.beginPath();
+      ctx.arc(smokeX, smokeY, 6 + Math.sin(now / 300 + i) * 3, 0, Math.PI * 2);
+      ctx.fillStyle = critical ? "rgba(200,60,20,0.3)" : "rgba(80,80,80,0.25)";
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  drawDomeBarrier(ctx, boat, topY, hpRatio, barrierUp);
+  ctx.restore();
+}
+
+// ==================== HAVEN ====================
+// Preserved from original — elegant city-state with SAM-7 and statue
+
+function drawHaven(
+  ctx: CanvasRenderingContext2D,
+  boat: Boat,
+  viewH: number,
+  hpRatio: number,
+  barrierUp: boolean,
+  structHp: number,
+) {
+  const surfaceY = getWaterSurfaceY(viewH);
+  const waveY = getWaveY(boat.x, surfaceY);
+  const topY = waveY - 22;
+  const hw = boat.width / 2;
+  const now = performance.now();
+  const exposed = !barrierUp;
+  const critical = hpRatio <= 0.3;
+  const damaged = hpRatio < 1;
+
+  ctx.save();
+  drawPlatformBase(ctx, boat, topY, hpRatio, exposed);
+
+  const seededRandH = (seed: number) => {
     let s = seed | 0;
     s = ((s >>> 16) ^ s) * 0x45d9f3b;
     s = ((s >>> 16) ^ s) * 0x45d9f3b;
@@ -938,7 +581,6 @@ export function drawBoat(
   type BldStyle = "rect" | "dome" | "spire" | "stepped" | "cylinder";
   type BldDef = { ox: number; w: number; h: number; s: BldStyle };
 
-  // Scale buildings relative to city width
   const scale = boat.width / 700;
 
   const backBuildings: BldDef[] = (
@@ -1038,10 +680,6 @@ export function drawBoat(
     }
   }
 
-  const damaged = hpRatio < 1;
-  const critical = hpRatio <= 0.3;
-  const exposed = !barrierUp;
-  const now = performance.now();
   const flickerRate = critical ? 80 : exposed ? 120 : 200;
   const flickering = (damaged || exposed) && Math.sin(now / flickerRate) > 0;
 
@@ -1067,7 +705,7 @@ export function drawBoat(
     for (let wy = by + 5; wy < topY - 2; wy += 7) {
       for (let wx = bx - b.w / 2 + 4; wx < bx + b.w / 2 - 2; wx += 5) {
         winSeed++;
-        if (seededRand(winSeed) > 0.5) ctx.fillRect(wx, wy, 2, 2);
+        if (seededRandH(winSeed) > 0.5) ctx.fillRect(wx, wy, 2, 2);
       }
     }
     ctx.restore();
@@ -1106,7 +744,6 @@ export function drawBoat(
       }
     }
     ctx.restore();
-
     if (b.s === "spire") {
       ctx.strokeStyle = exposed ? "rgba(255,80,40,0.4)" : "rgba(120,240,220,0.4)";
       ctx.lineWidth = 1;
@@ -1126,7 +763,6 @@ export function drawBoat(
       else ctx.ellipse(bx, by + 7, b.w / 2, 7, 0, Math.PI, 0);
       ctx.stroke();
     }
-
     ctx.save();
     traceBldShape(bx, by, b.w, b.h, b.s);
     ctx.clip();
@@ -1148,156 +784,130 @@ export function drawBoat(
     for (let wy = winStartY; wy < topY - 4; wy += 8) {
       for (let wx = bx - b.w / 2 + 6; wx < bx + b.w / 2 - 3; wx += 6) {
         winSeed2++;
-        if (seededRand(winSeed2) > lightChance) ctx.fillRect(wx, wy, 2, 2);
+        if (seededRandH(winSeed2) > lightChance) ctx.fillRect(wx, wy, 2, 2);
       }
     }
     ctx.restore();
   }
 
-  // Statue and SAM site only on Haven
-  if (boat.name === "HAVEN") {
-    const sx = boat.x + hw - 60;
-    const statueH = 120;
-    const baseY2 = topY;
-
-    ctx.fillStyle = exposed ? "rgba(40,25,20,0.9)" : "rgba(25,60,75,0.9)";
-    ctx.fillRect(sx - 12, baseY2 - 6, 24, 6);
-    ctx.fillRect(sx - 10, baseY2 - 12, 20, 6);
-    ctx.fillRect(sx - 7, baseY2 - 18, 14, 6);
-
-    const bodyColor = exposed ? "rgba(55,30,20,0.95)" : "rgba(35,80,90,0.95)";
-    const bodyColorDark = exposed ? "rgba(40,20,12,0.95)" : "rgba(25,60,70,0.95)";
-    const accentColor = exposed ? "rgba(80,40,25,0.9)" : "rgba(60,140,150,0.9)";
-
-    ctx.fillStyle = bodyColor;
+  // Statue
+  const sx = boat.x + hw - 60;
+  const statueH = 120;
+  const baseY2 = topY;
+  const bodyColor = exposed ? "rgba(55,30,20,0.95)" : "rgba(35,80,90,0.95)";
+  const bodyColorDark = exposed ? "rgba(40,20,12,0.95)" : "rgba(25,60,70,0.95)";
+  const accentColor = exposed ? "rgba(80,40,25,0.9)" : "rgba(60,140,150,0.9)";
+  ctx.fillStyle = exposed ? "rgba(40,25,20,0.9)" : "rgba(25,60,75,0.9)";
+  ctx.fillRect(sx - 12, baseY2 - 6, 24, 6);
+  ctx.fillRect(sx - 10, baseY2 - 12, 20, 6);
+  ctx.fillRect(sx - 7, baseY2 - 18, 14, 6);
+  ctx.fillStyle = bodyColor;
+  ctx.fillRect(sx - 2, baseY2 - 90, 4, 5);
+  ctx.beginPath();
+  ctx.ellipse(sx, baseY2 - 95, 5, 6, 0, 0, Math.PI * 2);
+  ctx.fillStyle = bodyColor;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(sx, baseY2 - 99, 5, 3, 0, Math.PI, 0);
+  ctx.fillStyle = bodyColorDark;
+  ctx.fill();
+  ctx.strokeStyle = bodyColor;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(sx - 8, baseY2 - 82);
+  ctx.quadraticCurveTo(sx - 16, baseY2 - 75, sx - 14, baseY2 - 65);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(sx - 14, baseY2 - 64, 2, 0, Math.PI * 2);
+  ctx.fillStyle = bodyColor;
+  ctx.fill();
+  ctx.strokeStyle = bodyColor;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(sx + 8, baseY2 - 82);
+  ctx.quadraticCurveTo(sx + 14, baseY2 - 90, sx + 12, baseY2 - 100);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(sx + 12, baseY2 - 100, 2, 0, Math.PI * 2);
+  ctx.fillStyle = bodyColor;
+  ctx.fill();
+  ctx.strokeStyle = accentColor;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(sx + 12, baseY2 - 65);
+  ctx.lineTo(sx + 12, baseY2 - statueH - 15);
+  ctx.stroke();
+  const statueTop = baseY2 - statueH;
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = accentColor;
+  ctx.beginPath();
+  ctx.moveTo(sx + 12, statueTop - 15);
+  ctx.lineTo(sx + 12, statueTop - 28);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(sx + 12, statueTop - 15);
+  ctx.quadraticCurveTo(sx + 8, statueTop - 22, sx + 7, statueTop - 26);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(sx + 12, statueTop - 15);
+  ctx.quadraticCurveTo(sx + 16, statueTop - 22, sx + 17, statueTop - 26);
+  ctx.stroke();
+  for (const tipX of [sx + 7, sx + 12, sx + 17]) {
     ctx.beginPath();
-    ctx.moveTo(sx - 5, baseY2 - 18);
-    ctx.lineTo(sx - 6, baseY2 - 50);
-    ctx.lineTo(sx - 2, baseY2 - 50);
-    ctx.lineTo(sx - 1, baseY2 - 18);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(sx + 1, baseY2 - 18);
-    ctx.lineTo(sx + 2, baseY2 - 52);
-    ctx.lineTo(sx + 6, baseY2 - 52);
-    ctx.lineTo(sx + 5, baseY2 - 18);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.moveTo(sx - 6, baseY2 - 50);
-    ctx.lineTo(sx - 8, baseY2 - 65);
-    ctx.quadraticCurveTo(sx - 10, baseY2 - 80, sx - 8, baseY2 - 85);
-    ctx.lineTo(sx + 8, baseY2 - 85);
-    ctx.quadraticCurveTo(sx + 10, baseY2 - 80, sx + 8, baseY2 - 65);
-    ctx.lineTo(sx + 6, baseY2 - 50);
-    ctx.closePath();
-    const torsoGrad = ctx.createLinearGradient(sx - 8, baseY2 - 85, sx + 8, baseY2 - 50);
-    torsoGrad.addColorStop(0, bodyColor);
-    torsoGrad.addColorStop(1, bodyColorDark);
-    ctx.fillStyle = torsoGrad;
-    ctx.fill();
-
+    ctx.arc(tipX, tipX === sx + 12 ? statueTop - 28 : statueTop - 26, 1.5, 0, Math.PI * 2);
     ctx.fillStyle = accentColor;
-    ctx.fillRect(sx - 7, baseY2 - 52, 14, 3);
-    ctx.fillStyle = bodyColor;
-    ctx.fillRect(sx - 2, baseY2 - 90, 4, 5);
-    ctx.beginPath();
-    ctx.ellipse(sx, baseY2 - 95, 5, 6, 0, 0, Math.PI * 2);
-    ctx.fillStyle = bodyColor;
     ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(sx, baseY2 - 99, 5, 3, 0, Math.PI, 0);
-    ctx.fillStyle = bodyColorDark;
-    ctx.fill();
+  }
+  ctx.beginPath();
+  ctx.moveTo(sx + 8, statueTop - 15);
+  ctx.lineTo(sx + 16, statueTop - 15);
+  ctx.stroke();
+  const glowPulse = 0.5 + Math.sin(now / 400) * 0.25;
+  ctx.beginPath();
+  ctx.arc(sx + 12, statueTop - 28, 5, 0, Math.PI * 2);
+  ctx.fillStyle = exposed ? `rgba(255,100,40,${glowPulse * 0.4})` : `rgba(80,255,220,${glowPulse * 0.4})`;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(sx + 12, statueTop - 28, 2.5, 0, Math.PI * 2);
+  ctx.fillStyle = exposed ? `rgba(255,140,60,${glowPulse})` : `rgba(120,255,230,${glowPulse})`;
+  ctx.fill();
 
-    ctx.strokeStyle = bodyColor;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(sx - 8, baseY2 - 82);
-    ctx.quadraticCurveTo(sx - 16, baseY2 - 75, sx - 14, baseY2 - 65);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(sx - 14, baseY2 - 64, 2, 0, Math.PI * 2);
-    ctx.fillStyle = bodyColor;
-    ctx.fill();
-
-    ctx.strokeStyle = bodyColor;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(sx + 8, baseY2 - 82);
-    ctx.quadraticCurveTo(sx + 14, baseY2 - 90, sx + 12, baseY2 - 100);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(sx + 12, baseY2 - 100, 2, 0, Math.PI * 2);
-    ctx.fillStyle = bodyColor;
-    ctx.fill();
-
-    ctx.strokeStyle = accentColor;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(sx + 12, baseY2 - 65);
-    ctx.lineTo(sx + 12, baseY2 - statueH - 15);
-    ctx.stroke();
-
-    const statueTop = baseY2 - statueH;
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = accentColor;
-    ctx.beginPath();
-    ctx.moveTo(sx + 12, statueTop - 15);
-    ctx.lineTo(sx + 12, statueTop - 28);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(sx + 12, statueTop - 15);
-    ctx.quadraticCurveTo(sx + 8, statueTop - 22, sx + 7, statueTop - 26);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(sx + 12, statueTop - 15);
-    ctx.quadraticCurveTo(sx + 16, statueTop - 22, sx + 17, statueTop - 26);
-    ctx.stroke();
-    for (const tipX of [sx + 7, sx + 12, sx + 17]) {
+  // SAM-7 structure
+  const samX = boat.x - hw + 65;
+  const samAlive = structHp > 0;
+  if (samAlive) {
+    // Launcher base
+    ctx.fillStyle = exposed ? "#2a1a0a" : "#1a3040";
+    ctx.fillRect(samX - 14, topY - 8, 28, 8);
+    ctx.fillStyle = exposed ? "#3a2010" : "#2a4858";
+    ctx.fillRect(samX - 10, topY - 14, 20, 8);
+    // Rotating turret
+    const turretAngle = Math.sin(now * 0.0005) * 0.4 - 0.6;
+    ctx.save();
+    ctx.translate(samX, topY - 14);
+    ctx.rotate(turretAngle);
+    // Tubes
+    for (let t = -1; t <= 1; t++) {
+      ctx.fillStyle = exposed ? "#4a2010" : "#3a6070";
+      ctx.fillRect(-3 + t * 5, -22, 5, 22);
+      // Tip glow
       ctx.beginPath();
-      ctx.arc(tipX, tipX === sx + 12 ? statueTop - 28 : statueTop - 26, 1.5, 0, Math.PI * 2);
-      ctx.fillStyle = accentColor;
+      ctx.arc(-0.5 + t * 5, -22, 2.5, 0, Math.PI * 2);
+      const tPulse = 0.4 + Math.sin(now * 0.006 + t) * 0.3;
+      ctx.fillStyle = exposed ? `rgba(255,80,40,${tPulse})` : `rgba(80,200,240,${tPulse})`;
       ctx.fill();
     }
-    ctx.beginPath();
-    ctx.moveTo(sx + 8, statueTop - 15);
-    ctx.lineTo(sx + 16, statueTop - 15);
-    ctx.stroke();
-
-    const glowPulse = 0.5 + Math.sin(now / 400) * 0.25;
-    ctx.beginPath();
-    ctx.arc(sx + 12, statueTop - 28, 5, 0, Math.PI * 2);
-    ctx.fillStyle = exposed ? `rgba(255,100,40,${glowPulse * 0.4})` : `rgba(80,255,220,${glowPulse * 0.4})`;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(sx + 12, statueTop - 28, 2.5, 0, Math.PI * 2);
-    ctx.fillStyle = exposed ? `rgba(255,140,60,${glowPulse})` : `rgba(120,255,230,${glowPulse})`;
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.moveTo(sx - 8, baseY2 - 84);
-    ctx.quadraticCurveTo(sx - 12, baseY2 - 70, sx - 10, baseY2 - 50);
-    ctx.quadraticCurveTo(sx - 14, baseY2 - 40, sx - 11, baseY2 - 30);
-    ctx.lineTo(sx - 6, baseY2 - 50);
-    ctx.closePath();
-    ctx.fillStyle = exposed ? "rgba(50,25,15,0.6)" : "rgba(30,70,80,0.5)";
-    ctx.fill();
-
-    // ---- SAM site on left side of Haven ----
-    drawSAMSite(ctx, boat.x, hw, topY, now, structureHp > 0);
-  }
-
-  // Shield Battery on right side of Nova Mare
-  if (boat.name === "NOVA MARE") {
-    drawShieldBattery(ctx, boat.x, hw, topY, now, structureHp > 0);
-  }
-
-  // Sonar Array on left side of Port Astra
-  if (boat.name === "PORT ASTRA") {
-    drawSonarArray(ctx, boat.x, hw, topY, now, structureHp > 0);
+    ctx.restore();
+  } else {
+    // Destroyed SAM
+    ctx.fillStyle = "#3a2010";
+    ctx.fillRect(samX - 14, topY - 8, 28, 8);
+    ctx.save();
+    ctx.translate(samX, topY - 8);
+    ctx.rotate(0.6);
+    ctx.fillStyle = "#2a1808";
+    ctx.fillRect(-5, -18, 8, 18);
+    ctx.restore();
   }
 
   if (exposed) {
@@ -1314,129 +924,370 @@ export function drawBoat(
     ctx.globalAlpha = 1;
   }
 
-  // ==================== DOME BARRIER ====================
-  if (barrierUp) {
-    const domeRadius = hw * 0.85;
-    const domeCenterY = topY;
+  drawDomeBarrier(ctx, boat, topY, hpRatio, barrierUp);
+  ctx.restore();
+}
 
-    const domeR = Math.round(30 + (1 - hpRatio) * 200);
-    const domeG = Math.round(200 * hpRatio + 40);
-    const domeB = Math.round(220 * hpRatio + 30);
-    const domeAlphaBase = 0.1 + (1 - hpRatio) * 0.15;
+// ==================== NOVA MARE ====================
+// Research platform — sleek, modular, geodesic, solar panels, observation spire
+// Structure: Shield Battery — hexagonal emitter tower
 
-    const domeGrad = ctx.createRadialGradient(boat.x, domeCenterY, domeRadius * 0.3, boat.x, domeCenterY, domeRadius);
-    domeGrad.addColorStop(0, `rgba(${domeR},${domeG},${domeB},0.01)`);
-    domeGrad.addColorStop(0.6, `rgba(${domeR},${domeG},${domeB},${domeAlphaBase * 0.4})`);
-    domeGrad.addColorStop(0.85, `rgba(${domeR},${domeG},${domeB},${domeAlphaBase * 0.7})`);
-    domeGrad.addColorStop(1, `rgba(${domeR},${domeG},${domeB},${domeAlphaBase})`);
+function drawNovaMare(
+  ctx: CanvasRenderingContext2D,
+  boat: Boat,
+  viewH: number,
+  hpRatio: number,
+  barrierUp: boolean,
+  structHp: number,
+) {
+  const surfaceY = getWaterSurfaceY(viewH);
+  const waveY = getWaveY(boat.x, surfaceY);
+  const topY = waveY - 22;
+  const hw = boat.width / 2;
+  const now = performance.now();
+  const exposed = !barrierUp;
+  const critical = hpRatio <= 0.3;
+  const damaged = hpRatio < 1;
+  const scale = boat.width / 700;
 
-    const specGrad = ctx.createRadialGradient(
-      boat.x - domeRadius * 0.3,
-      domeCenterY - domeRadius * 0.5,
-      0,
-      boat.x - domeRadius * 0.3,
-      domeCenterY - domeRadius * 0.5,
-      domeRadius * 0.4,
-    );
-    specGrad.addColorStop(0, "rgba(255,255,255,0.08)");
-    specGrad.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.save();
+  drawPlatformBase(ctx, boat, topY, hpRatio, exposed);
 
+  // ---- Colour palette ----
+  const modDark = exposed ? "#1a0e0a" : "#0e1e2e";
+  const modMid = exposed ? "#2a1810" : "#162838";
+  const modLight = exposed ? "#3a2818" : "#1e3a50";
+  const glass = exposed ? "rgba(180,60,20,0.15)" : "rgba(60,200,220,0.15)";
+  const glowC = exposed ? "rgba(255,80,40,0.8)" : "rgba(60,220,240,0.8)";
+  const panelC = exposed ? "#4a2010" : "#1a4060";
+
+  // ---- Background modular blocks ----
+  const backBlocks = [
+    { ox: -250, w: 45, h: 22 },
+    { ox: -195, w: 38, h: 30 },
+    { ox: -148, w: 30, h: 38 },
+    { ox: -108, w: 36, h: 28 },
+    { ox: -62, w: 32, h: 42 },
+    { ox: -22, w: 40, h: 36 },
+    { ox: 24, w: 36, h: 44 },
+    { ox: 68, w: 30, h: 32 },
+    { ox: 108, w: 38, h: 26 },
+    { ox: 156, w: 42, h: 34 },
+    { ox: 206, w: 36, h: 28 },
+  ].map((b) => ({ ...b, ox: b.ox * scale, w: b.w * scale, h: b.h * scale }));
+
+  for (const b of backBlocks) {
+    const bx = boat.x + b.ox;
+    const by = topY - b.h;
+    ctx.fillStyle = modMid;
+    ctx.fillRect(bx - b.w / 2, by, b.w, b.h);
+    // Hex window
+    const hexR = 5 * scale;
+    const hx = bx,
+      hy = by + b.h * 0.5;
     ctx.beginPath();
-    ctx.arc(boat.x, domeCenterY, domeRadius, Math.PI, 0);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 - Math.PI / 6;
+      if (i === 0) ctx.moveTo(hx + Math.cos(a) * hexR, hy + Math.sin(a) * hexR);
+      else ctx.lineTo(hx + Math.cos(a) * hexR, hy + Math.sin(a) * hexR);
+    }
     ctx.closePath();
-    ctx.fillStyle = domeGrad;
+    ctx.fillStyle = glass;
     ctx.fill();
-    ctx.beginPath();
-    ctx.arc(boat.x, domeCenterY, domeRadius, Math.PI, 0);
-    ctx.closePath();
-    ctx.fillStyle = specGrad;
-    ctx.fill();
-
-    const outlineAlpha = critical ? (flickering ? 0.6 : 0.15) : 0.25 + (1 - hpRatio) * 0.2;
-    ctx.beginPath();
-    ctx.arc(boat.x, domeCenterY, domeRadius, Math.PI, 0);
-    ctx.strokeStyle = `rgba(${domeR + 60},${Math.min(domeG + 40, 255)},${Math.min(domeB + 55, 255)},${outlineAlpha})`;
-    ctx.lineWidth = damaged ? 3 : 2;
+    ctx.strokeStyle = exposed ? "rgba(180,60,20,0.4)" : "rgba(60,200,220,0.4)";
+    ctx.lineWidth = 0.5;
     ctx.stroke();
+  }
 
-    if (!critical || flickering) {
+  // ---- Foreground modules / geodesic structures ----
+  type ModDef = { ox: number; w: number; h: number; type: "geo" | "cylinder" | "block" | "sphere" };
+  const modules: ModDef[] = (
+    [
+      { ox: -245, w: 28, h: 35, type: "block" },
+      { ox: -205, w: 40, h: 55, type: "geo" },
+      { ox: -155, w: 32, h: 48, type: "cylinder" },
+      { ox: -110, w: 36, h: 62, type: "geo" },
+      { ox: -62, w: 28, h: 52, type: "sphere" },
+      { ox: -25, w: 32, h: 70, type: "block" },
+      { ox: 18, w: 38, h: 80, type: "geo" },
+      { ox: 65, w: 28, h: 65, type: "cylinder" },
+      { ox: 102, w: 36, h: 55, type: "geo" },
+      { ox: 148, w: 30, h: 45, type: "sphere" },
+      { ox: 188, w: 34, h: 38, type: "block" },
+      { ox: 230, w: 28, h: 30, type: "cylinder" },
+    ] as const
+  ).map((b) => ({ ...b, ox: b.ox * scale, w: b.w * scale, h: b.h * scale }));
+
+  for (const m of modules) {
+    const mx = boat.x + m.ox;
+    const my = topY - m.h;
+    if (m.type === "geo") {
+      // Geodesic dome on block base
+      const baseH = m.h * 0.45;
+      ctx.fillStyle = modMid;
+      ctx.fillRect(mx - m.w / 2, my + m.h - baseH, m.w, baseH);
+      // Dome
       ctx.beginPath();
-      ctx.arc(boat.x, domeCenterY, domeRadius * 0.92, Math.PI * 0.95, Math.PI * 0.05);
-      ctx.strokeStyle = `rgba(${domeR + 80},${Math.min(domeG + 60, 255)},${Math.min(domeB + 55, 255)},0.15)`;
-      ctx.lineWidth = 1;
+      ctx.arc(mx, my + m.h - baseH, m.w / 2, Math.PI, 0);
+      ctx.closePath();
+      ctx.fillStyle = modLight;
+      ctx.fill();
+      ctx.strokeStyle = exposed ? "rgba(180,60,20,0.3)" : "rgba(60,200,220,0.3)";
+      ctx.lineWidth = 0.5;
+      // Geodesic lines
+      const dr = m.w / 2;
+      for (let li = 0; li < 5; li++) {
+        const la = Math.PI + (li / 4) * Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(mx, my + m.h - baseH);
+        ctx.lineTo(mx + Math.cos(la) * dr, my + m.h - baseH + Math.sin(la) * dr);
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(mx, my + m.h - baseH, dr * 0.5, Math.PI, 0);
+      ctx.stroke();
+      // Glass panels
+      ctx.fillStyle = glass;
+      ctx.beginPath();
+      ctx.arc(mx, my + m.h - baseH, dr, Math.PI, 0);
+      ctx.closePath();
+      ctx.fill();
+    } else if (m.type === "cylinder") {
+      ctx.fillStyle = modMid;
+      ctx.fillRect(mx - m.w / 2, my, m.w, m.h);
+      // Ellipse cap
+      ctx.beginPath();
+      ctx.ellipse(mx, my, m.w / 2, m.w * 0.2, 0, 0, Math.PI * 2);
+      ctx.fillStyle = modLight;
+      ctx.fill();
+      ctx.strokeStyle = exposed ? "rgba(180,60,20,0.3)" : "rgba(60,200,220,0.3)";
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+      // Horizontal rings
+      for (let ri = 1; ri <= 3; ri++) {
+        ctx.beginPath();
+        ctx.ellipse(mx, my + (m.h * ri) / 4, m.w / 2, m.w * 0.08, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    } else if (m.type === "sphere") {
+      ctx.fillStyle = modMid;
+      ctx.fillRect(mx - m.w / 4, my + m.h - m.w * 0.6, m.w / 2, m.w * 0.6);
+      ctx.beginPath();
+      ctx.arc(mx, my + m.h - m.w * 0.5, m.w / 2, 0, Math.PI * 2);
+      ctx.fillStyle = modLight;
+      ctx.fill();
+      ctx.strokeStyle = exposed ? "rgba(180,60,20,0.3)" : "rgba(60,200,220,0.3)";
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.arc(mx, my + m.h - m.w * 0.5, m.w / 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(mx, my + m.h - m.w * 0.5, m.w / 2, m.w * 0.1, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = glass;
+      ctx.beginPath();
+      ctx.arc(mx, my + m.h - m.w * 0.5, m.w / 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = modMid;
+      ctx.fillRect(mx - m.w / 2, my, m.w, m.h);
+      ctx.fillStyle = modLight;
+      ctx.fillRect(mx - m.w / 2, my, m.w, 3 * scale);
+    }
+
+    // Glowing window strips on all types
+    const winRows = Math.max(1, Math.floor(m.h / (16 * scale)));
+    ctx.fillStyle = glowC;
+    ctx.globalAlpha = 0.4;
+    for (let wr = 0; wr < winRows; wr++) {
+      if (seededRand(m.ox * 100 + wr) > 0.5) continue;
+      const wy = my + 4 * scale + wr * 16 * scale;
+      ctx.fillRect(mx - m.w * 0.35, wy, m.w * 0.7, 2 * scale);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ---- Solar panel arrays ----
+  const panelArrays = [
+    { ox: -180 * scale, count: 5 },
+    { ox: 80 * scale, count: 4 },
+  ];
+  for (const pa of panelArrays) {
+    const px = boat.x + pa.ox;
+    const pw = 14 * scale,
+      ph = 8 * scale,
+      gap = 3 * scale;
+    const tiltAngle = Math.sin(now * 0.0002) * 0.08 + 0.15;
+    // Support post
+    ctx.strokeStyle = exposed ? "#4a2010" : "#2a5060";
+    ctx.lineWidth = 2 * scale;
+    ctx.beginPath();
+    ctx.moveTo(px, topY);
+    ctx.lineTo(px, topY - 28 * scale);
+    ctx.stroke();
+    ctx.save();
+    ctx.translate(px, topY - 28 * scale);
+    ctx.rotate(-tiltAngle);
+    for (let pi = 0; pi < pa.count; pi++) {
+      const ox2 = (pi - (pa.count - 1) / 2) * (pw + gap);
+      ctx.fillStyle = exposed ? "#2a1808" : "#0a2a40";
+      ctx.fillRect(ox2 - pw / 2, -ph / 2, pw, ph);
+      ctx.strokeStyle = exposed ? "rgba(180,60,20,0.3)" : "rgba(60,200,220,0.3)";
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(ox2 - pw / 2, -ph / 2, pw, ph);
+      // Panel grid lines
+      ctx.beginPath();
+      ctx.moveTo(ox2, -ph / 2);
+      ctx.lineTo(ox2, ph / 2);
+      ctx.moveTo(ox2 - pw / 2, 0);
+      ctx.lineTo(ox2 + pw / 2, 0);
+      ctx.stroke();
+      // Reflection glint
+      if (!exposed) {
+        ctx.fillStyle = "rgba(100,220,240,0.15)";
+        ctx.fillRect(ox2 - pw / 2 + 1, -ph / 2 + 1, pw / 2, ph / 2);
+      }
+    }
+    ctx.restore();
+  }
+
+  // ---- Shield Battery Structure ----
+  const shieldX = boat.x + hw * 0.4;
+  const shieldBaseY = topY;
+  const shieldAlive = structHp > 0;
+  const towerH = 75 * scale;
+
+  if (shieldAlive) {
+    // Tower shaft
+    ctx.strokeStyle = exposed ? "#5a2010" : "#2a6070";
+    ctx.lineWidth = 5 * scale;
+    ctx.beginPath();
+    ctx.moveTo(shieldX, shieldBaseY);
+    ctx.lineTo(shieldX, shieldBaseY - towerH);
+    ctx.stroke();
+    // Struts
+    ctx.lineWidth = 2 * scale;
+    for (let st = 1; st <= 3; st++) {
+      const sy = shieldBaseY - (towerH * st) / 4;
+      const spread = 10 * scale * (1 - st / 4);
+      ctx.beginPath();
+      ctx.moveTo(shieldX - spread, sy);
+      ctx.lineTo(shieldX + spread, sy);
       ctx.stroke();
     }
-
-    if (damaged) {
-      const crackCount = Math.ceil((1 - hpRatio) * 8);
-      ctx.strokeStyle = critical
-        ? `rgba(255,80,40,${0.3 + Math.sin(now / 150) * 0.15})`
-        : `rgba(200,220,255,${0.15 + (1 - hpRatio) * 0.15})`;
-      ctx.lineWidth = critical ? 2 : 1;
-      for (let i = 0; i < crackCount; i++) {
-        const baseAngle = Math.PI + i * 0.9 + 0.4;
-        const r1 = domeRadius * (0.5 + (i % 3) * 0.15);
-        const r2 = domeRadius * (0.7 + (i % 2) * 0.2);
-        const cx1 = boat.x + Math.cos(baseAngle) * r1;
-        const cy1 = domeCenterY + Math.sin(baseAngle) * r1;
-        const cx2 = boat.x + Math.cos(baseAngle + 0.08) * r2;
-        const cy2 = domeCenterY + Math.sin(baseAngle + 0.08) * r2;
-        const midR = (r1 + r2) / 2;
-        const cmx = boat.x + Math.cos(baseAngle + 0.15) * midR;
-        const cmy = domeCenterY + Math.sin(baseAngle - 0.05) * midR;
-        if (cy1 < domeCenterY && cy2 < domeCenterY) {
-          ctx.beginPath();
-          ctx.moveTo(cx1, cy1);
-          ctx.quadraticCurveTo(cmx, cmy, cx2, cy2);
-          ctx.stroke();
-        }
-      }
-    }
-
-    const hexAlpha = Math.max(0.02, 0.08 * hpRatio);
-    ctx.strokeStyle = `rgba(${domeR},${Math.min(domeG + 40, 255)},${Math.min(domeB + 40, 255)},${hexAlpha})`;
-    ctx.lineWidth = 0.5;
-    for (let a = Math.PI; a < Math.PI * 2; a += 0.12) {
-      for (let r = domeRadius * 0.3; r < domeRadius * 0.95; r += 35) {
-        const hx = boat.x + Math.cos(a) * r;
-        const hy = domeCenterY + Math.sin(a) * r;
-        if (hy < domeCenterY) {
-          ctx.beginPath();
-          ctx.arc(hx, hy, 8, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-      }
-    }
-  } else {
-    const domeRadius = hw * 0.85;
-    const domeCenterY = topY;
+    // Hexagonal emitter at top
+    const emitY = shieldBaseY - towerH;
+    const emitR = 18 * scale;
+    const rotAngle = (now * 0.0006) % ((Math.PI * 2) / 6); // rotates by 1/6 turns
+    ctx.save();
+    ctx.translate(shieldX, emitY);
+    // Outer hex ring
     ctx.beginPath();
-    ctx.arc(boat.x, domeCenterY, domeRadius, Math.PI, 0);
-    ctx.setLineDash([8, 12]);
-    ctx.strokeStyle = "rgba(255,80,40,0.15)";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.setLineDash([]);
     for (let i = 0; i < 6; i++) {
-      const fx = boat.x - hw * 0.7 + i * hw * 0.28;
-      const fy = topY - 2 + Math.sin(i * 2.1) * 3;
+      const a = (i / 6) * Math.PI * 2 + rotAngle;
+      if (i === 0) ctx.moveTo(Math.cos(a) * emitR, Math.sin(a) * emitR);
+      else ctx.lineTo(Math.cos(a) * emitR, Math.sin(a) * emitR);
+    }
+    ctx.closePath();
+    ctx.fillStyle = exposed ? "#2a0a08" : "#0a2a40";
+    ctx.fill();
+    ctx.strokeStyle = exposed ? "rgba(255,80,40,0.6)" : "rgba(60,220,240,0.6)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Inner hex
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + rotAngle;
       ctx.beginPath();
-      ctx.arc(fx, fy, 4 + (i % 3), 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(100,160,200,0.15)";
-      ctx.fill();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(Math.cos(a) * emitR * 0.7, Math.sin(a) * emitR * 0.7);
+      ctx.strokeStyle = exposed ? "rgba(255,80,40,0.25)" : "rgba(60,220,240,0.25)";
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+    // Core glow
+    const pulse = 0.6 + Math.sin(now * 0.005) * 0.4;
+    ctx.beginPath();
+    ctx.arc(0, 0, emitR * 0.3, 0, Math.PI * 2);
+    ctx.fillStyle = exposed ? `rgba(255,100,40,${pulse})` : `rgba(60,220,240,${pulse})`;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, 0, emitR * 0.12, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    // Shield pulse rings when active
+    if (!exposed) {
+      for (let ring = 1; ring <= 2; ring++) {
+        const rp = (now * 0.0008 + ring * 0.5) % 1;
+        ctx.beginPath();
+        ctx.arc(0, 0, emitR * (1 + rp * 2), 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(60,220,240,${0.3 * (1 - rp)})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  } else {
+    // Destroyed — bent tower stub
+    ctx.save();
+    ctx.translate(shieldX, shieldBaseY);
+    ctx.rotate(-0.4);
+    ctx.strokeStyle = "#4a2010";
+    ctx.lineWidth = 5 * scale;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -towerH * 0.45);
+    ctx.stroke();
+    ctx.restore();
+    // Debris hex pieces
+    ctx.strokeStyle = "rgba(60,80,100,0.4)";
+    ctx.lineWidth = 1;
+    for (let di = 0; di < 3; di++) {
+      const dx = shieldX + (di - 1) * 14 * scale;
+      const dy = shieldBaseY - 5 * scale;
+      ctx.beginPath();
+      ctx.arc(dx, dy, 6 * scale, 0, Math.PI * 2);
+      ctx.stroke();
     }
   }
 
-  // Waterline highlight
-  ctx.beginPath();
-  ctx.moveTo(boat.x - hw + 10, topY + hd);
-  ctx.lineTo(boat.x + hw - 10, topY + hd);
-  ctx.strokeStyle = "rgba(100,160,200,0.2)";
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  // Damage smoke
+  if (exposed) {
+    ctx.globalAlpha = 0.3 + Math.sin(now / 200) * 0.1;
+    for (let i = 0; i < 5; i++) {
+      const smokeX = boat.x + Math.sin(now / 800 + i * 1.3) * hw * 0.5;
+      const smokeY = topY - 20 - ((now / 50 + i * 30) % 60);
+      ctx.beginPath();
+      ctx.arc(smokeX, smokeY, 6 + Math.sin(now / 300 + i) * 3, 0, Math.PI * 2);
+      ctx.fillStyle = critical ? "rgba(200,60,20,0.3)" : "rgba(80,80,80,0.25)";
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
 
+  drawDomeBarrier(ctx, boat, topY, hpRatio, barrierUp);
   ctx.restore();
 }
+
+// ==================== MAIN DRAW DISPATCHER ====================
+
+export function drawBoat(
+  ctx: CanvasRenderingContext2D,
+  boat: Boat,
+  viewH: number,
+  hpRatio: number = 1,
+  barrierUp: boolean = true,
+  structHp: number = 3,
+) {
+  if (boat.name === "PORT ASTRA") {
+    drawPortAstra(ctx, boat, viewH, hpRatio, barrierUp, structHp);
+  } else if (boat.name === "NOVA MARE") {
+    drawNovaMare(ctx, boat, viewH, hpRatio, barrierUp, structHp);
+  } else {
+    drawHaven(ctx, boat, viewH, hpRatio, barrierUp, structHp);
+  }
+}
+
+// ==================== COLLISION ====================
 
 export function collideWithBoat(
   px: number,
@@ -1454,7 +1305,6 @@ export function collideWithBoat(
   if (py > topY + hd + radius) return null;
 
   const inX = px > boat.x - hw + 10 && px < boat.x + hw - 10;
-
   if (inX && py > topY - radius && py < topY + 5) {
     return { x: px, y: topY - radius - 1, damaging: true };
   }
@@ -1462,4 +1312,13 @@ export function collideWithBoat(
     return { x: px, y: topY + hd + radius + 1, damaging: false };
   }
   return null;
+}
+
+export function createBoat(worldWidth: number): Boat {
+  return {
+    x: worldWidth / 2,
+    width: 700,
+    hullDepth: 36,
+    name: "HAVEN",
+  };
 }
