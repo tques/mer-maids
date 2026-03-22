@@ -649,7 +649,7 @@ const Index = () => {
       const introState = introCamRef.current;
       if (introState === "panning") {
         // Slow rightward drift across the world during title screen
-        introCamXRef.current = (introCamXRef.current + 0.4 * dtScale) % WORLD_WIDTH;
+        introCamXRef.current = (introCamXRef.current + 1.2 * dtScale) % WORLD_WIDTH;
         finalCamX = introCamXRef.current;
       } else if (introState === "scrolling") {
         // Lerp toward bomber target city, then transition to playing
