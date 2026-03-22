@@ -259,88 +259,173 @@ function drawPortAstra(
   const yellow = exposed ? "#6a3010" : "#c8a030";
   const glowG = exposed ? "rgba(200,80,40,0.7)" : "rgba(80,200,180,0.7)";
 
-  type BldDef = { ox: number; w: number; h: number; style: "block" | "tower" | "warehouse" };
-  const buildings: BldDef[] = (
+  type BldDef = { ox: number; w: number; h: number; style: "block" | "tower" | "warehouse" | "slab" };
+
+  // Back row — shorter, provides depth
+  const backBuildings: BldDef[] = (
     [
-      { ox: -240, w: 60, h: 30, style: "warehouse" },
-      { ox: -170, w: 40, h: 50, style: "block" },
-      { ox: -118, w: 32, h: 65, style: "tower" },
-      { ox: -75, w: 50, h: 40, style: "warehouse" },
-      { ox: -15, w: 36, h: 72, style: "block" },
-      { ox: 32, w: 44, h: 55, style: "block" },
-      { ox: 90, w: 36, h: 48, style: "tower" },
-      { ox: 140, w: 55, h: 35, style: "warehouse" },
-      { ox: 205, w: 38, h: 58, style: "block" },
+      { ox: -255, w: 32, h: 42, style: "block" },
+      { ox: -215, w: 28, h: 55, style: "slab" },
+      { ox: -180, w: 24, h: 68, style: "tower" },
+      { ox: -150, w: 36, h: 48, style: "block" },
+      { ox: -108, w: 26, h: 72, style: "slab" },
+      { ox: -75, w: 30, h: 58, style: "block" },
+      { ox: -38, w: 22, h: 80, style: "tower" },
+      { ox: -8, w: 34, h: 62, style: "slab" },
+      { ox: 32, w: 28, h: 75, style: "tower" },
+      { ox: 68, w: 36, h: 55, style: "block" },
+      { ox: 112, w: 24, h: 70, style: "slab" },
+      { ox: 145, w: 30, h: 50, style: "block" },
+      { ox: 182, w: 26, h: 65, style: "tower" },
+      { ox: 216, w: 32, h: 45, style: "slab" },
+      { ox: 248, w: 22, h: 38, style: "block" },
     ] as const
   ).map((b) => ({ ...b, ox: b.ox * scale, w: b.w * scale, h: b.h * scale }));
 
+  // Front row — taller, more prominent
+  const buildings: BldDef[] = (
+    [
+      { ox: -242, w: 48, h: 32, style: "warehouse" },
+      { ox: -188, w: 34, h: 62, style: "block" },
+      { ox: -148, w: 28, h: 88, style: "tower" },
+      { ox: -112, w: 44, h: 44, style: "warehouse" },
+      { ox: -62, w: 32, h: 78, style: "slab" },
+      { ox: -22, w: 38, h: 95, style: "block" },
+      { ox: 22, w: 30, h: 110, style: "tower" },
+      { ox: 58, w: 40, h: 82, style: "slab" },
+      { ox: 105, w: 34, h: 70, style: "block" },
+      { ox: 148, w: 46, h: 38, style: "warehouse" },
+      { ox: 202, w: 30, h: 85, style: "slab" },
+      { ox: 240, w: 26, h: 60, style: "tower" },
+    ] as const
+  ).map((b) => ({ ...b, ox: b.ox * scale, w: b.w * scale, h: b.h * scale }));
+
+  // Draw back row first (darker, less detail)
+  for (const b of backBuildings) {
+    const bx = boat.x + b.ox;
+    const by = topY - b.h;
+    ctx.fillStyle = steelDark;
+    ctx.fillRect(bx - b.w / 2, by, b.w, b.h);
+    // Simple windows
+    ctx.fillStyle = exposed ? "rgba(120,40,10,0.4)" : "rgba(60,160,140,0.3)";
+    const cols2 = Math.max(1, Math.floor(b.w / (8 * scale)));
+    const rows2 = Math.max(1, Math.floor(b.h / (12 * scale)));
+    for (let r = 0; r < rows2; r++) {
+      for (let c = 0; c < cols2; c++) {
+        if (seededRand(b.ox * 50 + r * 7 + c * 3) > 0.5)
+          ctx.fillRect(
+            bx - b.w / 2 + 3 * scale + (c * (b.w - 4 * scale)) / cols2,
+            by + 4 * scale + (r * (b.h - 4 * scale)) / rows2,
+            3 * scale,
+            3 * scale,
+          );
+      }
+    }
+  }
+
+  // Draw front row
   for (const b of buildings) {
     const bx = boat.x + b.ox;
     const by = topY - b.h;
     ctx.fillStyle = steelMid;
     if (b.style === "warehouse") {
-      // Wide low warehouse with sawtooth roof
       ctx.fillRect(bx - b.w / 2, by, b.w, b.h);
       ctx.fillStyle = steelDark;
-      // Roof ridges
-      const ridges = 3;
+      const ridges = Math.max(2, Math.floor(b.w / (18 * scale)));
       for (let r = 0; r < ridges; r++) {
         const rx = bx - b.w / 2 + (r / ridges) * b.w;
         ctx.beginPath();
         ctx.moveTo(rx, by);
-        ctx.lineTo(rx + b.w / ridges / 2, by - 6 * scale);
+        ctx.lineTo(rx + b.w / ridges / 2, by - 7 * scale);
         ctx.lineTo(rx + b.w / ridges, by);
         ctx.closePath();
         ctx.fill();
       }
-      // Windows as slits
       ctx.fillStyle = glowG;
       const winCount = Math.floor(b.w / (10 * scale));
-      for (let wi = 0; wi < winCount; wi++) {
-        ctx.fillRect(bx - b.w / 2 + 4 * scale + wi * 10 * scale, by + b.h * 0.4, 4 * scale, b.h * 0.25);
-      }
-    } else if (b.style === "block") {
+      for (let wi = 0; wi < winCount; wi++)
+        ctx.fillRect(bx - b.w / 2 + 4 * scale + wi * 10 * scale, by + b.h * 0.45, 5 * scale, b.h * 0.22);
+    } else if (b.style === "slab") {
+      // Wide flat-topped slab with roof equipment
       ctx.fillRect(bx - b.w / 2, by, b.w, b.h);
-      // Horizontal band stripes
+      // Roof water tower
+      ctx.fillStyle = steelLight;
+      ctx.fillRect(bx - 4 * scale, by - 10 * scale, 8 * scale, 10 * scale);
+      ctx.beginPath();
+      ctx.arc(bx, by - 10 * scale, 7 * scale, Math.PI, 0);
+      ctx.closePath();
       ctx.fillStyle = steelDark;
-      ctx.fillRect(bx - b.w / 2, by + b.h * 0.33, b.w, 3 * scale);
-      ctx.fillRect(bx - b.w / 2, by + b.h * 0.66, b.w, 3 * scale);
-      // Windows
+      ctx.fill();
+      // Windows — grid
       ctx.fillStyle = glowG;
-      const rows = 3,
-        cols = Math.max(2, Math.floor(b.w / (10 * scale)));
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          if (seededRand(b.ox * 100 + r * 10 + c) > 0.4) {
+      const cols3 = Math.max(2, Math.floor(b.w / (9 * scale)));
+      const rows3 = Math.max(2, Math.floor(b.h / (14 * scale)));
+      for (let r = 0; r < rows3; r++) {
+        for (let c = 0; c < cols3; c++) {
+          if (seededRand(b.ox * 70 + r * 11 + c) > 0.35)
             ctx.fillRect(
-              bx - b.w / 2 + 4 * scale + (c * (b.w - 8 * scale)) / cols,
-              by + 6 * scale + (r * (b.h - 12 * scale)) / rows,
+              bx - b.w / 2 + 4 * scale + (c * (b.w - 6 * scale)) / cols3,
+              by + 5 * scale + (r * (b.h - 8 * scale)) / rows3,
               4 * scale,
               4 * scale,
             );
-          }
+        }
+      }
+    } else if (b.style === "block") {
+      ctx.fillRect(bx - b.w / 2, by, b.w, b.h);
+      ctx.fillStyle = steelDark;
+      ctx.fillRect(bx - b.w / 2, by + b.h * 0.33, b.w, 2 * scale);
+      ctx.fillRect(bx - b.w / 2, by + b.h * 0.66, b.w, 2 * scale);
+      ctx.fillStyle = glowG;
+      const cols4 = Math.max(2, Math.floor(b.w / (10 * scale)));
+      const rows4 = 4;
+      for (let r = 0; r < rows4; r++) {
+        for (let c = 0; c < cols4; c++) {
+          if (seededRand(b.ox * 100 + r * 10 + c) > 0.38)
+            ctx.fillRect(
+              bx - b.w / 2 + 4 * scale + (c * (b.w - 8 * scale)) / cols4,
+              by + 5 * scale + (r * (b.h - 10 * scale)) / rows4,
+              4 * scale,
+              4 * scale,
+            );
         }
       }
     } else {
-      // Tower — narrower, taller, stepped top
+      // Tower — stepped setback profile
       ctx.fillRect(bx - b.w / 2, by, b.w, b.h);
       ctx.fillStyle = steelLight;
-      ctx.fillRect(bx - b.w / 4, by - 8 * scale, b.w / 2, 8 * scale);
-      // Antenna
+      ctx.fillRect(bx - b.w * 0.35, by - 10 * scale, b.w * 0.7, 10 * scale);
+      ctx.fillStyle = steelMid;
+      ctx.fillRect(bx - b.w * 0.2, by - 18 * scale, b.w * 0.4, 8 * scale);
       ctx.strokeStyle = accent;
       ctx.lineWidth = 2 * scale;
       ctx.beginPath();
-      ctx.moveTo(bx, by - 8 * scale);
-      ctx.lineTo(bx, by - 22 * scale);
+      ctx.moveTo(bx, by - 18 * scale);
+      ctx.lineTo(bx, by - 30 * scale);
       ctx.stroke();
-      ctx.fillStyle = exposed ? "#ff4000" : "#00ffcc";
       ctx.beginPath();
-      ctx.arc(bx, by - 22 * scale, 2.5 * scale, 0, Math.PI * 2);
+      ctx.arc(bx, by - 30 * scale, 2.5 * scale, 0, Math.PI * 2);
+      ctx.fillStyle = exposed ? "#ff4020" : "#00ffcc";
       ctx.fill();
+      // Windows
+      ctx.fillStyle = glowG;
+      const cols5 = Math.max(2, Math.floor(b.w / (9 * scale)));
+      const rows5 = Math.max(3, Math.floor(b.h / (12 * scale)));
+      for (let r = 0; r < rows5; r++) {
+        for (let c = 0; c < cols5; c++) {
+          if (seededRand(b.ox * 90 + r * 9 + c * 5) > 0.35)
+            ctx.fillRect(
+              bx - b.w / 2 + 4 * scale + (c * (b.w - 8 * scale)) / cols5,
+              by + 5 * scale + (r * (b.h - 10 * scale)) / rows5,
+              3 * scale,
+              4 * scale,
+            );
+        }
+      }
     }
 
-    // Rust streaks on all buildings
-    ctx.strokeStyle = `rgba(100,40,20,0.2)`;
+    // Rust streaks
+    ctx.strokeStyle = "rgba(100,40,20,0.18)";
     ctx.lineWidth = 1;
     for (let rs = 0; rs < 2; rs++) {
       const rx = bx - b.w / 4 + (seededRand(b.ox * 200 + rs) * b.w) / 2;
@@ -797,12 +882,54 @@ function drawHaven(
   const bodyColor = exposed ? "rgba(55,30,20,0.95)" : "rgba(35,80,90,0.95)";
   const bodyColorDark = exposed ? "rgba(40,20,12,0.95)" : "rgba(25,60,70,0.95)";
   const accentColor = exposed ? "rgba(80,40,25,0.9)" : "rgba(60,140,150,0.9)";
+
+  // Pedestal base tiers
   ctx.fillStyle = exposed ? "rgba(40,25,20,0.9)" : "rgba(25,60,75,0.9)";
   ctx.fillRect(sx - 12, baseY2 - 6, 24, 6);
   ctx.fillRect(sx - 10, baseY2 - 12, 20, 6);
   ctx.fillRect(sx - 7, baseY2 - 18, 14, 6);
+
+  // Legs / lower robe
+  ctx.fillStyle = bodyColor;
+  ctx.beginPath();
+  ctx.moveTo(sx - 5, baseY2 - 18);
+  ctx.lineTo(sx - 6, baseY2 - 50);
+  ctx.lineTo(sx - 2, baseY2 - 50);
+  ctx.lineTo(sx - 1, baseY2 - 18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(sx + 1, baseY2 - 18);
+  ctx.lineTo(sx + 2, baseY2 - 52);
+  ctx.lineTo(sx + 6, baseY2 - 52);
+  ctx.lineTo(sx + 5, baseY2 - 18);
+  ctx.closePath();
+  ctx.fill();
+
+  // Torso
+  ctx.beginPath();
+  ctx.moveTo(sx - 6, baseY2 - 50);
+  ctx.lineTo(sx - 8, baseY2 - 65);
+  ctx.quadraticCurveTo(sx - 10, baseY2 - 80, sx - 8, baseY2 - 85);
+  ctx.lineTo(sx + 8, baseY2 - 85);
+  ctx.quadraticCurveTo(sx + 10, baseY2 - 80, sx + 8, baseY2 - 65);
+  ctx.lineTo(sx + 6, baseY2 - 50);
+  ctx.closePath();
+  const torsoGrad = ctx.createLinearGradient(sx - 8, baseY2 - 85, sx + 8, baseY2 - 50);
+  torsoGrad.addColorStop(0, bodyColor);
+  torsoGrad.addColorStop(1, bodyColorDark);
+  ctx.fillStyle = torsoGrad;
+  ctx.fill();
+
+  // Belt accent
+  ctx.fillStyle = accentColor;
+  ctx.fillRect(sx - 7, baseY2 - 52, 14, 3);
+
+  // Neck
   ctx.fillStyle = bodyColor;
   ctx.fillRect(sx - 2, baseY2 - 90, 4, 5);
+
+  // Head
   ctx.beginPath();
   ctx.ellipse(sx, baseY2 - 95, 5, 6, 0, 0, Math.PI * 2);
   ctx.fillStyle = bodyColor;
@@ -811,6 +938,8 @@ function drawHaven(
   ctx.ellipse(sx, baseY2 - 99, 5, 3, 0, Math.PI, 0);
   ctx.fillStyle = bodyColorDark;
   ctx.fill();
+
+  // Left arm down
   ctx.strokeStyle = bodyColor;
   ctx.lineWidth = 3;
   ctx.beginPath();
@@ -821,6 +950,8 @@ function drawHaven(
   ctx.arc(sx - 14, baseY2 - 64, 2, 0, Math.PI * 2);
   ctx.fillStyle = bodyColor;
   ctx.fill();
+
+  // Right arm raised holding torch/staff
   ctx.strokeStyle = bodyColor;
   ctx.lineWidth = 3;
   ctx.beginPath();
@@ -831,12 +962,16 @@ function drawHaven(
   ctx.arc(sx + 12, baseY2 - 100, 2, 0, Math.PI * 2);
   ctx.fillStyle = bodyColor;
   ctx.fill();
+
+  // Staff / torch pole
   ctx.strokeStyle = accentColor;
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(sx + 12, baseY2 - 65);
   ctx.lineTo(sx + 12, baseY2 - statueH - 15);
   ctx.stroke();
+
+  // Torch head (trident tip)
   const statueTop = baseY2 - statueH;
   ctx.lineWidth = 1.5;
   ctx.strokeStyle = accentColor;
@@ -862,6 +997,8 @@ function drawHaven(
   ctx.moveTo(sx + 8, statueTop - 15);
   ctx.lineTo(sx + 16, statueTop - 15);
   ctx.stroke();
+
+  // Glow at torch tip
   const glowPulse = 0.5 + Math.sin(now / 400) * 0.25;
   ctx.beginPath();
   ctx.arc(sx + 12, statueTop - 28, 5, 0, Math.PI * 2);
@@ -928,10 +1065,6 @@ function drawHaven(
   ctx.restore();
 }
 
-function accentNeedle(exposed: boolean): string {
-  return exposed ? "rgba(255,100,40,0.7)" : "rgba(60,220,240,0.7)";
-}
-
 // ==================== NOVA MARE ====================
 // Research platform — sleek, modular, geodesic, solar panels, observation spire
 // Structure: Shield Battery — hexagonal emitter tower
@@ -965,172 +1098,213 @@ function drawNovaMare(
   const glowC = exposed ? "rgba(255,80,40,0.8)" : "rgba(60,220,240,0.8)";
   const panelC = exposed ? "#4a2010" : "#1a4060";
 
-  // ---- Background modular blocks ----
-  const backBlocks = [
-    { ox: -250, w: 45, h: 22 },
-    { ox: -195, w: 38, h: 30 },
-    { ox: -148, w: 30, h: 38 },
-    { ox: -108, w: 36, h: 28 },
-    { ox: -62, w: 32, h: 42 },
-    { ox: -22, w: 40, h: 36 },
-    { ox: 24, w: 36, h: 44 },
-    { ox: 68, w: 30, h: 32 },
-    { ox: 108, w: 38, h: 26 },
-    { ox: 156, w: 42, h: 34 },
-    { ox: 206, w: 36, h: 28 },
+  // ---- Back row skyline — darker, provides depth ----
+  const backBuildings2 = [
+    { ox: -252, w: 30, h: 48 },
+    { ox: -214, w: 26, h: 62 },
+    { ox: -180, w: 34, h: 55 },
+    { ox: -138, w: 28, h: 72 },
+    { ox: -102, w: 32, h: 58 },
+    { ox: -62, w: 24, h: 80 },
+    { ox: -30, w: 36, h: 68 },
+    { ox: 12, w: 28, h: 85 },
+    { ox: 48, w: 34, h: 72 },
+    { ox: 92, w: 26, h: 60 },
+    { ox: 128, w: 32, h: 75 },
+    { ox: 168, w: 28, h: 55 },
+    { ox: 206, w: 30, h: 65 },
+    { ox: 244, w: 24, h: 45 },
   ].map((b) => ({ ...b, ox: b.ox * scale, w: b.w * scale, h: b.h * scale }));
 
-  for (const b of backBlocks) {
+  for (const b of backBuildings2) {
     const bx = boat.x + b.ox;
     const by = topY - b.h;
-    ctx.fillStyle = modMid;
+    ctx.fillStyle = modDark;
     ctx.fillRect(bx - b.w / 2, by, b.w, b.h);
-    // Hex window
-    const hexR = 5 * scale;
-    const hx = bx,
-      hy = by + b.h * 0.5;
-    ctx.beginPath();
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2 - Math.PI / 6;
-      if (i === 0) ctx.moveTo(hx + Math.cos(a) * hexR, hy + Math.sin(a) * hexR);
-      else ctx.lineTo(hx + Math.cos(a) * hexR, hy + Math.sin(a) * hexR);
+    // Thin top cap
+    ctx.fillStyle = modMid;
+    ctx.fillRect(bx - b.w / 2, by, b.w, 3 * scale);
+    // Sparse lit windows
+    ctx.fillStyle = glowC;
+    ctx.globalAlpha = 0.25;
+    const wc = Math.max(1, Math.floor(b.w / (7 * scale)));
+    const wr = Math.max(2, Math.floor(b.h / (12 * scale)));
+    for (let r = 0; r < wr; r++) {
+      for (let c = 0; c < wc; c++) {
+        if (seededRand(b.ox * 30 + r * 5 + c) > 0.6)
+          ctx.fillRect(
+            bx - b.w / 2 + 3 * scale + (c * (b.w - 4 * scale)) / wc,
+            by + 4 * scale + (r * (b.h - 5 * scale)) / wr,
+            3 * scale,
+            3 * scale,
+          );
+      }
     }
-    ctx.closePath();
-    ctx.fillStyle = glass;
-    ctx.fill();
-    ctx.strokeStyle = exposed ? "rgba(180,60,20,0.4)" : "rgba(60,200,220,0.4)";
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
-  // ---- Foreground modules / geodesic structures ----
-  type ModDef = { ox: number; w: number; h: number; type: "geo" | "cylinder" | "block" | "sphere" };
-  const modules: ModDef[] = (
+  // ---- Front row skyline — taller, distinct sci-fi shapes ----
+  type NovaBldDef = { ox: number; w: number; h: number; type: "tower" | "geo" | "cylinder" | "block" | "spire" };
+  const novaBlds: NovaBldDef[] = (
     [
-      { ox: -245, w: 28, h: 35, type: "block" },
-      { ox: -205, w: 40, h: 55, type: "geo" },
-      { ox: -155, w: 32, h: 48, type: "cylinder" },
-      { ox: -110, w: 36, h: 62, type: "geo" },
-      { ox: -62, w: 28, h: 52, type: "sphere" },
-      { ox: -25, w: 32, h: 70, type: "block" },
-      { ox: 18, w: 38, h: 80, type: "geo" },
-      { ox: 65, w: 28, h: 65, type: "cylinder" },
-      { ox: 102, w: 36, h: 55, type: "geo" },
-      { ox: 148, w: 30, h: 45, type: "sphere" },
-      { ox: 188, w: 34, h: 38, type: "block" },
-      { ox: 230, w: 28, h: 30, type: "cylinder" },
+      { ox: -245, w: 36, h: 45, type: "block" },
+      { ox: -200, w: 42, h: 70, type: "geo" },
+      { ox: -150, w: 30, h: 90, type: "cylinder" },
+      { ox: -112, w: 38, h: 75, type: "tower" },
+      { ox: -65, w: 44, h: 60, type: "geo" },
+      { ox: -18, w: 32, h: 105, type: "spire" },
+      { ox: 22, w: 40, h: 88, type: "cylinder" },
+      { ox: 68, w: 36, h: 115, type: "tower" },
+      { ox: 112, w: 42, h: 78, type: "geo" },
+      { ox: 160, w: 30, h: 92, type: "spire" },
+      { ox: 200, w: 38, h: 65, type: "block" },
+      { ox: 243, w: 28, h: 50, type: "cylinder" },
     ] as const
   ).map((b) => ({ ...b, ox: b.ox * scale, w: b.w * scale, h: b.h * scale }));
 
-  for (const m of modules) {
+  for (const m of novaBlds) {
     const mx = boat.x + m.ox;
     const my = topY - m.h;
+    const glowStroke = exposed ? "rgba(180,60,20,0.35)" : "rgba(60,200,220,0.35)";
+
     if (m.type === "geo") {
-      // Geodesic dome on block base
-      const baseH = m.h * 0.45;
+      // Tall block base + geodesic dome cap
+      const domeH = m.h * 0.4;
+      const baseH = m.h - domeH;
       ctx.fillStyle = modMid;
-      ctx.fillRect(mx - m.w / 2, my + m.h - baseH, m.w, baseH);
+      ctx.fillRect(mx - m.w / 2, my + domeH, m.w, baseH);
+      // Stepped setback before dome
+      ctx.fillStyle = modLight;
+      ctx.fillRect(mx - m.w * 0.4, my + domeH - 6 * scale, m.w * 0.8, 6 * scale);
       // Dome
       ctx.beginPath();
-      ctx.arc(mx, my + m.h - baseH, m.w / 2, Math.PI, 0);
+      ctx.arc(mx, my + domeH, m.w / 2, Math.PI, 0);
       ctx.closePath();
       ctx.fillStyle = modLight;
       ctx.fill();
-      ctx.strokeStyle = exposed ? "rgba(180,60,20,0.3)" : "rgba(60,200,220,0.3)";
+      ctx.strokeStyle = glowStroke;
       ctx.lineWidth = 0.5;
-      // Geodesic lines
       const dr = m.w / 2;
       for (let li = 0; li < 5; li++) {
         const la = Math.PI + (li / 4) * Math.PI;
         ctx.beginPath();
-        ctx.moveTo(mx, my + m.h - baseH);
-        ctx.lineTo(mx + Math.cos(la) * dr, my + m.h - baseH + Math.sin(la) * dr);
+        ctx.moveTo(mx, my + domeH);
+        ctx.lineTo(mx + Math.cos(la) * dr, my + domeH + Math.sin(la) * dr);
         ctx.stroke();
       }
       ctx.beginPath();
-      ctx.arc(mx, my + m.h - baseH, dr * 0.5, Math.PI, 0);
+      ctx.arc(mx, my + domeH, dr * 0.5, Math.PI, 0);
       ctx.stroke();
-      // Glass panels
       ctx.fillStyle = glass;
       ctx.beginPath();
-      ctx.arc(mx, my + m.h - baseH, dr, Math.PI, 0);
+      ctx.arc(mx, my + domeH, dr, Math.PI, 0);
       ctx.closePath();
       ctx.fill();
     } else if (m.type === "cylinder") {
       ctx.fillStyle = modMid;
       ctx.fillRect(mx - m.w / 2, my, m.w, m.h);
-      // Ellipse cap
       ctx.beginPath();
-      ctx.ellipse(mx, my, m.w / 2, m.w * 0.2, 0, 0, Math.PI * 2);
+      ctx.ellipse(mx, my, m.w / 2, m.w * 0.18, 0, 0, Math.PI * 2);
       ctx.fillStyle = modLight;
       ctx.fill();
-      ctx.strokeStyle = exposed ? "rgba(180,60,20,0.3)" : "rgba(60,200,220,0.3)";
+      ctx.strokeStyle = glowStroke;
       ctx.lineWidth = 0.5;
       ctx.stroke();
-      // Horizontal rings
-      for (let ri = 1; ri <= 3; ri++) {
+      for (let ri = 1; ri <= 4; ri++) {
         ctx.beginPath();
-        ctx.ellipse(mx, my + (m.h * ri) / 4, m.w / 2, m.w * 0.08, 0, 0, Math.PI * 2);
+        ctx.ellipse(mx, my + (m.h * ri) / 5, m.w / 2, m.w * 0.07, 0, 0, Math.PI * 2);
         ctx.stroke();
       }
-    } else if (m.type === "sphere") {
+    } else if (m.type === "spire") {
+      // Tall narrow building tapering to a needle
       ctx.fillStyle = modMid;
-      ctx.fillRect(mx - m.w / 4, my + m.h - m.w * 0.6, m.w / 2, m.w * 0.6);
+      const baseW = m.w;
+      ctx.fillRect(mx - baseW / 2, my + m.h * 0.35, baseW, m.h * 0.65);
+      ctx.fillStyle = modLight;
+      ctx.fillRect(mx - baseW * 0.35, my + m.h * 0.15, baseW * 0.7, m.h * 0.2);
       ctx.beginPath();
-      ctx.arc(mx, my + m.h - m.w * 0.5, m.w / 2, 0, Math.PI * 2);
+      ctx.moveTo(mx - baseW * 0.2, my + m.h * 0.15);
+      ctx.lineTo(mx, my);
+      ctx.lineTo(mx + baseW * 0.2, my + m.h * 0.15);
+      ctx.closePath();
       ctx.fillStyle = modLight;
       ctx.fill();
-      ctx.strokeStyle = exposed ? "rgba(180,60,20,0.3)" : "rgba(60,200,220,0.3)";
-      ctx.lineWidth = 0.5;
+      // Needle tip
+      ctx.strokeStyle = exposed ? "rgba(255,80,40,0.6)" : "rgba(60,220,240,0.6)";
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.arc(mx, my + m.h - m.w * 0.5, m.w / 2, 0, Math.PI * 2);
+      ctx.moveTo(mx, my);
+      ctx.lineTo(mx, my - 14 * scale);
       ctx.stroke();
+      const npulse = 0.5 + Math.sin(now * 0.005 + m.ox) * 0.4;
       ctx.beginPath();
-      ctx.ellipse(mx, my + m.h - m.w * 0.5, m.w / 2, m.w * 0.1, 0, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = glass;
-      ctx.beginPath();
-      ctx.arc(mx, my + m.h - m.w * 0.5, m.w / 2, 0, Math.PI * 2);
+      ctx.arc(mx, my - 14 * scale, 2.5 * scale, 0, Math.PI * 2);
+      ctx.fillStyle = exposed ? `rgba(255,80,40,${npulse})` : `rgba(60,220,240,${npulse})`;
       ctx.fill();
-    } else {
+    } else if (m.type === "tower") {
+      // Stepped tower with observation deck ring
       ctx.fillStyle = modMid;
       ctx.fillRect(mx - m.w / 2, my, m.w, m.h);
       ctx.fillStyle = modLight;
-      ctx.fillRect(mx - m.w / 2, my, m.w, 3 * scale);
+      ctx.fillRect(mx - m.w * 0.35, my, m.w * 0.7, 8 * scale);
+      // Observation ring
+      const ringY = my + m.h * 0.4;
+      ctx.strokeStyle = glowStroke;
+      ctx.lineWidth = 4 * scale;
+      ctx.beginPath();
+      ctx.ellipse(mx, ringY, m.w * 0.65, 5 * scale, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = glass;
+      ctx.beginPath();
+      ctx.ellipse(mx, ringY, m.w * 0.65, 5 * scale, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Chunky block
+      ctx.fillStyle = modMid;
+      ctx.fillRect(mx - m.w / 2, my, m.w, m.h);
+      ctx.fillStyle = modLight;
+      ctx.fillRect(mx - m.w / 2, my, m.w, 4 * scale);
+      ctx.fillRect(mx - m.w / 2, my + m.h * 0.5, m.w, 2 * scale);
     }
 
-    // Glowing window strips on all types
-    const winRows = Math.max(1, Math.floor(m.h / (16 * scale)));
+    // Window rows on all types
+    ctx.globalAlpha = 0.55;
     ctx.fillStyle = glowC;
-    ctx.globalAlpha = 0.4;
-    for (let wr = 0; wr < winRows; wr++) {
-      if (seededRand(m.ox * 100 + wr) > 0.5) continue;
-      const wy = my + 4 * scale + wr * 16 * scale;
-      ctx.fillRect(mx - m.w * 0.35, wy, m.w * 0.7, 2 * scale);
+    const winRows = Math.max(2, Math.floor(m.h / (14 * scale)));
+    const winCols = Math.max(2, Math.floor(m.w / (9 * scale)));
+    for (let r = 0; r < winRows; r++) {
+      for (let c = 0; c < winCols; c++) {
+        if (seededRand(m.ox * 80 + r * 9 + c * 4) > 0.38)
+          ctx.fillRect(
+            mx - m.w / 2 + 3 * scale + (c * (m.w - 5 * scale)) / winCols,
+            my + 5 * scale + (r * (m.h - 8 * scale)) / winRows,
+            3 * scale,
+            3 * scale,
+          );
+      }
     }
     ctx.globalAlpha = 1;
   }
 
-  // ---- Solar panel arrays ----
+  // ---- Solar panel arrays (retained, now on rooftops) ----
   const panelArrays = [
-    { ox: -180 * scale, count: 5 },
-    { ox: 80 * scale, count: 4 },
+    { ox: -150 * scale, count: 4 },
+    { ox: 68 * scale, count: 5 },
   ];
   for (const pa of panelArrays) {
     const px = boat.x + pa.ox;
-    const pw = 14 * scale,
-      ph = 8 * scale,
+    const pw = 13 * scale,
+      ph = 7 * scale,
       gap = 3 * scale;
     const tiltAngle = Math.sin(now * 0.0002) * 0.08 + 0.15;
-    // Support post
     ctx.strokeStyle = exposed ? "#4a2010" : "#2a5060";
     ctx.lineWidth = 2 * scale;
     ctx.beginPath();
     ctx.moveTo(px, topY);
-    ctx.lineTo(px, topY - 28 * scale);
+    ctx.lineTo(px, topY - 30 * scale);
     ctx.stroke();
     ctx.save();
-    ctx.translate(px, topY - 28 * scale);
+    ctx.translate(px, topY - 30 * scale);
     ctx.rotate(-tiltAngle);
     for (let pi = 0; pi < pa.count; pi++) {
       const ox2 = (pi - (pa.count - 1) / 2) * (pw + gap);
@@ -1139,14 +1313,12 @@ function drawNovaMare(
       ctx.strokeStyle = exposed ? "rgba(180,60,20,0.3)" : "rgba(60,200,220,0.3)";
       ctx.lineWidth = 0.5;
       ctx.strokeRect(ox2 - pw / 2, -ph / 2, pw, ph);
-      // Panel grid lines
       ctx.beginPath();
       ctx.moveTo(ox2, -ph / 2);
       ctx.lineTo(ox2, ph / 2);
       ctx.moveTo(ox2 - pw / 2, 0);
       ctx.lineTo(ox2 + pw / 2, 0);
       ctx.stroke();
-      // Reflection glint
       if (!exposed) {
         ctx.fillStyle = "rgba(100,220,240,0.15)";
         ctx.fillRect(ox2 - pw / 2 + 1, -ph / 2 + 1, pw / 2, ph / 2);
