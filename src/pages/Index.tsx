@@ -1944,6 +1944,13 @@ const Index = () => {
         setSubmarineTargetCity(initialSubTarget);
         subTargetRef.current = initialSubTarget;
 
+        const spawnCity = citiesRef.current[initialBomberTarget];
+        if (spawnCity) {
+          const spawnViewH = (canvasRef.current?.height ?? 600) / ZOOM;
+          posRef.current = { x: spawnCity.x - 420, y: getWaterSurfaceY(spawnViewH) + 30 };
+          velRef.current = { x: 0, y: 0 };
+        }
+
         if (musicRef.current) {
           musicRef.current.currentTime = 0;
           musicRef.current.play().catch(() => {});
@@ -2023,6 +2030,13 @@ const Index = () => {
             const initialSubTarget = pickDifferentCity(initialBomberTarget);
             setSubmarineTargetCity(initialSubTarget);
             subTargetRef.current = initialSubTarget;
+
+            const spawnCity = citiesRef.current[initialBomberTarget];
+            if (spawnCity) {
+              const spawnViewH = (canvasRef.current?.height ?? 600) / ZOOM;
+              posRef.current = { x: spawnCity.x - 420, y: getWaterSurfaceY(spawnViewH) + 30 };
+              velRef.current = { x: 0, y: 0 };
+            }
 
             if (musicRef.current) {
               musicRef.current.currentTime = 0;
