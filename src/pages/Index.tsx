@@ -1549,7 +1549,7 @@ const Index = () => {
       ly += 24;
       const ammoLow = ammo <= AMMO_LOW_THRESHOLD;
       ctx.font = "bold 10px monospace";
-      ctx.fillStyle = ammoLow ? "#ffcc00" : "rgba(180,190,200,0.7)";
+      ctx.fillStyle = ammoLow ? "#ffcc00" : "rgba(255,210,60,0.7)";
       ctx.textAlign = "right";
       ctx.fillText("AMMO", labelX - 4, ly);
       ctx.textAlign = "left";
