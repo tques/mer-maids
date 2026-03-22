@@ -658,7 +658,7 @@ const Index = () => {
         // Shortest path wrap
         if (delta > WORLD_WIDTH / 2) delta -= WORLD_WIDTH;
         if (delta < -WORLD_WIDTH / 2) delta += WORLD_WIDTH;
-        const lerpSpeed = 1 - Math.pow(0.012, dtScale / 60);
+        const lerpSpeed = 1 - Math.pow(0.003, dtScale / 60);
         introCamXRef.current = (((introCamXRef.current + delta * lerpSpeed) % WORLD_WIDTH) + WORLD_WIDTH) % WORLD_WIDTH;
         finalCamX = introCamXRef.current;
         // Fade out overlay
