@@ -2125,7 +2125,7 @@ const Index = () => {
       if (gameOverRef.current && faceAPressed) window.location.reload();
 
       if (pausedRef.current && gp.connected) {
-        const PAUSE_MENU_COUNT = 4;
+        const PAUSE_MENU_COUNT = 3;
         const dpadUpPressed = gp.dpadUp && !gpDpadUpPrev.current;
         const dpadDownPressed = gp.dpadDown && !gpDpadDownPrev.current;
         gpDpadUpPrev.current = gp.dpadUp;
