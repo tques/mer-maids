@@ -223,8 +223,8 @@ const Index = () => {
   const useRightStickRef = useRef(false);
   const [pauseMenuIndex, setPauseMenuIndex] = useState(0);
   const pauseMenuIndexRef = useRef(0);
-  const [musicVolume, setMusicVolume] = useState(0.4);
-  const musicRef = useRef<HTMLAudioElement | null>(null);
+
+
   const gamepadAimingRef = useRef(false);
   const lastGamepadAngleRef = useRef(0);
   const loopRef = useRef<(() => void) | null>(null);
@@ -291,10 +291,8 @@ const Index = () => {
     resize();
     window.addEventListener("resize", resize);
 
-    const audio = new Audio("/audio/background-music.mp3");
-    audio.loop = true;
-    audio.volume = 0.0;
-    musicRef.current = audio;
+
+
 
     const onMouseMove = (e: MouseEvent) => {
       if (gamepadAimingRef.current) return;
@@ -2122,16 +2120,12 @@ const Index = () => {
 
         initAudio();
         sfxJetStart();
-        if (musicRef.current) {
-          musicRef.current.currentTime = 0;
-          musicRef.current.play().catch(() => {});
-        }
       }
 
       if (gameOverRef.current && faceAPressed) window.location.reload();
 
       if (pausedRef.current && gp.connected) {
-        const PAUSE_MENU_COUNT = 4;
+        const PAUSE_MENU_COUNT = 3;
         const dpadUpPressed = gp.dpadUp && !gpDpadUpPrev.current;
         const dpadDownPressed = gp.dpadDown && !gpDpadDownPrev.current;
         gpDpadUpPrev.current = gp.dpadUp;
@@ -2155,7 +2149,7 @@ const Index = () => {
             const newVal = !useRightStickRef.current;
             useRightStickRef.current = newVal;
             setUseRightStick(newVal);
-          } else if (pauseMenuIndexRef.current === 3) window.location.reload();
+          } else if (pauseMenuIndexRef.current === 2) window.location.reload();
         }
         if (startPressed) {
           pausedRef.current = false;
@@ -2220,10 +2214,8 @@ const Index = () => {
 
             initAudio();
             sfxJetStart();
-            if (musicRef.current) {
-              musicRef.current.currentTime = 0;
-              musicRef.current.play().catch(() => {});
-            }
+
+
           }}
         >
           <div
@@ -2364,7 +2356,6 @@ const Index = () => {
             {[
               { label: "Resume", color: "#f7d794" },
               { label: `Stick: ${useRightStick ? "RIGHT" : "LEFT"}`, color: "#f7d794" },
-              { label: "Music", color: "#f7d794", isSlider: true },
               { label: "Restart", color: "#D93636" },
             ].map((item, idx) => (
               <button
@@ -2378,7 +2369,7 @@ const Index = () => {
                     const nv = !useRightStick;
                     useRightStickRef.current = nv;
                     setUseRightStick(nv);
-                  } else if (idx === 3) window.location.reload();
+                  } else if (idx === 2) window.location.reload();
                 }}
                 className="px-6 py-3 text-sm tracking-widest uppercase border cursor-pointer"
                 style={{
@@ -2393,29 +2384,7 @@ const Index = () => {
                 }}
               >
                 {pauseMenuIndex === idx ? "► " : "  "}
-                {(item as any).isSlider ? (
-                  <span className="inline-flex items-center gap-3">
-                    Music
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={musicVolume}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => {
-                        const v = parseFloat(e.target.value);
-                        setMusicVolume(v);
-                        if (musicRef.current) musicRef.current.volume = v;
-                      }}
-                      className="flex-1 accent-[#f7d794] cursor-pointer"
-                      style={{ height: "4px" }}
-                    />
-                    <span style={{ fontSize: "10px" }}>{Math.round(musicVolume * 100)}%</span>
-                  </span>
-                ) : (
-                  item.label
-                )}
+                {item.label}
               </button>
             ))}
           </div>
