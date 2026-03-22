@@ -34,6 +34,8 @@ import {
   getBomberTargetCityIndex,
   getLastBomberSpawnTime,
   getBombs,
+  getHomingMissiles,
+  getChaserBullets,
 } from "../game/enemies";
 import {
   resetSubmarines,
@@ -93,6 +95,32 @@ import {
   drawMinelayer,
   fleeMinelayers,
 } from "../game/minelayer";
+import {
+  initAudio,
+  sfxShoot,
+  sfxJetStart,
+  sfxJetUpdate,
+  sfxJetStop,
+  sfxEnemyShoot,
+  sfxExplosion,
+  sfxExplosionHeavy,
+  sfxBombDrop,
+  sfxBarrierHit,
+  sfxPlatformBump,
+  sfxSplash,
+  sfxPickup,
+  sfxAmmoLaunch,
+  sfxLowAmmo,
+  sfxLowFuel,
+  sfxMissileLockStart,
+  sfxMissileLockStop,
+  sfxSubWarnStart,
+  sfxSubWarnStop,
+  sfxWaveComplete,
+  sfxExtraLife,
+  sfxGameOver,
+  sfxPlayerHit,
+} from "../game/audio";
 
 const SPEED = 7;
 const TRI_SIZE = 20;
@@ -308,7 +336,14 @@ const Index = () => {
       if (lkey === "escape" && gameStartedRef.current && !gameOverRef.current) {
         pausedRef.current = !pausedRef.current;
         setPaused(pausedRef.current);
-        if (!pausedRef.current) rafRef.current = requestAnimationFrame(loop);
+        if (pausedRef.current) {
+          sfxJetStop();
+          sfxMissileLockStop();
+          sfxSubWarnStop();
+        } else {
+          sfxJetStart();
+          rafRef.current = requestAnimationFrame(loop);
+        }
         return;
       }
       if (key === "w") {
@@ -383,8 +418,14 @@ const Index = () => {
         if (pausedRef.current) {
           pauseMenuIndexRef.current = 0;
           setPauseMenuIndex(0);
+          sfxJetStop();
+          sfxMissileLockStop();
+          sfxSubWarnStop();
         }
-        if (!pausedRef.current) rafRef.current = requestAnimationFrame(loop);
+        if (!pausedRef.current) {
+          sfxJetStart();
+          rafRef.current = requestAnimationFrame(loop);
+        }
         return;
       }
 
@@ -486,10 +527,13 @@ const Index = () => {
 
       const crossingVy = pos.y - lastPosRef.current.y;
       const crossingSpeed = Math.abs(crossingVy) + Math.abs(pos.x - lastPosRef.current.x) * 0.3;
-      if (submerged && !wasSubmerged && crossingSpeed > 0.5)
+      if (submerged && !wasSubmerged && crossingSpeed > 0.5) {
         spawnSplash(pos.x, getWaterSurfaceY(viewH), crossingVy, true);
-      else if (!submerged && wasSubmerged && crossingSpeed > 0.5)
+        sfxSplash();
+      } else if (!submerged && wasSubmerged && crossingSpeed > 0.5) {
         spawnSplash(pos.x, getWaterSurfaceY(viewH), crossingVy, false);
+        sfxSplash();
+      }
       wasSubmergedRef.current = submerged;
       lastPosRef.current = { x: pos.x, y: pos.y };
 
@@ -566,8 +610,10 @@ const Index = () => {
           spawnJetParticles(pos.x, pos.y, angle, 1, submerged, fuelRef.current, MAX_FUEL);
           spawnJetParticles(pos.x, pos.y, angle, 0.8, submerged, fuelRef.current, MAX_FUEL);
         }
+        sfxJetUpdate(jetThrottle, submerged);
         wasMovingRef.current = true;
       } else {
+        sfxJetUpdate(0, submerged);
         throttleRef.current = Math.max(throttleRef.current - 0.03 * dtScale, 0);
         vel.x *= Math.pow(AIR_DRAG, dtScale);
         vel.y *= Math.pow(AIR_DRAG, dtScale);
@@ -637,6 +683,7 @@ const Index = () => {
         if (shootCooldownRef.current <= 0) {
           shootCooldownRef.current = SHOOT_INTERVAL;
           ammoRef.current -= 1;
+          sfxShoot();
           bulletsRef.current.push({
             x: pos.x + Math.cos(angle) * (TRI_SIZE + 4),
             y: pos.y + Math.sin(angle) * (TRI_SIZE + 4),
@@ -680,11 +727,12 @@ const Index = () => {
           fleeSubmarines();
           fleeGunboats();
           fleeMinelayers();
-          // Bombardment subs retreat naturally via fleeing flag in updateBombardSubs
+          sfxWaveComplete();
         }
         if (waveResult.newLife) {
           playerLivesRef.current = Math.min(playerLivesRef.current + 1, PLAYER_LIVES + 5);
           playerHPRef.current = PLAYER_MAX_HP;
+          sfxExtraLife();
         }
         if (waveResult.startNextWave) {
           resetEnemies();
@@ -769,6 +817,10 @@ const Index = () => {
               gameOverRef.current = true;
               setGameOver(true);
               setGameOverReason(`${cities[subTargetIdx]?.name ?? "City"} destroyed!`);
+              sfxGameOver();
+              sfxJetStop();
+              sfxMissileLockStop();
+              sfxSubWarnStop();
             }
           }
         }
@@ -806,9 +858,11 @@ const Index = () => {
 
         const result = checkBulletCollisions(bulletsRef.current);
         bulletsRef.current = result.remaining;
+        if (result.score > 0) sfxExplosion();
         scoreRef.current += result.score;
         const subResult = checkBulletHitsSubmarine(bulletsRef.current);
         bulletsRef.current = subResult.remaining;
+        if (subResult.score > 0) sfxExplosion();
         scoreRef.current += subResult.score;
 
         // ---- Bombardment submarines ----
@@ -831,6 +885,7 @@ const Index = () => {
         );
         const bombardResult = checkBulletHitsBombardSub(bulletsRef.current);
         bulletsRef.current = bombardResult.remaining;
+        if (bombardResult.score > 0) sfxExplosionHeavy();
         scoreRef.current += bombardResult.score;
 
         // Check mortars hitting structures
@@ -843,13 +898,16 @@ const Index = () => {
           if (hits > 0) {
             struct.hp = Math.max(struct.hp - hits, 0);
             shake(0.5, 0.5);
+            sfxExplosionHeavy();
           }
         }
         const gunboatResult = checkBulletHitsGunboat(bulletsRef.current, viewH);
         bulletsRef.current = gunboatResult.remaining;
+        if (gunboatResult.score > 0) sfxExplosionHeavy();
         scoreRef.current += gunboatResult.score;
         const mineResult = checkBulletHitsMine(bulletsRef.current);
         bulletsRef.current = mineResult.remaining;
+        if (mineResult.score > 0) sfxExplosionHeavy();
         scoreRef.current += mineResult.score;
 
         // ---- Bomb hits on city domes ----
@@ -858,16 +916,21 @@ const Index = () => {
           const cHp = cityHPs[ci];
           const barrierUp = cHp.hp > 3;
           const cityTopY = getBoatTopY(city, viewH);
-          // Nova Mare shield down = 2x bomb damage on that city's dome
           const thisShieldAlive = ci === novaMareIdx ? shieldAlive : true;
           const bombHits = checkBombHitsShip(city.x, city.width, cityTopY, barrierUp, thisShieldAlive);
           if (bombHits > 0) {
             shake(0, 1);
+            if (barrierUp) sfxBarrierHit();
+            else sfxExplosionHeavy();
             cHp.hp = Math.max(cHp.hp - bombHits, 0);
             if (cHp.hp <= 0) {
               gameOverRef.current = true;
               setGameOver(true);
               setGameOverReason(`${city.name} destroyed!`);
+              sfxGameOver();
+              sfxJetStop();
+              sfxMissileLockStop();
+              sfxSubWarnStop();
             }
           }
         }
@@ -886,6 +949,7 @@ const Index = () => {
               struct.hp = Math.max(struct.hp - 1, 0);
               spawnExplosion(b.x, b.y, 22);
               shake(0.5, 0.5);
+              sfxExplosion();
             }
           }
         }
@@ -904,6 +968,8 @@ const Index = () => {
             spawnExplosion(pos.x, pos.y, missileHits > 0 || mineHits > 0 ? 35 : 20);
             shake(missileHits > 0 || mineHits > 0 ? 1 : 0, 1);
             invulnRef.current = INVULN_DURATION;
+            if (mineHits > 0) sfxExplosionHeavy();
+            else sfxPlayerHit();
             playerHPRef.current -= totalHits;
             if (playerHPRef.current <= 0) {
               playerLivesRef.current -= 1;
@@ -911,6 +977,10 @@ const Index = () => {
                 gameOverRef.current = true;
                 setGameOver(true);
                 setGameOverReason("All ships lost!");
+                sfxGameOver();
+                sfxJetStop();
+                sfxMissileLockStop();
+                sfxSubWarnStop();
               } else playerHPRef.current = PLAYER_MAX_HP;
             }
           }
@@ -933,18 +1003,24 @@ const Index = () => {
                 invulnRef.current = INVULN_DURATION;
                 spawnExplosion(pos.x, pos.y, 15);
                 shake(bounceDir, -1);
+                sfxPlatformBump();
                 if (playerHPRef.current <= 0) {
                   playerLivesRef.current -= 1;
                   if (playerLivesRef.current <= 0) {
                     gameOverRef.current = true;
                     setGameOver(true);
                     setGameOverReason("All ships lost!");
+                    sfxGameOver();
+                    sfxJetStop();
+                    sfxMissileLockStop();
+                    sfxSubWarnStop();
                   } else playerHPRef.current = PLAYER_MAX_HP;
                 }
               }
             } else {
               velRef.current.x *= 0.5;
               velRef.current.y = 2;
+              sfxPlatformBump();
             }
           }
         }
@@ -961,18 +1037,24 @@ const Index = () => {
               invulnRef.current = INVULN_DURATION;
               spawnExplosion(pos.x, pos.y, 15);
               shake(pos.x < WORLD_WIDTH / 2 ? -1 : 1, -1);
+              sfxPlatformBump();
               if (playerHPRef.current <= 0) {
                 playerLivesRef.current -= 1;
                 if (playerLivesRef.current <= 0) {
                   gameOverRef.current = true;
                   setGameOver(true);
                   setGameOverReason("Crashed into depot!");
+                  sfxGameOver();
+                  sfxJetStop();
+                  sfxMissileLockStop();
+                  sfxSubWarnStop();
                 } else playerHPRef.current = PLAYER_MAX_HP;
               }
             }
           } else {
             velRef.current.x *= 0.5;
             velRef.current.y = 2;
+            sfxPlatformBump();
           }
         }
 
@@ -991,8 +1073,10 @@ const Index = () => {
         }
         updatePowerups();
         const pickedUp = checkPowerupPickup(pos.x, pos.y, TRI_SIZE);
-        if (pickedUp === "health") playerHPRef.current = Math.min(playerHPRef.current + 1, PLAYER_MAX_HP);
-        else if (pickedUp === "repair") {
+        if (pickedUp === "health") {
+          playerHPRef.current = Math.min(playerHPRef.current + 1, PLAYER_MAX_HP);
+          sfxPickup();
+        } else if (pickedUp === "repair") {
           let worstIdx = 0;
           let worstHp = cityHPs[0].hp;
           for (let i = 1; i < cityHPs.length; i++) {
@@ -1002,10 +1086,13 @@ const Index = () => {
             }
           }
           cityHPs[worstIdx].hp = Math.min(cityHPs[worstIdx].hp + 1, SHIP_MAX_HP);
+          sfxPickup();
         }
       }
 
       if (gameStartedRef.current) {
+        const prevAmmo = ammoRef.current;
+        const hadCrate = !!getAmmoCrate();
         ammoRef.current = updateAmmoCrate(
           ammoRef.current,
           pos.x,
@@ -1017,6 +1104,38 @@ const Index = () => {
           bulletPlatforms,
         );
         ammoRef.current = updateAmmoDrop(ammoRef.current, pos.x, pos.y, TRI_SIZE, WORLD_WIDTH, viewH, dt);
+        // Ammo crate just collected
+        if (ammoRef.current > prevAmmo) sfxPickup();
+        // Ammo crate just launched (crate appeared this frame)
+        if (!hadCrate && !!getAmmoCrate()) sfxAmmoLaunch();
+
+        // Low ammo / fuel warnings (throttled internally)
+        if (ammoRef.current <= AMMO_LOW_THRESHOLD && ammoRef.current > 0) sfxLowAmmo();
+        if (fuelRef.current <= FUEL_LOW_THRESHOLD && fuelRef.current > 0) sfxLowFuel();
+
+        // Missile lock-on warning — continuous while homing missiles are active
+        const activeMissiles = getHomingMissiles().filter((m) => m.alive && !m.deflected);
+        if (activeMissiles.length > 0) sfxMissileLockStart();
+        else sfxMissileLockStop();
+
+        // Submarine attack warning — continuous while a sub is in attack phase
+        const attackingSubs = getSubmarines().filter((s) => s.alive && (s as any).attacking);
+        if (attackingSubs.length > 0) sfxSubWarnStart();
+        else sfxSubWarnStop();
+
+        // Bomb drop whistle — once per fresh bomb (hang phase, just spawned)
+        for (const b of getBombs()) {
+          if (b.alive && b.hangTime > 0.45) {
+            sfxBombDrop();
+            break;
+          }
+        }
+
+        // Enemy shoot — triggered when chaser bullets are nearby
+        const nearbyEnemyBullets = getChaserBullets().some(
+          (b) => b.alive && Math.hypot(b.x - pos.x, b.y - pos.y) < viewW * 0.6,
+        );
+        if (nearbyEnemyBullets) sfxEnemyShoot();
       }
 
       updateParticles(dt);
@@ -2001,6 +2120,8 @@ const Index = () => {
         }
         introCamRef.current = "scrolling";
 
+        initAudio();
+        sfxJetStart();
         if (musicRef.current) {
           musicRef.current.currentTime = 0;
           musicRef.current.play().catch(() => {});
@@ -2097,6 +2218,8 @@ const Index = () => {
             }
             introCamRef.current = "scrolling";
 
+            initAudio();
+            sfxJetStart();
             if (musicRef.current) {
               musicRef.current.currentTime = 0;
               musicRef.current.play().catch(() => {});
