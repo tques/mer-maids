@@ -649,7 +649,7 @@ const Index = () => {
       const introState = introCamRef.current;
       if (introState === "panning") {
         // Slow rightward drift across the world during title screen
-        introCamXRef.current = (introCamXRef.current + 0.4 * dtScale) % WORLD_WIDTH;
+        introCamXRef.current = (introCamXRef.current + 1.2 * dtScale) % WORLD_WIDTH;
         finalCamX = introCamXRef.current;
       } else if (introState === "scrolling") {
         // Lerp toward bomber target city, then transition to playing
@@ -658,7 +658,7 @@ const Index = () => {
         // Shortest path wrap
         if (delta > WORLD_WIDTH / 2) delta -= WORLD_WIDTH;
         if (delta < -WORLD_WIDTH / 2) delta += WORLD_WIDTH;
-        const lerpSpeed = 1 - Math.pow(0.012, dtScale / 60);
+        const lerpSpeed = 1 - Math.pow(0.003, dtScale / 60);
         introCamXRef.current = (((introCamXRef.current + delta * lerpSpeed) % WORLD_WIDTH) + WORLD_WIDTH) % WORLD_WIDTH;
         finalCamX = introCamXRef.current;
         // Fade out overlay
@@ -2114,7 +2114,7 @@ const Index = () => {
           const spawnX = spawnCity.x - spawnCity.width / 2 - 180;
           posRef.current = { x: spawnX, y: getWaterSurfaceY(spawnViewH) - 60 };
           velRef.current = { x: 0, y: 0 };
-          introCamTargetXRef.current = spawnCity.x - (canvasRef.current?.width ?? 800) / ZOOM / 2;
+          introCamTargetXRef.current = spawnX - (canvasRef.current?.width ?? 800) / ZOOM / 3;
         }
         introCamRef.current = "scrolling";
 
@@ -2207,8 +2207,8 @@ const Index = () => {
               const spawnX = spawnCity.x - spawnCity.width / 2 - 180;
               posRef.current = { x: spawnX, y: getWaterSurfaceY(spawnViewH) - 60 };
               velRef.current = { x: 0, y: 0 };
-              // Camera scrolls to slightly left of the city so player is in frame on arrival
-              introCamTargetXRef.current = spawnCity.x - (canvasRef.current?.width ?? 800) / ZOOM / 2;
+              // Camera scrolls to player spawn position
+              introCamTargetXRef.current = spawnX - (canvasRef.current?.width ?? 800) / ZOOM / 3;
             }
             introCamRef.current = "scrolling";
 
