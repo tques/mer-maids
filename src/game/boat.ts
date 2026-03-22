@@ -928,6 +928,10 @@ function drawHaven(
   ctx.restore();
 }
 
+function accentNeedle(exposed: boolean): string {
+  return exposed ? "rgba(255,100,40,0.7)" : "rgba(60,220,240,0.7)";
+}
+
 // ==================== NOVA MARE ====================
 // Research platform — sleek, modular, geodesic, solar panels, observation spire
 // Structure: Shield Battery — hexagonal emitter tower
