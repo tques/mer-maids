@@ -1006,7 +1006,16 @@ const Index = () => {
       }
 
       if (gameStartedRef.current) {
-        ammoRef.current = updateAmmoCrate(ammoRef.current, pos.x, pos.y, TRI_SIZE, WORLD_WIDTH, viewH, frameDelta);
+        ammoRef.current = updateAmmoCrate(
+          ammoRef.current,
+          pos.x,
+          pos.y,
+          TRI_SIZE,
+          WORLD_WIDTH,
+          viewH,
+          frameDelta,
+          bulletPlatforms,
+        );
         ammoRef.current = updateAmmoDrop(ammoRef.current, pos.x, pos.y, TRI_SIZE, WORLD_WIDTH, viewH, dt);
       }
 
@@ -1985,7 +1994,8 @@ const Index = () => {
         const spawnCity = citiesRef.current[initialBomberTarget];
         if (spawnCity) {
           const spawnViewH = (canvasRef.current?.height ?? 600) / ZOOM;
-          posRef.current = { x: spawnCity.x - 420, y: getWaterSurfaceY(spawnViewH) + 30 };
+          const spawnX = spawnCity.x - spawnCity.width / 2 - 180;
+          posRef.current = { x: spawnX, y: getWaterSurfaceY(spawnViewH) - 60 };
           velRef.current = { x: 0, y: 0 };
           introCamTargetXRef.current = spawnCity.x - (canvasRef.current?.width ?? 800) / ZOOM / 2;
         }
@@ -2079,7 +2089,8 @@ const Index = () => {
             const spawnCity = citiesRef.current[initialBomberTarget];
             if (spawnCity) {
               const spawnViewH = (canvasRef.current?.height ?? 600) / ZOOM;
-              posRef.current = { x: spawnCity.x - 420, y: getWaterSurfaceY(spawnViewH) + 30 };
+              const spawnX = spawnCity.x - spawnCity.width / 2 - 180;
+              posRef.current = { x: spawnX, y: getWaterSurfaceY(spawnViewH) - 60 };
               velRef.current = { x: 0, y: 0 };
               // Camera scrolls to slightly left of the city so player is in frame on arrival
               introCamTargetXRef.current = spawnCity.x - (canvasRef.current?.width ?? 800) / ZOOM / 2;

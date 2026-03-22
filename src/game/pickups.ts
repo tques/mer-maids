@@ -6,6 +6,7 @@
  * - Ammo crate is launched toward the player's current X position
  * - Crate lands on the water surface (not hovering above it)
  * - Landed crate bobs on the waves like other floating objects
+ * - Crate bounces off city platforms and depot instead of landing on them
  */
 
 import { getWaterSurfaceY, getWaveY } from "./water";
@@ -16,14 +17,13 @@ const POWERUP_LIFETIME = 18000;
 const SINK_SPEED = 0.3;
 export const AMMO_BOX_SIZE = 22;
 export const MAX_AMMO = 60;
-export const AMMO_LOW_THRESHOLD = 22; // Raised from 12 — triggers earlier so player has time to react
+export const AMMO_LOW_THRESHOLD = 22;
 const AMMO_DROP_LIFETIME = 20000;
 const DEPOT_WIDTH = 120;
 const DEPOT_HULL_DEPTH = 40;
 const CANNON_LAUNCH_VY = -480;
 const CANNON_GRAVITY = 200;
 const PARACHUTE_SPEED = 35;
-// Land right on the water surface instead of hovering above it
 const PARACHUTE_TARGET_ABOVE_SURFACE = 0;
 
 // ==================== INTERFACES ====================
@@ -153,11 +153,6 @@ export function checkPowerupPickup(px: number, py: number, radius: number): Powe
 
 // ==================== AMMO CRATE: DEPOT CANNON LAUNCH ====================
 
-/**
- * Launch a crate from the depot cannon, aimed toward the player's current X.
- * The horizontal velocity is scaled so the crate lands near the player
- * rather than just drifting to world center.
- */
 function launchCrateFromDepot(viewH: number, worldWidth: number, playerX: number) {
   if (!depot) return;
 
@@ -165,12 +160,6 @@ function launchCrateFromDepot(viewH: number, worldWidth: number, playerX: number
   const waveY = getWaveY(depot.x, surfY);
   const cannonY = waveY - 22 - 18;
 
-  // Aim toward player X across the full flight: ballistic arc + parachute descent.
-  // Time to apex = |CANNON_LAUNCH_VY| / CANNON_GRAVITY = 480/200 = 2.4s
-  // Apex height above cannon ≈ CANNON_LAUNCH_VY² / (2 * CANNON_GRAVITY) ≈ 576px
-  // Parachute descends at PARACHUTE_SPEED from apex to surface:
-  //   parachute time ≈ apexHeight / PARACHUTE_SPEED ≈ 576/35 ≈ 16.5s
-  // Total flight ≈ 2.4 + 16.5 = ~19s — vx spread over this covers the full map.
   const timeToApex = Math.abs(CANNON_LAUNCH_VY) / CANNON_GRAVITY;
   const apexHeight = (CANNON_LAUNCH_VY * CANNON_LAUNCH_VY) / (2 * CANNON_GRAVITY);
   const parachuteTime = apexHeight / PARACHUTE_SPEED;
@@ -181,11 +170,8 @@ function launchCrateFromDepot(viewH: number, worldWidth: number, playerX: number
   if (delta > halfWorld) delta -= worldWidth;
   if (delta < -halfWorld) delta += worldWidth;
 
-  // vx to cover the full distance over the total flight.
-  // No hard clamp — the long parachute phase means even large distances need modest vx.
   const vx = delta / totalFlightTime;
-
-  const targetY = surfY - PARACHUTE_TARGET_ABOVE_SURFACE; // = surfY (lands on water)
+  const targetY = surfY - PARACHUTE_TARGET_ABOVE_SURFACE;
 
   ammoCrate = {
     x: depot.x,
@@ -202,10 +188,17 @@ function launchCrateFromDepot(viewH: number, worldWidth: number, playerX: number
   ammoCrateAlert = 3000;
 }
 
-/**
- * Update the emergency ammo crate system.
- * Now passes playerX through to the launch function so the cannon can aim.
- */
+// ==================== PLATFORM TYPE ====================
+
+export interface CratePlatform {
+  x: number;
+  halfW: number;
+  topY: number;
+  bottomY: number;
+}
+
+// ==================== AMMO CRATE UPDATE ====================
+
 export function updateAmmoCrate(
   ammo: number,
   playerX: number,
@@ -214,10 +207,10 @@ export function updateAmmoCrate(
   worldWidth: number,
   viewH: number,
   frameDelta: number,
+  platforms: CratePlatform[] = [],
 ): number {
   const dt = frameDelta / 1000;
 
-  // Spawn: launch from depot when ammo is low
   if (ammo <= AMMO_LOW_THRESHOLD && !ammoCrate) {
     launchCrateFromDepot(viewH, worldWidth, playerX);
   }
@@ -235,24 +228,43 @@ export function updateAmmoCrate(
       if (ammoCrate.vy > 0) {
         ammoCrate.phase = "parachuting";
         ammoCrate.vy = PARACHUTE_SPEED;
-        // Keep vx unchanged — the horizontal aim was calculated for the full flight
       }
     } else if (ammoCrate.phase === "parachuting") {
       ammoCrate.y += ammoCrate.vy * dt;
       ammoCrate.x += ammoCrate.vx * dt;
-      // No vx friction — horizontal velocity was calculated to land near the player
 
-      // Land when reaching the water surface Y at the crate's current X
-      const waveAtCrate = getWaveY(ammoCrate.x, surfY, worldWidth);
-      if (ammoCrate.y >= waveAtCrate) {
-        ammoCrate.y = waveAtCrate;
-        ammoCrate.phase = "landed";
-        ammoCrate.vx = 0;
-        ammoCrate.vy = 0;
+      // Check platform collisions — bounce off the top surface
+      const halfBox = AMMO_BOX_SIZE / 2;
+      let bounced = false;
+      for (const p of platforms) {
+        if (ammoCrate.x > p.x - p.halfW && ammoCrate.x < p.x + p.halfW) {
+          if (ammoCrate.y + halfBox >= p.topY && ammoCrate.y < p.topY + 20) {
+            // Landed on platform top — bounce outward toward water
+            ammoCrate.y = p.topY - halfBox;
+            ammoCrate.vy = -80; // bounce up a little
+            // Push horizontally away from platform center
+            const bounceDir = ammoCrate.x < p.x ? -1 : 1;
+            ammoCrate.vx = bounceDir * 60;
+            bounced = true;
+            break;
+          }
+        }
+      }
+
+      if (!bounced) {
+        // Land on water surface
+        const waveAtCrate = getWaveY(ammoCrate.x, surfY, worldWidth);
+        if (ammoCrate.y + halfBox >= waveAtCrate) {
+          ammoCrate.y = waveAtCrate - halfBox;
+          ammoCrate.phase = "landed";
+          ammoCrate.vx = 0;
+          ammoCrate.vy = 0;
+        }
       }
     } else {
-      // Landed: follow the wave surface so it bobs naturally
-      ammoCrate.y = getWaveY(ammoCrate.x, surfY, worldWidth);
+      // Landed: follow wave surface so it bobs naturally
+      const waveAtCrate = getWaveY(ammoCrate.x, surfY, worldWidth);
+      ammoCrate.y = waveAtCrate - AMMO_BOX_SIZE / 2;
     }
 
     // Wrap X
@@ -611,8 +623,8 @@ export function drawPickups(ctx: CanvasRenderingContext2D) {
       }
       drawAmmoCrateBox(ctx, s);
     } else {
-      // Landed: already following wave in update, just draw at current y with gentle roll
-      const bobAngle = Math.sin(age / 800) * 0.08; // subtle rocking on waves
+      // Landed: already following wave in update, draw with gentle roll
+      const bobAngle = Math.sin(age / 800) * 0.08;
       ctx.translate(ammoCrate.x, ammoCrate.y);
       ctx.rotate(bobAngle);
       drawAmmoCrateBox(ctx, s);
@@ -690,6 +702,7 @@ export function drawAmmoCrateAlert(ctx: CanvasRenderingContext2D, hudX: number, 
     }
   }
 }
+
 // ==================== DEPOT COLLISION ====================
 
 export function collideWithDepot(
