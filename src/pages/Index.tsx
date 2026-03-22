@@ -291,10 +291,8 @@ const Index = () => {
     resize();
     window.addEventListener("resize", resize);
 
-    const audio = new Audio("/audio/background-music.mp3");
-    audio.loop = true;
-    audio.volume = 0.0;
-    musicRef.current = audio;
+
+
 
     const onMouseMove = (e: MouseEvent) => {
       if (gamepadAimingRef.current) return;
