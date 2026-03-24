@@ -321,8 +321,8 @@ export function updateEnemies(
   }
 
   // ==================== CHASER SPAWNING ====================
-  const maxChasers = fleeing ? 0 : gameTime < 8 / waveDifficulty ? 0 : Math.min(3 + Math.floor(difficulty * 9), 24);
-  const chaserInterval = Math.max(12 - difficulty * 4, 2);
+  const maxChasers = fleeing ? 0 : gameTime < 8 / waveDifficulty ? 0 : Math.min(5 + Math.floor(difficulty * 7), 24);
+  const chaserInterval = Math.max(8 - difficulty * 4, 2);
   chaserSpawnTimer -= dt;
   const aliveChasers = chasers.filter((c) => c.alive).length;
   if (chaserSpawnTimer <= 0 && aliveChasers < maxChasers) {
